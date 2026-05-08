@@ -520,9 +520,9 @@
                   <th><button class="sort-btn" onclick="sortTenants('room')">호실 <span class="sort-icon" id="si-room">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortTenants('name')">임차인명 <span class="sort-icon" id="si-name">⇅</span></button></th>
                   <th>연락처</th>
-                  <th><button class="sort-btn" onclick="sortTenants('deposit')">보증금 <span class="sort-icon" id="si-deposit">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortTenants('rent')">월세 <span class="sort-icon" id="si-rent">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortTenants('management')">관리비 <span class="sort-icon" id="si-management">⇅</span></button></th>
+                  <th style="text-align:right;"><button class="sort-btn" onclick="sortTenants('deposit')">보증금 <span class="sort-icon" id="si-deposit">⇅</span></button></th>
+                  <th style="text-align:right;"><button class="sort-btn" onclick="sortTenants('rent')">월세 <span class="sort-icon" id="si-rent">⇅</span></button></th>
+                  <th style="text-align:right;"><button class="sort-btn" onclick="sortTenants('management')">관리비 <span class="sort-icon" id="si-management">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortTenants('contractStart')">계약 시작일 <span class="sort-icon" id="si-contractStart">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortTenants('contractEnd')">계약 종료일 <span class="sort-icon" id="si-contractEnd">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortTenants('status')">상태 <span class="sort-icon" id="si-status">⇅</span></button></th>
@@ -1931,9 +1931,9 @@ function renderTenants(filter, statusFilter) {
       <td><strong>${fmtRoom(t.room)}</strong></td>
       <td>${t.name||'-'}</td>
       <td>${t.phone||'-'}</td>
-      <td>${t.deposit ? fmtMoney(t.deposit) : '-'}</td>
-      <td>${t.rent ? fmtMoney(t.rent) : '-'}</td>
-      <td>${t.management ? fmtMoney(t.management) : '-'}</td>
+      <td style="text-align:right;">${t.deposit ? fmtMoney(t.deposit) : '-'}</td>
+      <td style="text-align:right;">${t.rent ? fmtMoney(t.rent) : '-'}</td>
+      <td style="text-align:right;">${t.management ? fmtMoney(t.management) : '-'}</td>
       <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractStart)||'-'}</span></td>
       <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractEnd)||'-'}</span></td>
       <td><span class="badge ${t.status==='입주'?'badge-success':'badge-gray'}">${t.status}</span></td>
