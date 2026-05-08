@@ -1946,7 +1946,15 @@ function renderTenants(filter, statusFilter) {
     tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
     return;
   }
-  tbody.innerHTML = tenants.map(t => `
+  const today = new Date(); today.setHours(0,0,0,0);
+  tbody.innerHTML = tenants.map(t => {
+    const endStr = (t.contractEnd||'').replace(/[^\d]/g,'');
+    const isExpired = endStr.length === 8 && t.status === '입주'
+      && new Date(endStr.slice(0,4), endStr.slice(4,6)-1, endStr.slice(6,8)) < today;
+    const statusBadge = isExpired
+      ? `<span class="badge badge-danger">계약경과</span>`
+      : `<span class="badge ${t.status==='입주'?'badge-success':'badge-gray'}">${t.status}</span>`;
+    return `
     <tr>
       <td>${t.building || '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
       <td><strong>${fmtRoom(t.room)}</strong></td>
@@ -1957,13 +1965,14 @@ function renderTenants(filter, statusFilter) {
       <td style="text-align:right;">${t.management ? fmtMoney(t.management) : '-'}</td>
       <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractStart)||'-'}</span></td>
       <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractEnd)||'-'}</span></td>
-      <td><span class="badge ${t.status==='입주'?'badge-success':'badge-gray'}">${t.status}</span></td>
+      <td>${statusBadge}</td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${t.id}')">수정</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 function filterTenants(v) { renderTenants(v, tenantStatusFilter); }
 function filterTenantStatus(v) { renderTenants(tenantFilter, v); }
