@@ -425,7 +425,7 @@
     </div>
     <div class="nav-section">관리</div>
     <div class="nav-item" onclick="navigate('tenants')">
-      <span class="icon">👤</span> 임차인 관리
+      <span class="icon">👤</span> 임대차 관리
     </div>
     <div class="nav-item" onclick="navigate('payments')">
       <span class="icon">💳</span> 수납 관리
@@ -1378,7 +1378,7 @@ function seedDemoData() {
 // ============================================================
 // NAVIGATION
 // ============================================================
-const pageTitles = { dashboard:'대시보드', tenants:'임차인 관리', payments:'수납 관리', contracts:'계약 관리', analytics:'수익/지출 분석', admin:'사용자 관리' };
+const pageTitles = { dashboard:'대시보드', tenants:'임대차 관리', payments:'수납 관리', contracts:'계약 관리', analytics:'수익/지출 분석', admin:'사용자 관리' };
 let currentPage = 'dashboard';
 let chartInstances = {};
 
@@ -1393,7 +1393,7 @@ function navigate(page) {
   const ta = document.getElementById('topbarActions');
   ta.innerHTML = '';
   if (page === 'tenants') {
-    ta.innerHTML = '<button class="btn btn-primary" onclick="openTenantModal()">+ 임차인 추가</button>';
+    ta.innerHTML = '<button class="btn btn-primary" onclick="openTenantModal()">+ 임대차 추가</button>';
   }
   // Render
   updateBadges();
@@ -1636,7 +1636,7 @@ function openTenantModal(id) {
   document.getElementById('tenantId').value = '';
   document.getElementById('tType').value = '월세';
   document.getElementById('tStatus').value = '입주';
-  document.getElementById('tenantModalTitle').textContent = id ? '임차인 수정' : '임차인 추가';
+  document.getElementById('tenantModalTitle').textContent = id ? '임대차 수정' : '임대차 추가';
   if (id) {
     const t = getData('tenants').find(x => x.id === id);
     if (t) {
