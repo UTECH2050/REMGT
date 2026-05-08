@@ -622,18 +622,34 @@
           <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">📋 계약 기간</div>
           <div class="form-row">
             <div class="form-group">
-              <label>계약일 (시작)</label>
-              <input type="text" id="regContractStart" placeholder="20250101" maxlength="14" oninput="fmtKorDate(this)">
+              <label>계약 시작일</label>
+              <input type="text" id="regContractStart" placeholder="20250101" maxlength="10" oninput="fmtIsoDate(this)">
             </div>
             <div class="form-group">
-              <label>계약 종료일</label>
-              <input type="text" id="regContractEnd" placeholder="20260101" maxlength="14" oninput="fmtKorDate(this)">
+              <label>계약 기간</label>
+              <select id="regContractDur" onchange="onContractDurChange()">
+                <option value="1">1년</option>
+                <option value="2">2년</option>
+                <option value="기타">기타 (직접 입력)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>계약 만기일 <span style="font-size:11px;color:var(--gray-400);">(자동 계산)</span></label>
+              <input type="text" id="regContractEnd" placeholder="자동 입력됩니다" maxlength="10" readonly
+                style="background:var(--gray-50);color:var(--gray-500);">
+            </div>
+            <div class="form-group" id="regContractEndWrap" style="display:none;">
+              <label>만기일 직접 입력</label>
+              <input type="text" id="regContractEndManual" placeholder="20260101" maxlength="10"
+                oninput="fmtIsoDate(this);document.getElementById('regContractEnd').value=this.value;">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>실제 입주일</label>
-              <input type="text" id="regMoveIn" placeholder="20250101" maxlength="14" oninput="fmtKorDate(this)">
+              <input type="text" id="regMoveIn" placeholder="20250101" maxlength="10" oninput="fmtIsoDate(this)">
             </div>
             <div class="form-group"></div>
           </div>
@@ -2243,19 +2259,50 @@ function fmtComma(el) {
   el.value = raw ? Number(raw).toLocaleString() : '';
 }
 
-function fmtKorDate(el) {
-  const digits = el.value.replace(/[^\d]/g, '').slice(0, 8);
-  let result = digits;
-  if (digits.length > 4) result = digits.slice(0,4) + '년 ' + digits.slice(4);
-  if (digits.length > 6) result = digits.slice(0,4) + '년 ' + digits.slice(4,6) + '월 ' + digits.slice(6);
-  if (digits.length === 8) result = digits.slice(0,4) + '년 ' + digits.slice(4,6) + '월 ' + digits.slice(6,8) + '일';
-  el.value = result;
+function fmtIsoDate(el) {
+  const d = el.value.replace(/[^\d]/g, '').slice(0, 8);
+  let v = d;
+  if (d.length > 4) v = d.slice(0,4) + '-' + d.slice(4);
+  if (d.length > 6) v = d.slice(0,4) + '-' + d.slice(4,6) + '-' + d.slice(6);
+  el.value = v;
+  // 계약 시작일 변경 시 만기일 자동 계산
+  if (el.id === 'regContractStart') calcContractEnd();
 }
 
 function parseKorDate(str) {
   const d = str.replace(/[^\d]/g, '');
   if (d.length === 8) return d.slice(0,4) + '-' + d.slice(4,6) + '-' + d.slice(6,8);
-  return str;
+  return str.includes('-') ? str : str; // already YYYY-MM-DD or raw
+}
+
+function calcContractEnd() {
+  const dur = document.getElementById('regContractDur')?.value;
+  if (!dur || dur === '기타') return;
+  const startVal = document.getElementById('regContractStart').value.replace(/[^\d]/g,'');
+  if (startVal.length < 8) return;
+  const y = parseInt(startVal.slice(0,4));
+  const m = parseInt(startVal.slice(4,6));
+  const dd = parseInt(startVal.slice(6,8));
+  const years = parseInt(dur);
+  // 만기일 = 시작일 기준 N년 후 -1일
+  const endDate = new Date(y + years, m - 1, dd - 1);
+  const ey = endDate.getFullYear();
+  const em = String(endDate.getMonth()+1).padStart(2,'0');
+  const ed = String(endDate.getDate()).padStart(2,'0');
+  const endEl = document.getElementById('regContractEnd');
+  if (endEl) endEl.value = `${ey}-${em}-${ed}`;
+}
+
+function onContractDurChange() {
+  const dur = document.getElementById('regContractDur').value;
+  const endWrap = document.getElementById('regContractEndWrap');
+  if (dur === '기타') {
+    endWrap.style.display = 'block';
+    document.getElementById('regContractEnd').value = '';
+  } else {
+    endWrap.style.display = 'none';
+    calcContractEnd();
+  }
 }
 
 function clearRegisterForm() {
@@ -2270,6 +2317,12 @@ function clearRegisterForm() {
   if (statusEl) statusEl.value = '입주';
   const payTypeEl = document.getElementById('regPayType');
   if (payTypeEl) payTypeEl.value = '선불';
+  const durEl = document.getElementById('regContractDur');
+  if (durEl) durEl.value = '1';
+  const endWrap = document.getElementById('regContractEndWrap');
+  if (endWrap) endWrap.style.display = 'none';
+  const manualEl = document.getElementById('regContractEndManual');
+  if (manualEl) manualEl.value = '';
   populateBuildingDropdown();
 }
 
@@ -2318,9 +2371,9 @@ function saveRegisterTenant() {
     management: Number(document.getElementById('regManagement').value) || 0,
     payDay: Number(document.getElementById('regPayDay').value) || 5,
     payType: document.getElementById('regPayType')?.value || '선불',
-    contractStart: parseKorDate(document.getElementById('regContractStart').value),
-    contractEnd: parseKorDate(document.getElementById('regContractEnd').value),
-    moveIn: parseKorDate(document.getElementById('regMoveIn').value),
+    contractStart: document.getElementById('regContractStart').value,
+    contractEnd: document.getElementById('regContractEnd').value,
+    moveIn: document.getElementById('regMoveIn').value,
     type: document.getElementById('regType').value,
     status,
     note: document.getElementById('regNote').value
