@@ -1053,12 +1053,23 @@
       <input type="hidden" id="rmRoomId">
       <div class="form-row">
         <div class="form-group">
-          <label>호실 번호 <span class="required">*</span></label>
-          <input type="text" id="rmRoomNo" placeholder="예: 101, 2층 201호">
+          <label>동 <span style="font-size:11px;color:var(--gray-400);">(없으면 공란)</span></label>
+          <input type="text" id="rmDong" placeholder="예: 101" oninput="updateRoomPreview()">
         </div>
+        <div class="form-group">
+          <label>호수 <span class="required">*</span></label>
+          <input type="text" id="rmHosu" placeholder="예: 203" oninput="updateRoomPreview()">
+        </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label>전용면적 (㎡)</label>
           <input type="text" id="rmArea" placeholder="예: 33.5">
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--gray-600);width:100%;min-height:38px;" id="rmRoomPreview">
+            <span style="color:var(--gray-400);">자동 조합 미리보기</span>
+          </div>
         </div>
       </div>
       <div class="form-group">
@@ -2182,32 +2193,60 @@ function deleteProperty(id) {
 function openRoomModal(propId, roomId) {
   document.getElementById('rmPropId').value  = propId;
   document.getElementById('rmRoomId').value  = roomId || '';
-  document.getElementById('rmRoomNo').value  = '';
+  document.getElementById('rmDong').value    = '';
+  document.getElementById('rmHosu').value    = '';
   document.getElementById('rmArea').value    = '';
   document.getElementById('rmNote').value    = '';
+  updateRoomPreview();
   document.getElementById('roomModalTitle').textContent = roomId ? '호실 수정' : '호실 추가';
   if (roomId) {
     const prop = getData('properties').find(x => x.id === propId);
     const room = prop?.rooms?.find(r => r.id === roomId);
     if (room) {
-      document.getElementById('rmRoomNo').value = room.roomNo;
-      document.getElementById('rmArea').value   = room.area || '';
-      document.getElementById('rmNote').value   = room.note || '';
+      // 기존 roomNo를 동/호수로 분리 (예: "101동 203호" → dong=101, hosu=203호)
+      document.getElementById('rmDong').value  = room.dong || '';
+      document.getElementById('rmHosu').value  = room.hosu || room.roomNo || '';
+      document.getElementById('rmArea').value  = room.area || '';
+      document.getElementById('rmNote').value  = room.note || '';
+      updateRoomPreview();
     }
   }
   openModal('roomModal');
 }
 
+function updateRoomPreview() {
+  const dong  = (document.getElementById('rmDong')?.value  || '').trim();
+  const hosu  = (document.getElementById('rmHosu')?.value  || '').trim();
+  const prev  = document.getElementById('rmRoomPreview');
+  if (!prev) return;
+  if (!dong && !hosu) {
+    prev.innerHTML = '<span style="color:var(--gray-400);">자동 조합 미리보기</span>';
+  } else {
+    const label = dong ? `${dong}동 ${hosu}호` : (hosu ? `${hosu}호` : '');
+    prev.textContent = label;
+  }
+}
+
+function buildRoomNo(dong, hosu) {
+  dong = (dong || '').trim();
+  hosu = (hosu || '').trim();
+  if (dong && hosu) return `${dong}동 ${hosu}호`;
+  if (hosu) return `${hosu}호`;
+  return dong;
+}
+
 function saveRoom() {
-  const roomNo = document.getElementById('rmRoomNo').value.trim();
-  if (!roomNo) { showToast('호실 번호를 입력해주세요.', 'error'); return; }
+  const dong   = document.getElementById('rmDong').value.trim();
+  const hosu   = document.getElementById('rmHosu').value.trim();
+  if (!hosu) { showToast('호수를 입력해주세요.', 'error'); return; }
+  const roomNo = buildRoomNo(dong, hosu);
   const props  = getData('properties');
   const propId = document.getElementById('rmPropId').value;
   const roomId = document.getElementById('rmRoomId').value;
   const prop   = props.find(x => x.id === propId);
   if (!prop) return;
   if (!prop.rooms) prop.rooms = [];
-  const obj = { id: roomId || uid(), roomNo, area: document.getElementById('rmArea').value.trim(), note: document.getElementById('rmNote').value };
+  const obj = { id: roomId || uid(), dong, hosu, roomNo, area: document.getElementById('rmArea').value.trim(), note: document.getElementById('rmNote').value };
   if (roomId) {
     const idx = prop.rooms.findIndex(r => r.id === roomId);
     if (idx >= 0) prop.rooms[idx] = obj;
