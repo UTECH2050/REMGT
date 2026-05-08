@@ -924,12 +924,19 @@ function saveUsers(users) {
 // 시스템 초기화: admin 계정이 없으면 생성
 async function initAuthSystem() {
   let users = getUsers();
+  // admin 이메일 자동 보정 (기존 계정에도 적용)
+  const adminUser = users.find(u => u.id === 'admin');
+  if (adminUser && adminUser.email !== 'wooyoung.yu@gmail.com') {
+    adminUser.email = 'wooyoung.yu@gmail.com';
+    saveUsers(users);
+  }
   if (!users.find(u => u.id === 'admin')) {
     const salt = makeSalt();
     const hash = await sha256(salt + ':' + 'admin1234');
     users.push({
       id: 'admin',
       name: '관리자',
+      email: 'wooyoung.yu@gmail.com',
       role: 'admin',
       salt,
       hash,
