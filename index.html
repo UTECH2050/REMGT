@@ -5,32 +5,56 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>부동산 임대차 관리 시스템</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 
-  /* ===== 로그인 화면 ===== */
-  #loginOverlay {
+  /* ===== 인증 화면 공통 ===== */
+  .auth-overlay {
     position: fixed; inset: 0; z-index: 9999;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #0f2044 0%, #1e3a8a 60%, #2563eb 100%);
     display: flex; align-items: center; justify-content: center;
+    padding: 20px;
   }
-  #loginOverlay.hidden { display: none; }
-  .login-card {
+  .auth-overlay.hidden { display: none; }
+  .auth-card {
     background: white; border-radius: 20px;
-    padding: 48px 44px; width: 100%; max-width: 420px;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.3);
-    text-align: center;
+    padding: 44px 40px; width: 100%; max-width: 440px;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.35);
   }
-  .login-logo { font-size: 48px; margin-bottom: 12px; }
-  .login-title { font-size: 22px; font-weight: 800; color: #1f2937; margin-bottom: 6px; }
-  .login-sub { font-size: 14px; color: #6b7280; margin-bottom: 36px; }
-  .login-btn {
-    width: 100%; padding: 15px; border: none; border-radius: 12px;
-    background: #2563eb; color: white; font-size: 16px; font-weight: 700;
-    cursor: pointer; transition: background 0.2s; margin-bottom: 12px;
+  .auth-logo { font-size: 44px; text-align: center; margin-bottom: 10px; }
+  .auth-title { font-size: 20px; font-weight: 800; color: #1f2937; text-align: center; margin-bottom: 4px; }
+  .auth-sub { font-size: 13px; color: #6b7280; text-align: center; margin-bottom: 28px; }
+  .auth-field { margin-bottom: 16px; }
+  .auth-field label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+  .auth-field input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid #d1d5db; border-radius: 10px;
+    font-size: 14px; outline: none; transition: border 0.2s;
   }
-  .login-btn:hover { background: #1d4ed8; }
-  .login-note { font-size: 12px; color: #9ca3af; margin-top: 20px; line-height: 1.6; }
+  .auth-field input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .auth-btn {
+    width: 100%; padding: 13px; border: none; border-radius: 10px;
+    background: #2563eb; color: white; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: background 0.2s; margin-top: 8px;
+  }
+  .auth-btn:hover { background: #1d4ed8; }
+  .auth-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+  .auth-error { background: #fee2e2; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; display: none; }
+  .auth-note { font-size: 12px; color: #9ca3af; text-align: center; margin-top: 18px; line-height: 1.7; }
+  .auth-warn { background: #fef3c7; color: #92400e; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; }
+  /* ===== 관리자 페이지 ===== */
+  .admin-section { margin-bottom: 32px; }
+  .admin-section h3 { font-size: 15px; font-weight: 700; color: #1f2937; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+  .user-table { width: 100%; border-collapse: collapse; }
+  .user-table th { background: #f9fafb; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; padding: 10px 14px; text-align: left; }
+  .user-table td { padding: 12px 14px; font-size: 13.5px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+  .user-table tr:last-child td { border-bottom: none; }
+  .user-table tr:hover td { background: #f9fafb; }
+  .badge-admin { background: #dbeafe; color: #1d4ed8; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .badge-user { background: #f3f4f6; color: #4b5563; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .add-user-form { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
+  .add-user-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .add-user-form .form-group label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
+  .add-user-form .form-group input,
+  .add-user-form .form-group select { width: 100%; padding: 9px 12px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 13px; }
 
   :root {
     --primary: #2563eb;
@@ -290,14 +314,47 @@
 </head>
 <body>
 
-<!-- 로그인 오버레이 -->
-<div id="loginOverlay">
-  <div class="login-card">
-    <div class="login-logo">🏢</div>
-    <div class="login-title">부동산 임대차 관리 시스템</div>
-    <div class="login-sub">계속하려면 로그인이 필요합니다</div>
-    <button class="login-btn" onclick="netlifyIdentity.open('login')">🔐 로그인</button>
-    <div class="login-note">⚠️ 이 시스템은 초대된 사용자만 접근할 수 있습니다.<br>관리자에게 초대 요청을 하시기 바랍니다.</div>
+<!-- ===== 로그인 화면 ===== -->
+<div id="loginOverlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">🏢</div>
+    <div class="auth-title">부동산 임대차 관리 시스템</div>
+    <div class="auth-sub">계정 정보를 입력하여 로그인하세요</div>
+    <div class="auth-error" id="loginError"></div>
+    <div class="auth-field">
+      <label>아이디 (이메일)</label>
+      <input type="text" id="loginId" placeholder="아이디를 입력하세요" autocomplete="username" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <div class="auth-field">
+      <label>비밀번호</label>
+      <input type="password" id="loginPw" placeholder="비밀번호를 입력하세요" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="auth-btn" onclick="doLogin()">🔐 로그인</button>
+    <div class="auth-note">이 시스템은 초대된 사용자만 접근할 수 있습니다.<br>관리자에게 계정 생성을 요청하세요.</div>
+  </div>
+</div>
+
+<!-- ===== 비밀번호 변경 화면 ===== -->
+<div id="changePwOverlay" class="auth-overlay hidden">
+  <div class="auth-card">
+    <div class="auth-logo">🔑</div>
+    <div class="auth-title">비밀번호 변경 필요</div>
+    <div class="auth-sub">최초 로그인 시 비밀번호를 변경해야 합니다</div>
+    <div class="auth-warn">⚠️ 보안을 위해 초기 비밀번호를 변경해 주세요. 이 작업은 한 번만 요청됩니다.</div>
+    <div class="auth-error" id="changePwError"></div>
+    <div class="auth-field">
+      <label>현재 비밀번호</label>
+      <input type="password" id="cpCurrent" placeholder="현재 비밀번호">
+    </div>
+    <div class="auth-field">
+      <label>새 비밀번호 (8자 이상)</label>
+      <input type="password" id="cpNew" placeholder="새 비밀번호">
+    </div>
+    <div class="auth-field">
+      <label>새 비밀번호 확인</label>
+      <input type="password" id="cpConfirm" placeholder="새 비밀번호 재입력" onkeydown="if(event.key==='Enter') doChangePassword()">
+    </div>
+    <button class="auth-btn" onclick="doChangePassword()">✅ 비밀번호 변경 후 로그인</button>
   </div>
 </div>
 
@@ -328,11 +385,15 @@
     <div class="nav-item" onclick="navigate('analytics')">
       <span class="icon">📈</span> 수익/지출 분석
     </div>
+    <div class="nav-section" id="adminNavSection" style="display:none">관리자</div>
+    <div class="nav-item" id="adminNavItem" style="display:none" onclick="navigate('admin')">
+      <span class="icon">👥</span> 사용자 관리
+    </div>
   </nav>
   <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:8px;">
-    <div id="sidebarUser" style="font-size:12px;color:#9ca3af;word-break:break-all;"></div>
-    <button onclick="netlifyIdentity.logout()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#e5e7eb;padding:7px 12px;border-radius:7px;font-size:12px;cursor:pointer;width:100%;">🚪 로그아웃</button>
-    <div style="font-size:11px;color:#4b5563;">v1.0 · 데이터 로컬 저장</div>
+    <div id="sidebarUser" style="font-size:12px;color:#9ca3af;word-break:break-all;line-height:1.5;"></div>
+    <button onclick="doLogout()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#e5e7eb;padding:7px 12px;border-radius:7px;font-size:12px;cursor:pointer;width:100%;">🚪 로그아웃</button>
+    <div style="font-size:11px;color:#4b5563;">v2.0 · 사용자별 독립 데이터</div>
   </div>
 </aside>
 
@@ -673,18 +734,267 @@
   </div>
 </div>
 
+<!-- Admin Page -->
+<div id="page-admin" class="page">
+  <div class="content-area">
+    <!-- 사용자 목록 -->
+    <div class="card admin-section">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>👥 등록된 사용자</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="user-table">
+          <thead><tr><th>아이디</th><th>이름</th><th>역할</th><th>등록일</th><th>최초PW변경</th><th>작업</th></tr></thead>
+          <tbody id="userTbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- 사용자 추가 -->
+    <div class="card">
+      <div class="card-header">➕ 새 사용자 추가</div>
+      <div class="card-body">
+        <div class="add-user-form">
+          <div class="form-row" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>아이디 (이메일)</label>
+              <input type="text" id="newUserId" placeholder="user@example.com">
+            </div>
+            <div class="form-group">
+              <label>이름</label>
+              <input type="text" id="newUserName" placeholder="홍길동">
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label>역할</label>
+              <select id="newUserRole">
+                <option value="user">일반 사용자</option>
+                <option value="admin">관리자</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>임시 비밀번호</label>
+              <input type="text" id="newUserPw" placeholder="초기 비밀번호 설정">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="addUser()" style="margin-top:4px;">사용자 추가</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
 <script>
 // ============================================================
-// DATA STORE (localStorage)
+// AUTH SYSTEM
 // ============================================================
+let _currentSession = null; // { userId, name, role }
+
+const USERS_KEY  = 'remgt_sys_users';
+const SESSION_KEY = 'remgt_sys_session';
+
+// SHA-256 해시 (Web Crypto API)
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function makeSalt() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch { return []; }
+}
+function saveUsers(users) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+// 시스템 초기화: admin 계정이 없으면 생성
+async function initAuthSystem() {
+  let users = getUsers();
+  if (!users.find(u => u.id === 'admin')) {
+    const salt = makeSalt();
+    const hash = await sha256(salt + ':' + 'admin1234');
+    users.push({
+      id: 'admin',
+      name: '관리자',
+      role: 'admin',
+      salt,
+      hash,
+      mustChangePassword: true,
+      createdAt: new Date().toISOString().slice(0,10)
+    });
+    saveUsers(users);
+  }
+}
+
+async function doLogin() {
+  const id = document.getElementById('loginId').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if (!id || !pw) { showAuthError(errEl, '아이디와 비밀번호를 입력해주세요.'); return; }
+  const users = getUsers();
+  const user = users.find(u => u.id === id);
+  if (!user) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
+  const hash = await sha256(user.salt + ':' + pw);
+  if (hash !== user.hash) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
+  // 로그인 성공
+  if (user.mustChangePassword) {
+    // 임시로 세션 저장 (비밀번호 변경용)
+    sessionStorage.setItem('remgt_pending_user', user.id);
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('changePwOverlay').classList.remove('hidden');
+    return;
+  }
+  completeLogin(user);
+}
+
+async function doChangePassword() {
+  const current = document.getElementById('cpCurrent').value;
+  const newPw   = document.getElementById('cpNew').value;
+  const confirm = document.getElementById('cpConfirm').value;
+  const errEl   = document.getElementById('changePwError');
+  errEl.style.display = 'none';
+  if (!current || !newPw || !confirm) { showAuthError(errEl, '모든 항목을 입력해주세요.'); return; }
+  if (newPw.length < 8) { showAuthError(errEl, '새 비밀번호는 8자 이상이어야 합니다.'); return; }
+  if (newPw !== confirm) { showAuthError(errEl, '새 비밀번호가 일치하지 않습니다.'); return; }
+  const pendingId = sessionStorage.getItem('remgt_pending_user');
+  const users = getUsers();
+  const user = users.find(u => u.id === pendingId);
+  if (!user) { showAuthError(errEl, '오류가 발생했습니다. 다시 로그인하세요.'); return; }
+  const currentHash = await sha256(user.salt + ':' + current);
+  if (currentHash !== user.hash) { showAuthError(errEl, '현재 비밀번호가 올바르지 않습니다.'); return; }
+  if (newPw === current) { showAuthError(errEl, '새 비밀번호는 기존 비밀번호와 달라야 합니다.'); return; }
+  // 비밀번호 변경
+  const newSalt = makeSalt();
+  const newHash = await sha256(newSalt + ':' + newPw);
+  user.salt = newSalt;
+  user.hash = newHash;
+  user.mustChangePassword = false;
+  saveUsers(users);
+  sessionStorage.removeItem('remgt_pending_user');
+  document.getElementById('changePwOverlay').classList.add('hidden');
+  completeLogin(user);
+}
+
+function completeLogin(user) {
+  _currentSession = { userId: user.id, name: user.name, role: user.role };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession));
+  showApp();
+}
+
+function doLogout() {
+  _currentSession = null;
+  localStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem('remgt_pending_user');
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPw').value = '';
+  document.getElementById('changePwOverlay').classList.add('hidden');
+  document.getElementById('loginOverlay').classList.remove('hidden');
+}
+
+function showAuthError(el, msg) {
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function showApp() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('changePwOverlay').classList.add('hidden');
+  // 사용자 정보 표시
+  const el = document.getElementById('sidebarUser');
+  if (el && _currentSession) {
+    const roleLabel = _currentSession.role === 'admin' ? '👑 관리자' : '👤 사용자';
+    el.innerHTML = `<span style="color:#60a5fa;font-size:11px;">${roleLabel}</span><br><span style="color:#d1d5db;">${_currentSession.name}</span><br><span style="font-size:11px;color:#6b7280;">${_currentSession.userId}</span>`;
+  }
+  // 관리자 메뉴 표시/숨김
+  const isAdmin = _currentSession && _currentSession.role === 'admin';
+  document.getElementById('adminNavSection').style.display = isAdmin ? '' : 'none';
+  document.getElementById('adminNavItem').style.display  = isAdmin ? '' : 'none';
+  // 앱 초기화
+  seedDemoData();
+  updateBadges();
+  renderDashboard();
+}
+
+async function addUser() {
+  const id   = document.getElementById('newUserId').value.trim();
+  const name = document.getElementById('newUserName').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  const pw   = document.getElementById('newUserPw').value.trim();
+  if (!id || !name || !pw) { showToast('모든 항목을 입력해주세요.', 'danger'); return; }
+  const users = getUsers();
+  if (users.find(u => u.id === id)) { showToast('이미 존재하는 아이디입니다.', 'danger'); return; }
+  const salt = makeSalt();
+  const hash = await sha256(salt + ':' + pw);
+  users.push({ id, name, role, salt, hash, mustChangePassword: true, createdAt: new Date().toISOString().slice(0,10) });
+  saveUsers(users);
+  document.getElementById('newUserId').value = '';
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserPw').value = '';
+  showToast(`사용자 '${name}' 이(가) 추가되었습니다.`);
+  renderAdminPage();
+}
+
+async function resetUserPassword(userId) {
+  const newPw = prompt(`'${userId}' 사용자의 임시 비밀번호를 입력하세요:`);
+  if (!newPw) return;
+  const users = getUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) return;
+  const salt = makeSalt();
+  const hash = await sha256(salt + ':' + newPw);
+  user.salt = salt; user.hash = hash; user.mustChangePassword = true;
+  saveUsers(users);
+  showToast(`'${userId}' 비밀번호가 초기화되었습니다. 다음 로그인 시 변경 필요.`);
+  renderAdminPage();
+}
+
+function deleteUser(userId) {
+  if (userId === 'admin') { showToast('admin 계정은 삭제할 수 없습니다.', 'danger'); return; }
+  if (userId === _currentSession?.userId) { showToast('현재 로그인 중인 계정은 삭제할 수 없습니다.', 'danger'); return; }
+  if (!confirm(`'${userId}' 사용자를 삭제하시겠습니까?\n해당 사용자의 모든 데이터도 함께 삭제됩니다.`)) return;
+  const users = getUsers().filter(u => u.id !== userId);
+  saveUsers(users);
+  // 해당 사용자의 데이터 삭제
+  Object.keys(localStorage).filter(k => k.startsWith(`remgt_u_${userId}_`)).forEach(k => localStorage.removeItem(k));
+  showToast(`'${userId}' 사용자가 삭제되었습니다.`);
+  renderAdminPage();
+}
+
+function renderAdminPage() {
+  const users = getUsers();
+  const tbody = document.getElementById('userTbody');
+  if (!tbody) return;
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td><code style="font-size:12px;">${u.id}</code></td>
+      <td>${u.name}</td>
+      <td><span class="${u.role === 'admin' ? 'badge-admin' : 'badge-user'}">${u.role === 'admin' ? '관리자' : '일반'}</span></td>
+      <td>${u.createdAt || '-'}</td>
+      <td>${u.mustChangePassword ? '<span style="color:#dc2626;font-size:12px;">⚠️ 미변경</span>' : '<span style="color:#16a34a;font-size:12px;">✅ 완료</span>'}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="resetUserPassword('${u.id}')">PW 초기화</button>
+        ${u.id !== 'admin' ? `<button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="deleteUser('${u.id}')">삭제</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ============================================================
+// DATA STORE (localStorage - 사용자별 격리)
+// ============================================================
+function _dataPrefix() {
+  return _currentSession ? `remgt_u_${_currentSession.userId}_` : 'remgt_tmp_';
+}
 function getData(key) {
-  try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(_dataPrefix() + key)) || []; } catch { return []; }
 }
 function setData(key, val) {
-  localStorage.setItem(key, JSON.stringify(val));
+  localStorage.setItem(_dataPrefix() + key, JSON.stringify(val));
 }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
@@ -747,7 +1057,7 @@ function seedDemoData() {
 // ============================================================
 // NAVIGATION
 // ============================================================
-const pageTitles = { dashboard:'대시보드', tenants:'임차인 관리', payments:'수납 관리', contracts:'계약 관리', analytics:'수익/지출 분석' };
+const pageTitles = { dashboard:'대시보드', tenants:'임차인 관리', payments:'수납 관리', contracts:'계약 관리', analytics:'수익/지출 분석', admin:'사용자 관리' };
 let currentPage = 'dashboard';
 let chartInstances = {};
 
@@ -771,6 +1081,7 @@ function navigate(page) {
   if (page === 'payments') renderPayments();
   if (page === 'contracts') renderContracts();
   if (page === 'analytics') renderAnalytics();
+  if (page === 'admin') renderAdminPage();
 }
 
 // ============================================================
@@ -1408,47 +1719,26 @@ function deleteExpense(id) {
 }
 
 // ============================================================
-// NETLIFY IDENTITY 인증
-// ============================================================
-function showApp(user) {
-  document.getElementById('loginOverlay').classList.add('hidden');
-  const email = user && user.email ? user.email : '';
-  const name = user && user.user_metadata && user.user_metadata.full_name ? user.user_metadata.full_name : email;
-  const el = document.getElementById('sidebarUser');
-  if (el) el.textContent = '👤 ' + (name || '사용자');
-}
-
-function showLogin() {
-  document.getElementById('loginOverlay').classList.remove('hidden');
-}
-
-// ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('topbarDate').textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
-  seedDemoData();
-  updateBadges();
-  renderDashboard();
 
-  // Netlify Identity 초기화
-  if (window.netlifyIdentity) {
-    netlifyIdentity.on('init', user => {
-      if (user) {
-        showApp(user);
-      } else {
-        showLogin();
-      }
-    });
-    netlifyIdentity.on('login', user => {
-      showApp(user);
-      netlifyIdentity.close();
-    });
-    netlifyIdentity.on('logout', () => {
-      showLogin();
-    });
-    netlifyIdentity.init();
-  }
+  // 인증 시스템 초기화 (admin 계정 최초 생성)
+  await initAuthSystem();
+
+  // 저장된 세션 복원
+  try {
+    const saved = localStorage.getItem(SESSION_KEY);
+    if (saved) {
+      _currentSession = JSON.parse(saved);
+      showApp();
+      return;
+    }
+  } catch {}
+
+  // 세션 없으면 로그인 화면
+  document.getElementById('loginOverlay').classList.remove('hidden');
 });
 
 // Click outside modal to close
