@@ -1921,6 +1921,7 @@ function renderDashboard() {
 let tenantFilter = '', tenantStatusFilter = '';
 let tenantSortKey = 'room', tenantSortDir = 'asc';
 let _editingTenantId = null;
+let _originalContractEnd = '';  // 계약 연장 시 원본 만기일 보존
 
 function sortTenants(key) {
   if (tenantSortKey === key) tenantSortDir = tenantSortDir === 'asc' ? 'desc' : 'asc';
@@ -2431,8 +2432,8 @@ function onExtendYearsChange() {
   const years      = document.getElementById('regExtendYears').value;
   const manualWrap = document.getElementById('regExtendManualWrap');
   const preview    = document.getElementById('regExtendPreview');
-  // 기존 만기일 (연장 전)
-  const oldEnd = document.getElementById('regContractEnd').value;
+  // 기존 만기일 (연장 전) — _originalContractEnd 사용 (DOM 값 아님)
+  const oldEnd = _originalContractEnd;
   const curEnd = oldEnd.replace(/[^\d]/g,'');
   if (curEnd.length < 8) { showToast('기존 계약 만기일을 먼저 입력해주세요.', 'error'); return; }
   if (years === '기타') {
@@ -2475,10 +2476,10 @@ function applyExtendManual(val) {
   document.getElementById('regContractEnd').value = val;
   const preview  = document.getElementById('regExtendPreview');
   const ns = document.getElementById('regContractStart').value;
-  const oldEnd = (document.getElementById('regExtendManual')?._origEnd) || '';
   if (preview) {
     preview.style.display = 'block';
     preview.innerHTML = `
+      <div style="margin-bottom:4px;color:#6b7280;">연장 전 만기일: <strong>${_originalContractEnd}</strong></div>
       <div style="color:var(--danger);font-weight:700;">연장 후 계약기간: ${ns} ~ ${val}</div>
       <div style="font-size:11px;color:#9ca3af;margin-top:4px;">수정 저장을 누르면 위 내용으로 반영됩니다.</div>`;
   }
@@ -2486,6 +2487,7 @@ function applyExtendManual(val) {
 
 function clearRegisterForm() {
   _editingTenantId = null;
+  _originalContractEnd = '';
   ['regName','regPhone','regDeposit','regRent','regManagement',
    'regPayDay','regContractStart','regContractEnd','regMoveIn','regNote'].forEach(f => {
     const el = document.getElementById(f);
@@ -2531,8 +2533,10 @@ function openRegisterEdit(id) {
   if (alert) alert.style.display = 'none';
   const delBtn = document.getElementById('regDeleteBtn');
   if (delBtn) delBtn.style.display = 'inline-flex';
-  // 계약경과 여부 확인 → 연장 섹션 표시
+  // 원본 만기일 저장 (연장 계산 기준)
   const t = getData('tenants').find(x => x.id === id);
+  _originalContractEnd = t?.contractEnd || '';
+  // 계약경과 여부 확인 → 연장 섹션 표시
   const endStr = (t?.contractEnd || '').replace(/[^\d]/g,'');
   const tod = new Date(); tod.setHours(0,0,0,0);
   const expired = endStr.length === 8 && t?.status === '입주' &&
