@@ -153,14 +153,7 @@
 
   /* Main */
   .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
-  .topbar {
-    height: var(--header-h); background: white; border-bottom: 1px solid var(--gray-200);
-    display: flex; align-items: center; padding: 0 28px;
-    position: sticky; top: 0; z-index: 50; gap: 16px;
-    box-shadow: var(--shadow);
-  }
-  .topbar h2 { font-size: 17px; font-weight: 700; color: var(--gray-800); flex: 1; }
-  .topbar-date { font-size: 13px; color: var(--gray-500); }
+  .dash-date { font-size: 13px; color: var(--gray-500); margin-bottom: 16px; }
   .btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
@@ -475,18 +468,11 @@
 
 <!-- Main -->
 <div class="main">
-  <div class="topbar">
-    <span class="topbar-date" id="topbarDate"></span>
-    <div id="topbarActions"></div>
-    <div style="display:flex;align-items:center;gap:10px;margin-left:16px;padding-left:16px;border-left:1px solid var(--gray-200);">
-      <span id="topbarUserName" style="font-size:13px;color:var(--gray-600);"></span>
-      <button onclick="doLogout()" style="padding:6px 14px;border:1px solid var(--gray-300);border-radius:7px;background:white;color:var(--gray-700);font-size:13px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">🚪 로그아웃</button>
-    </div>
-  </div>
   <div class="content">
 
     <!-- ===== DASHBOARD ===== -->
     <div id="page-dashboard" class="page active">
+      <div class="dash-date" id="dashDate"></div>
       <div class="stats-grid" id="dashStats"></div>
       <div id="dashAlerts"></div>
       <div class="grid-2">
@@ -1294,9 +1280,6 @@ function showApp() {
     const roleLabel = _currentSession.role === 'admin' ? '👑 관리자' : '👤 사용자';
     el.innerHTML = `<span style="color:#60a5fa;font-size:11px;">${roleLabel}</span><br><span style="color:#d1d5db;">${_currentSession.name}</span><br><span style="font-size:11px;color:#6b7280;">${_currentSession.userId}</span>`;
   }
-  // 상단 바 사용자명 표시
-  const tnEl = document.getElementById('topbarUserName');
-  if (tnEl && _currentSession) tnEl.textContent = _currentSession.name + '님';
   // 관리자 메뉴 표시/숨김
   const isAdmin = _currentSession && _currentSession.role === 'admin';
   document.getElementById('adminNavSection').style.display = isAdmin ? '' : 'none';
@@ -1670,9 +1653,6 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => { if(n.getAttribute('onclick')?.includes(page)) n.classList.add('active'); });
-  // Topbar actions
-  const ta = document.getElementById('topbarActions');
-  ta.innerHTML = '';
   // Render
   updateBadges();
   if (page === 'dashboard') renderDashboard();
@@ -2830,7 +2810,8 @@ function deleteExpense(id) {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
-  document.getElementById('topbarDate').textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  const dashDateEl = document.getElementById('dashDate');
+  if (dashDateEl) dashDateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
   // 인증 시스템 초기화 (admin 계정 최초 생성)
   await initAuthSystem();
