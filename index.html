@@ -450,9 +450,6 @@
     <div class="nav-item" onclick="navigate('properties')">
       <span class="icon">🏠</span> 부동산 등록
     </div>
-    <div class="nav-item" onclick="navigate('register')">
-      <span class="icon">➕</span> 임대차 등록
-    </div>
     <div class="nav-section" id="adminNavSection" style="display:none">관리자</div>
     <div class="nav-item" id="adminNavItem" style="display:none" onclick="navigate('admin')">
       <span class="icon">👥</span> 사용자 관리
@@ -511,6 +508,7 @@
           <option value="입주">입주중</option>
           <option value="공실">공실</option>
         </select>
+        <button class="btn btn-primary btn-sm" onclick="openRegisterModal()" style="white-space:nowrap;">➕ 임대차 등록</button>
       </div>
       <div class="card">
         <div class="card-body" style="padding:0">
@@ -546,123 +544,7 @@
       <div id="propList"></div>
     </div>
 
-    <!-- ===== REGISTER (임대차 등록 전용 페이지) ===== -->
-    <div id="page-register" class="page">
-      <div id="regNoPropAlert" class="alert-box alert-warning" style="display:none;margin-bottom:16px;">
-        ⚠️ 등록된 소유부동산이 없습니다. 먼저 <a href="#" onclick="navigate('properties')" style="color:#92400e;font-weight:700;text-decoration:underline;">소유부동산</a>에서 건물을 등록해주세요.
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title" id="regCardTitle">➕ 임대차 등록</span>
-        </div>
-        <div class="card-body">
-          <div class="form-row">
-            <div class="form-group">
-              <label>건물 선택 <span class="required">*</span></label>
-              <select id="regBuilding" onchange="onRegBuildingChange()">
-                <option value="">-- 건물 선택 --</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>호실 선택 <span class="required">*</span></label>
-              <select id="regRoom">
-                <option value="">-- 건물 먼저 선택 --</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>임대 유형 <span class="required">*</span></label>
-              <select id="regType">
-                <option>월세</option><option>전세</option><option>상가</option><option>사무실</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>상태</label>
-              <select id="regStatus"><option>입주</option><option>공실</option></select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>임차인명 <span class="required">*</span></label>
-              <input type="text" id="regName" placeholder="">
-            </div>
-            <div class="form-group">
-              <label>연락처</label>
-              <input type="text" id="regPhone" placeholder="000-0000-0000" maxlength="13" oninput="fmtPhone(this)">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>보증금 (만원)</label>
-              <input type="text" id="regDeposit" placeholder="" oninput="fmtComma(this)">
-            </div>
-            <div class="form-group">
-              <label>월세 (만원)</label>
-              <input type="number" id="regRent" placeholder="">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>관리비 (만원)</label>
-              <input type="number" id="regManagement" placeholder="">
-            </div>
-            <div class="form-group">
-              <label>납부일 (매월)</label>
-              <div style="display:flex;gap:6px;">
-                <input type="number" id="regPayDay" placeholder="" min="1" max="28" style="flex:1;">
-                <select id="regPayType" style="width:80px;">
-                  <option value="선불">선불</option>
-                  <option value="후불">후불</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">📋 계약 기간</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>계약 시작일</label>
-              <input type="text" id="regContractStart" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
-            </div>
-            <div class="form-group">
-              <label>계약 기간</label>
-              <select id="regContractDur" onchange="onContractDurChange()">
-                <option value="1">1년</option>
-                <option value="2">2년</option>
-                <option value="기타">기타 (직접 입력)</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>계약 만기일 <span style="font-size:11px;color:var(--gray-400);">(자동 계산)</span></label>
-              <input type="text" id="regContractEnd" placeholder="0000-00-00" maxlength="10" readonly
-                style="background:var(--gray-50);color:var(--gray-500);">
-            </div>
-            <div class="form-group" id="regContractEndWrap" style="display:none;">
-              <label>만기일 직접 입력</label>
-              <input type="text" id="regContractEndManual" placeholder="0000-00-00" maxlength="10"
-                oninput="fmtIsoDate(this);document.getElementById('regContractEnd').value=this.value;">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>실제 입주일</label>
-              <input type="text" id="regMoveIn" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
-            </div>
-            <div class="form-group"></div>
-          </div>
-          <div class="form-group">
-            <label>특이사항</label>
-            <textarea id="regNote" placeholder=""></textarea>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:8px;">
-            <button class="btn btn-outline" onclick="clearRegisterForm()">초기화</button>
-            <button class="btn btn-primary" id="regSaveBtn" onclick="saveRegisterTenant()">💾 등록 저장</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- page-register 제거: 임대차 등록은 registerModal 팝업으로 대체 -->
 
     <!-- ===== PAYMENTS ===== -->
     <div id="page-payments" class="page">
@@ -1075,6 +957,125 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('roomModal')">취소</button>
       <button class="btn btn-primary" onclick="saveRoom()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Register Modal (임대차 등록/수정 팝업) -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal" style="max-width:660px;width:100%;">
+    <div class="modal-header">
+      <span class="modal-title" id="regCardTitle">➕ 임대차 등록</span>
+      <button class="modal-close" onclick="closeModal('registerModal')">×</button>
+    </div>
+    <div class="modal-body" style="max-height:75vh;overflow-y:auto;padding:20px 24px;">
+      <div id="regNoPropAlert" class="alert-box alert-warning" style="display:none;margin-bottom:14px;">
+        ⚠️ 등록된 소유부동산이 없습니다. 먼저 <a href="#" onclick="closeModal('registerModal');navigate('properties')" style="color:#92400e;font-weight:700;text-decoration:underline;">소유부동산</a>에서 건물을 등록해주세요.
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>건물 선택 <span class="required">*</span></label>
+          <select id="regBuilding" onchange="onRegBuildingChange()">
+            <option value="">-- 건물 선택 --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>호실 선택 <span class="required">*</span></label>
+          <select id="regRoom">
+            <option value="">-- 건물 먼저 선택 --</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>임대 유형 <span class="required">*</span></label>
+          <select id="regType">
+            <option>월세</option><option>전세</option><option>상가</option><option>사무실</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>상태</label>
+          <select id="regStatus"><option>입주</option><option>공실</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>임차인명 <span class="required">*</span></label>
+          <input type="text" id="regName" placeholder="">
+        </div>
+        <div class="form-group">
+          <label>연락처</label>
+          <input type="text" id="regPhone" placeholder="000-0000-0000" maxlength="13" oninput="fmtPhone(this)">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>보증금 (만원)</label>
+          <input type="text" id="regDeposit" placeholder="" oninput="fmtComma(this)">
+        </div>
+        <div class="form-group">
+          <label>월세 (만원)</label>
+          <input type="number" id="regRent" placeholder="">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>관리비 (만원)</label>
+          <input type="number" id="regManagement" placeholder="">
+        </div>
+        <div class="form-group">
+          <label>납부일 (매월)</label>
+          <div style="display:flex;gap:6px;">
+            <input type="number" id="regPayDay" placeholder="" min="1" max="28" style="flex:1;">
+            <select id="regPayType" style="width:80px;">
+              <option value="선불">선불</option>
+              <option value="후불">후불</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">📋 계약 기간</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>계약 시작일</label>
+          <input type="text" id="regContractStart" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
+        </div>
+        <div class="form-group">
+          <label>계약 기간</label>
+          <select id="regContractDur" onchange="onContractDurChange()">
+            <option value="1">1년</option>
+            <option value="2">2년</option>
+            <option value="기타">기타 (직접 입력)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>계약 만기일 <span style="font-size:11px;color:var(--gray-400);">(자동 계산)</span></label>
+          <input type="text" id="regContractEnd" placeholder="0000-00-00" maxlength="10" readonly
+            style="background:var(--gray-50);color:var(--gray-500);">
+        </div>
+        <div class="form-group" id="regContractEndWrap" style="display:none;">
+          <label>만기일 직접 입력</label>
+          <input type="text" id="regContractEndManual" placeholder="0000-00-00" maxlength="10"
+            oninput="fmtIsoDate(this);document.getElementById('regContractEnd').value=this.value;">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>실제 입주일</label>
+          <input type="text" id="regMoveIn" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
+        </div>
+        <div class="form-group"></div>
+      </div>
+      <div class="form-group">
+        <label>특이사항</label>
+        <textarea id="regNote" placeholder=""></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="clearRegisterForm()">초기화</button>
+      <button class="btn btn-primary" id="regSaveBtn" onclick="saveRegisterTenant()">💾 등록 저장</button>
     </div>
   </div>
 </div>
@@ -1684,7 +1685,6 @@ function navigate(page) {
   updateBadges();
   if (page === 'dashboard') renderDashboard();
   if (page === 'properties') renderPropertiesPage();
-  if (page === 'register') initRegisterPage();
   if (page === 'tenants') renderTenants();
   if (page === 'payments') renderPayments();
   if (page === 'contracts') renderContracts();
@@ -2366,9 +2366,22 @@ function clearRegisterForm() {
   if (saveBtn) saveBtn.textContent = '💾 등록 저장';
 }
 
+function openRegisterModal() {
+  _editingTenantId = null;
+  clearRegisterForm();
+  const props = getData('properties');
+  const alert = document.getElementById('regNoPropAlert');
+  if (alert) alert.style.display = props.length === 0 ? 'flex' : 'none';
+  openModal('registerModal');
+}
+
 function openRegisterEdit(id) {
   _editingTenantId = id;
-  navigate('register');
+  populateBuildingDropdown();
+  prefillRegisterForm(id);
+  const alert = document.getElementById('regNoPropAlert');
+  if (alert) alert.style.display = 'none';
+  openModal('registerModal');
 }
 
 function prefillRegisterForm(id) {
@@ -2504,25 +2517,26 @@ function saveRegisterTenant() {
     note: document.getElementById('regNote').value
   };
   if (_editingTenantId) {
-    // 수정 모드: 기존 데이터 업데이트
     const idx = tenants.findIndex(t => t.id === _editingTenantId);
     if (idx !== -1) {
       tenants[idx] = { ...tenants[idx], ...fields };
       setData('tenants', tenants);
       _editingTenantId = null;
       updateBadges();
+      closeModal('registerModal');
       showToast('임대차 정보가 수정되었습니다.');
-      navigate('tenants');
+      if (currentPage === 'tenants') renderTenants();
+      else if (currentPage === 'contracts') renderContracts();
     } else {
       showToast('수정할 데이터를 찾을 수 없습니다.', 'error');
     }
   } else {
-    // 신규 등록
     tenants.push({ id: uid(), ...fields });
     setData('tenants', tenants);
     updateBadges();
+    closeModal('registerModal');
     showToast('임대차 정보가 등록되었습니다.');
-    navigate('tenants');
+    if (currentPage === 'tenants') renderTenants();
   }
 }
 
