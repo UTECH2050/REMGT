@@ -1086,6 +1086,30 @@
         </div>
         <div class="form-group"></div>
       </div>
+      <!-- 계약 연장 (계약경과 시만 표시) -->
+      <div id="regExtendSection" style="display:none;margin-top:4px;">
+        <div style="font-size:12px;font-weight:700;color:var(--danger);margin:8px 0 8px;letter-spacing:0.04em;">🔄 계약 연장</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>연장 기간</label>
+            <select id="regExtendYears" onchange="onExtendYearsChange()">
+              <option value="">-- 선택 --</option>
+              <option value="1">1년</option>
+              <option value="2">2년</option>
+              <option value="3">3년</option>
+              <option value="4">4년</option>
+              <option value="5">5년</option>
+              <option value="기타">기타 (직접 입력)</option>
+            </select>
+          </div>
+          <div class="form-group" id="regExtendManualWrap" style="display:none;">
+            <label>연장 만기일 직접 입력</label>
+            <input type="text" id="regExtendManual" placeholder="0000-00-00" maxlength="10"
+              oninput="fmtIsoDate(this);applyExtendManual(this.value)">
+          </div>
+        </div>
+        <div id="regExtendPreview" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--danger);margin-bottom:8px;"></div>
+      </div>
       <div class="form-group">
         <label>특이사항</label>
         <textarea id="regNote" placeholder=""></textarea>
@@ -2399,6 +2423,48 @@ function onContractDurChange() {
   }
 }
 
+function fmtDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function onExtendYearsChange() {
+  const years = document.getElementById('regExtendYears').value;
+  const manualWrap = document.getElementById('regExtendManualWrap');
+  const preview   = document.getElementById('regExtendPreview');
+  if (years === '기타') {
+    manualWrap.style.display = 'block';
+    preview.style.display = 'none';
+    return;
+  }
+  manualWrap.style.display = 'none';
+  if (!years) { preview.style.display = 'none'; return; }
+  // 기존 만기일 다음날을 새 시작일로
+  const curEnd = document.getElementById('regContractEnd').value.replace(/[^\d]/g,'');
+  if (curEnd.length < 8) { showToast('기존 계약 만기일을 확인해주세요.', 'error'); return; }
+  const base = new Date(curEnd.slice(0,4), curEnd.slice(4,6)-1, curEnd.slice(6,8));
+  const newStart = new Date(base); newStart.setDate(newStart.getDate() + 1);
+  const newEnd   = new Date(newStart.getFullYear() + parseInt(years), newStart.getMonth(), newStart.getDate() - 1);
+  const ns = fmtDateStr(newStart), ne = fmtDateStr(newEnd);
+  document.getElementById('regContractStart').value = ns;
+  document.getElementById('regContractEnd').value   = ne;
+  const durEl = document.getElementById('regContractDur');
+  if (durEl) durEl.value = '기타';
+  const endWrap = document.getElementById('regContractEndWrap');
+  if (endWrap) endWrap.style.display = 'none';
+  preview.style.display = 'block';
+  preview.textContent = `✅ 연장 적용: ${ns} ~ ${ne}`;
+}
+
+function applyExtendManual(val) {
+  document.getElementById('regContractEnd').value = val;
+  const preview = document.getElementById('regExtendPreview');
+  const ns = document.getElementById('regContractStart').value;
+  if (preview && val.length === 10) {
+    preview.style.display = 'block';
+    preview.textContent = `✅ 연장 적용: ${ns} ~ ${val}`;
+  }
+}
+
 function clearRegisterForm() {
   _editingTenantId = null;
   ['regName','regPhone','regDeposit','regRent','regManagement',
@@ -2425,6 +2491,8 @@ function clearRegisterForm() {
   if (saveBtn) saveBtn.textContent = '💾 등록 저장';
   const delBtn = document.getElementById('regDeleteBtn');
   if (delBtn) delBtn.style.display = 'none';
+  const extSec = document.getElementById('regExtendSection');
+  if (extSec) extSec.style.display = 'none';
 }
 
 function openRegisterModal() {
@@ -2444,6 +2512,20 @@ function openRegisterEdit(id) {
   if (alert) alert.style.display = 'none';
   const delBtn = document.getElementById('regDeleteBtn');
   if (delBtn) delBtn.style.display = 'inline-flex';
+  // 계약경과 여부 확인 → 연장 섹션 표시
+  const t = getData('tenants').find(x => x.id === id);
+  const endStr = (t?.contractEnd || '').replace(/[^\d]/g,'');
+  const tod = new Date(); tod.setHours(0,0,0,0);
+  const expired = endStr.length === 8 && t?.status === '입주' &&
+    new Date(endStr.slice(0,4), endStr.slice(4,6)-1, endStr.slice(6,8)) < tod;
+  const extSec = document.getElementById('regExtendSection');
+  if (extSec) extSec.style.display = expired ? 'block' : 'none';
+  const extYears = document.getElementById('regExtendYears');
+  if (extYears) extYears.value = '';
+  const extManualWrap = document.getElementById('regExtendManualWrap');
+  if (extManualWrap) extManualWrap.style.display = 'none';
+  const extPreview = document.getElementById('regExtendPreview');
+  if (extPreview) extPreview.style.display = 'none';
   openModal('registerModal');
 }
 
