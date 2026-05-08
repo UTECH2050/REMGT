@@ -512,7 +512,7 @@
             <table id="tenantTable">
               <thead>
                 <tr>
-                  <th>건물/호실</th><th>임차인명</th><th>연락처</th><th>보증금</th>
+                  <th>건물명</th><th>호실</th><th>임차인명</th><th>연락처</th><th>보증금</th>
                   <th>월세</th><th>관리비</th><th>계약기간</th><th>입주일</th><th>상태</th><th>관리</th>
                 </tr>
               </thead>
@@ -1599,17 +1599,17 @@ function renderTenants(filter, statusFilter) {
 
   const tbody = document.getElementById('tenantTbody');
   if (tenants.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
     return;
   }
   tbody.innerHTML = tenants.map(t => {
-    const bldg = t.building ? `<span style="font-size:11px;color:var(--gray-500);">${t.building}</span><br>` : '';
     const contractPeriod = (t.contractStart || t.contractEnd)
       ? `<span style="font-size:11px;color:var(--gray-600);">${fmtDate(t.contractStart)} ~<br>${fmtDate(t.contractEnd)}</span>`
       : '-';
     return `
     <tr>
-      <td>${bldg}<strong>${t.room}호</strong></td>
+      <td>${t.building ? `<span style="font-size:13px;">${t.building}</span>` : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
+      <td><strong>${t.room}호</strong></td>
       <td>${t.name||'-'}</td>
       <td>${t.phone||'-'}</td>
       <td>${t.deposit ? fmtMoney(t.deposit) : '-'}</td>
