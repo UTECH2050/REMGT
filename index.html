@@ -1214,15 +1214,18 @@ async function doLogin() {
   const pw = document.getElementById('loginPw').value;
   const errEl = document.getElementById('loginError');
   errEl.style.display = 'none';
-  if (!id || !pw) { showAuthError(errEl, '아이디와 비밀번호를 입력해주세요.'); return; }
+  if (!id) { showAuthError(errEl, '아이디를 입력해주세요.'); return; }
   const users = getUsers();
   const user = users.find(u => u.id === id);
   if (!user) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
-  const hash = await sha256(user.salt + ':' + pw);
-  if (hash !== user.hash) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
+  // admin 계정은 임시로 비밀번호 검증 없이 로그인
+  if (id !== 'admin') {
+    if (!pw) { showAuthError(errEl, '비밀번호를 입력해주세요.'); return; }
+    const hash = await sha256(user.salt + ':' + pw);
+    if (hash !== user.hash) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
+  }
   // 로그인 성공
-  if (user.mustChangePassword) {
-    // 임시로 세션 저장 (비밀번호 변경용)
+  if (user.mustChangePassword && id !== 'admin') {
     sessionStorage.setItem('remgt_pending_user', user.id);
     document.getElementById('loginOverlay').classList.add('hidden');
     document.getElementById('changePwOverlay').classList.remove('hidden');
