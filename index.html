@@ -436,7 +436,7 @@
       <span class="icon">📊</span> 대시보드
     </div>
     <div style="margin: 8px 0; border-top: 1px solid rgba(255,255,255,0.07);"></div>
-    <div class="nav-item" onclick="navigate('tenants'); setTimeout(openTenantModal, 50);">
+    <div class="nav-item" onclick="navigate('register')">
       <span class="icon">➕</span> 임대차 등록
     </div>
     <div class="nav-section">관리</div>
@@ -543,6 +543,97 @@
               </thead>
               <tbody id="tenantTbody"></tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== REGISTER (임대차 등록 전용 페이지) ===== -->
+    <div id="page-register" class="page">
+      <div style="max-width:620px;margin:0 auto;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">➕ 임대차 등록</span>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>건물명</label>
+                <input type="text" id="regBuilding" placeholder="예: 한강빌라, A동">
+              </div>
+              <div class="form-group">
+                <label>호실 번호 <span class="required">*</span></label>
+                <input type="text" id="regRoom" placeholder="예: 101, 202호">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>임대 유형 <span class="required">*</span></label>
+                <select id="regType">
+                  <option>월세</option><option>전세</option><option>상가</option><option>사무실</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>상태</label>
+                <select id="regStatus"><option>입주</option><option>공실</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>임차인명 <span class="required">*</span></label>
+                <input type="text" id="regName" placeholder="홍길동">
+              </div>
+              <div class="form-group">
+                <label>연락처</label>
+                <input type="text" id="regPhone" placeholder="010-0000-0000">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>보증금 (만원)</label>
+                <input type="number" id="regDeposit" placeholder="5000">
+              </div>
+              <div class="form-group">
+                <label>월세 (만원)</label>
+                <input type="number" id="regRent" placeholder="80">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>관리비 (만원)</label>
+                <input type="number" id="regManagement" placeholder="10">
+              </div>
+              <div class="form-group">
+                <label>납부일 (매월)</label>
+                <input type="number" id="regPayDay" placeholder="5" min="1" max="28">
+              </div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">📋 계약 기간</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>계약일 (시작) <span class="required">*</span></label>
+                <input type="date" id="regContractStart">
+              </div>
+              <div class="form-group">
+                <label>계약 종료일 <span class="required">*</span></label>
+                <input type="date" id="regContractEnd">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>실제 입주일</label>
+                <input type="date" id="regMoveIn">
+              </div>
+              <div class="form-group"></div>
+            </div>
+            <div class="form-group">
+              <label>특이사항</label>
+              <textarea id="regNote" placeholder="특이사항을 입력하세요"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+              <button class="btn btn-outline" onclick="clearRegisterForm()">초기화</button>
+              <button class="btn btn-primary" onclick="saveRegisterTenant()">💾 등록 저장</button>
+            </div>
           </div>
         </div>
       </div>
@@ -848,94 +939,76 @@
 
 <!-- Admin Page -->
 <div id="page-admin" class="page">
-  <div class="content-area">
-    <!-- 사용자 목록 -->
-    <div class="card admin-section">
-      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>👥 등록된 사용자</span>
-      </div>
+  <div class="content-area" style="max-width:860px;margin:0 auto;">
+
+    <!-- 사용자 목록 (가운데 배치) -->
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-header">👥 등록된 사용자</div>
       <div class="card-body" style="padding:0">
-        <table class="user-table">
-          <thead><tr><th>아이디</th><th>이름</th><th>역할</th><th>등록일</th><th>최초PW변경</th><th>작업</th></tr></thead>
+        <table class="user-table" style="width:100%;">
+          <thead>
+            <tr>
+              <th>아이디</th><th>이름</th><th>이메일</th><th>역할</th><th>등록일</th><th>PW변경</th><th>작업</th>
+            </tr>
+          </thead>
           <tbody id="userTbody"></tbody>
+          <!-- 인라인 사용자 추가 행 -->
+          <tfoot>
+            <tr style="background:#f0f9ff;border-top:2px dashed #bae6fd;">
+              <td style="padding:8px 6px;"><input type="text" id="newUserId" placeholder="아이디" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;"></td>
+              <td style="padding:8px 6px;"><input type="text" id="newUserName" placeholder="이름" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;"></td>
+              <td style="padding:8px 6px;"><input type="email" id="newUserEmail" placeholder="이메일" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;"></td>
+              <td style="padding:8px 6px;">
+                <select id="newUserRole" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;">
+                  <option value="user">일반</option>
+                  <option value="admin">관리자</option>
+                </select>
+              </td>
+              <td style="padding:8px 6px;" colspan="2"><input type="text" id="newUserPw" placeholder="임시 비밀번호" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;" onkeydown="if(event.key==='Enter') addUser()"></td>
+              <td style="padding:8px 6px;text-align:center;">
+                <button class="btn btn-primary" onclick="addUser()" style="padding:7px 14px;font-size:12px;white-space:nowrap;">+ 추가</button>
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>
-    <!-- 이메일 설정 -->
-    <div class="card admin-section">
-      <div class="card-header">⚙️ 이메일 발송 설정 (비밀번호 재설정용)</div>
-      <div class="card-body">
-        <div id="emailConfigStatus" style="margin-bottom:12px;"></div>
-        <div class="email-config-box">
-          <div style="font-size:13px;font-weight:700;color:#0369a1;margin-bottom:4px;">EmailJS 설정</div>
-          <div style="font-size:12px;color:#0284c7;margin-bottom:10px;">EmailJS 무료 계정으로 월 200건 발송 가능 — <a href="https://www.emailjs.com" target="_blank" style="color:#0284c7;">emailjs.com</a></div>
-          <label>Public Key (User ID)</label>
-          <input type="text" id="ejsPublicKey" placeholder="예: AbCdEfGhIjKlMnOp">
-          <label>Service ID</label>
-          <input type="text" id="ejsServiceId" placeholder="예: service_xxxxxxx">
-          <label>Template ID</label>
-          <input type="text" id="ejsTemplateId" placeholder="예: template_xxxxxxx">
-        </div>
-        <div style="display:flex;gap:10px;margin-bottom:20px;">
-          <button class="btn btn-primary" onclick="saveEmailConfig()">💾 설정 저장</button>
-          <button class="btn btn-outline" onclick="testEmailSend()">📨 테스트 발송</button>
-        </div>
-        <div class="setup-steps">
-          <strong>📋 EmailJS 설정 방법 (처음 사용 시)</strong>
-          <ol style="margin-top:8px;">
-            <li><a href="https://www.emailjs.com" target="_blank">emailjs.com</a> 무료 가입 → 로그인</li>
-            <li><strong>Email Services</strong> → Gmail/Outlook 연결 → Service ID 복사</li>
-            <li><strong>Email Templates</strong> → 새 템플릿 생성 → 아래 변수 사용:</li>
-          </ol>
-          <div style="background:#e5e7eb;border-radius:8px;padding:10px;margin-top:8px;font-size:12px;line-height:1.8;">
-            제목: <code>[임대차 관리] 비밀번호 재설정</code><br>
-            본문: <code>안녕하세요 {{to_name}}님, 재설정 링크: {{reset_link}} (1시간 유효)</code><br>
-            수신자 이메일: <code>{{to_email}}</code>
-          </div>
-          <div style="margin-top:8px;">4. <strong>Account</strong> → Public Key 복사 → 위 설정에 입력 후 저장</div>
-        </div>
-      </div>
-    </div>
-    <!-- 사용자 추가 -->
+
+    <!-- 이메일 발송 설정 -->
     <div class="card">
-      <div class="card-header">➕ 새 사용자 추가</div>
-      <div class="card-body">
-        <div class="add-user-form">
-          <div class="form-row" style="margin-bottom:12px;">
-            <div class="form-group">
-              <label>아이디 (로그인용)</label>
-              <input type="text" id="newUserId" placeholder="예: hong_gildong">
-            </div>
-            <div class="form-group">
-              <label>이름</label>
-              <input type="text" id="newUserName" placeholder="홍길동">
-            </div>
+      <div class="card-header" style="cursor:pointer;" onclick="toggleEmailConfig()">
+        ⚙️ 이메일 발송 설정 (비밀번호 재설정용) <span id="emailConfigToggle" style="float:right;font-size:12px;color:var(--gray-400);">▼ 펼치기</span>
+      </div>
+      <div id="emailConfigBody" style="display:none;">
+        <div class="card-body">
+          <div id="emailConfigStatus" style="margin-bottom:12px;"></div>
+          <div class="email-config-box">
+            <div style="font-size:13px;font-weight:700;color:#0369a1;margin-bottom:4px;">EmailJS 설정</div>
+            <div style="font-size:12px;color:#0284c7;margin-bottom:10px;">EmailJS 무료 계정으로 월 200건 발송 가능 — <a href="https://www.emailjs.com" target="_blank" style="color:#0284c7;">emailjs.com</a></div>
+            <label>Public Key (User ID)</label>
+            <input type="text" id="ejsPublicKey" placeholder="예: AbCdEfGhIjKlMnOp">
+            <label>Service ID</label>
+            <input type="text" id="ejsServiceId" placeholder="예: service_xxxxxxx">
+            <label>Template ID</label>
+            <input type="text" id="ejsTemplateId" placeholder="예: template_xxxxxxx">
           </div>
-          <div class="form-row" style="margin-bottom:12px;">
-            <div class="form-group">
-              <label>이메일 (비밀번호 재설정용) <span style="color:#dc2626">*</span></label>
-              <input type="email" id="newUserEmail" placeholder="hong@example.com">
-            </div>
-            <div class="form-group">
-              <label>역할</label>
-              <select id="newUserRole">
-                <option value="user">일반 사용자</option>
-                <option value="admin">관리자</option>
-              </select>
-            </div>
+          <div style="display:flex;gap:10px;margin-bottom:20px;">
+            <button class="btn btn-primary" onclick="saveEmailConfig()">💾 설정 저장</button>
+            <button class="btn btn-outline" onclick="testEmailSend()">📨 테스트 발송</button>
           </div>
-          <div class="form-row" style="margin-bottom:12px;">
-            <div class="form-group">
-              <label>임시 비밀번호</label>
-              <input type="text" id="newUserPw" placeholder="초기 비밀번호 설정">
-            </div>
-            <div class="form-group" style="display:flex;align-items:flex-end;">
-              <button class="btn btn-primary" onclick="addUser()" style="width:100%;padding:10px;">사용자 추가</button>
-            </div>
+          <div class="setup-steps">
+            <strong>📋 EmailJS 설정 방법</strong>
+            <ol style="margin-top:8px;">
+              <li><a href="https://www.emailjs.com" target="_blank">emailjs.com</a> 무료 가입 → 로그인</li>
+              <li><strong>Email Services</strong> → Gmail/Outlook 연결 → Service ID 복사</li>
+              <li><strong>Email Templates</strong> → 새 템플릿 생성: 변수 <code>{{to_name}}</code> <code>{{reset_link}}</code> <code>{{to_email}}</code> 사용</li>
+              <li><strong>Account</strong> → Public Key 복사 → 위 설정에 입력 후 저장</li>
+            </ol>
           </div>
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -1440,6 +1513,7 @@ function navigate(page) {
   // Render
   updateBadges();
   if (page === 'dashboard') renderDashboard();
+  if (page === 'register') clearRegisterForm();
   if (page === 'tenants') renderTenants();
   if (page === 'payments') renderPayments();
   if (page === 'contracts') renderContracts();
@@ -1799,6 +1873,61 @@ function saveTenant() {
   renderTenants();
   updateBadges();
   showToast(id ? '임차인 정보가 수정되었습니다.' : '임차인이 추가되었습니다.');
+}
+
+function clearRegisterForm() {
+  ['regBuilding','regRoom','regName','regPhone','regDeposit','regRent','regManagement',
+   'regPayDay','regContractStart','regContractEnd','regMoveIn','regNote'].forEach(f => {
+    const el = document.getElementById(f);
+    if (el) el.value = '';
+  });
+  const typeEl = document.getElementById('regType');
+  if (typeEl) typeEl.value = '월세';
+  const statusEl = document.getElementById('regStatus');
+  if (statusEl) statusEl.value = '입주';
+}
+
+function saveRegisterTenant() {
+  const room   = document.getElementById('regRoom').value.trim();
+  const name   = document.getElementById('regName').value.trim();
+  const status = document.getElementById('regStatus').value;
+  if (!room) { showToast('호실 번호를 입력해주세요.', 'error'); return; }
+  if (status === '입주' && !name) { showToast('임차인명을 입력해주세요.', 'error'); return; }
+  const tenants = getData('tenants');
+  const obj = {
+    id: uid(),
+    building: document.getElementById('regBuilding').value.trim(),
+    room, name,
+    phone: document.getElementById('regPhone').value,
+    deposit: Number(document.getElementById('regDeposit').value) || 0,
+    rent: Number(document.getElementById('regRent').value) || 0,
+    management: Number(document.getElementById('regManagement').value) || 0,
+    payDay: Number(document.getElementById('regPayDay').value) || 5,
+    contractStart: document.getElementById('regContractStart').value,
+    contractEnd: document.getElementById('regContractEnd').value,
+    moveIn: document.getElementById('regMoveIn').value,
+    type: document.getElementById('regType').value,
+    status,
+    note: document.getElementById('regNote').value
+  };
+  tenants.push(obj);
+  setData('tenants', tenants);
+  updateBadges();
+  showToast('임대차 정보가 등록되었습니다.');
+  navigate('tenants');
+}
+
+function toggleEmailConfig() {
+  const body   = document.getElementById('emailConfigBody');
+  const toggle = document.getElementById('emailConfigToggle');
+  if (!body) return;
+  if (body.style.display === 'none') {
+    body.style.display = '';
+    if (toggle) toggle.textContent = '▲ 접기';
+  } else {
+    body.style.display = 'none';
+    if (toggle) toggle.textContent = '▼ 펼치기';
+  }
 }
 
 function deleteTenant(id) {
