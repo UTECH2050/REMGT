@@ -2440,42 +2440,62 @@ function onExtendYearsChange() {
   const years      = document.getElementById('regExtendYears').value;
   const manualWrap = document.getElementById('regExtendManualWrap');
   const preview    = document.getElementById('regExtendPreview');
-  // 기존 만기일 (연장 전) — _originalContractEnd 사용 (DOM 값 아님)
-  const oldEnd = _originalContractEnd;
-  const curEnd = oldEnd.replace(/[^\d]/g,'');
-  if (curEnd.length < 8) { showToast('기존 계약 만기일을 먼저 입력해주세요.', 'error'); return; }
+
+  // 연장 기준일: _originalContractEnd 우선, 없으면 현재 폼의 만기일 읽기
+  const rawOld = _originalContractEnd || document.getElementById('regContractEnd').value || '';
+  const digOld = rawOld.replace(/[^\d]/g, '');
+  if (digOld.length < 8) {
+    showToast('기존 계약 만기일을 먼저 입력해주세요.', 'error');
+    return;
+  }
+
+  // 기존 만기일 파싱
+  const oy = parseInt(digOld.slice(0,4));
+  const om = parseInt(digOld.slice(4,6)) - 1; // 0-indexed
+  const od = parseInt(digOld.slice(6,8));
+  const baseDate = new Date(oy, om, od);
+  const dispOld  = `${oy}-${String(om+1).padStart(2,'0')}-${String(od).padStart(2,'0')}`;
+
   if (years === '기타') {
-    // 기타: 새 시작일만 자동 설정, 만기일은 직접 입력
-    const base = new Date(curEnd.slice(0,4), curEnd.slice(4,6)-1, curEnd.slice(6,8));
-    const newStart = new Date(base); newStart.setDate(newStart.getDate() + 1);
+    // 기타: 새 시작일 자동 설정, 만기일은 직접 입력
+    const newStart = new Date(baseDate); newStart.setDate(newStart.getDate() + 1);
     const ns = fmtDateStr(newStart);
     document.getElementById('regContractStart').value = ns;
     document.getElementById('regExtendManual').value  = '';
     manualWrap.style.display = 'block';
     preview.style.display = 'block';
-    preview.innerHTML = `<div style="margin-bottom:4px;color:#6b7280;">연장 전 만기일: <strong>${oldEnd}</strong></div>
+    preview.innerHTML = `
+      <div style="margin-bottom:4px;color:#6b7280;">연장 전 만기일: <strong>${dispOld}</strong></div>
       <div>새 계약 시작일: <strong>${ns}</strong> &nbsp;|&nbsp; 만기일을 아래에 직접 입력해주세요.</div>`;
     return;
   }
+
   manualWrap.style.display = 'none';
   if (!years) { preview.style.display = 'none'; return; }
-  // N년 자동 계산
-  const base     = new Date(curEnd.slice(0,4), curEnd.slice(4,6)-1, curEnd.slice(6,8));
-  const newStart = new Date(base); newStart.setDate(newStart.getDate() + 1);
+
+  // N년 자동 계산: 기존 만기일 다음날부터 N년
+  const newStart = new Date(baseDate); newStart.setDate(newStart.getDate() + 1);
   const newEnd   = new Date(newStart.getFullYear() + parseInt(years), newStart.getMonth(), newStart.getDate() - 1);
-  const ns = fmtDateStr(newStart), ne = fmtDateStr(newEnd);
-  // 폼 필드 업데이트
-  document.getElementById('regContractStart').value = ns;
-  document.getElementById('regContractEnd').value   = ne;
-  const durEl = document.getElementById('regContractDur');
-  if (durEl) durEl.value = '기타';
+  const ns = fmtDateStr(newStart);
+  const ne = fmtDateStr(newEnd);
+
+  // 폼 필드 업데이트 (calcContractEnd 충돌 방지: durEl은 '기타' 유지, endWrap 숨김)
+  const startInp = document.getElementById('regContractStart');
+  if (startInp) startInp.value = ns;
+  const endInp = document.getElementById('regContractEnd');
+  if (endInp) endInp.value = ne;
+  const manualInp = document.getElementById('regContractEndManual');
+  if (manualInp) manualInp.value = ne;          // 수동 입력 필드도 동기화
+  const durEl  = document.getElementById('regContractDur');
+  if (durEl)  durEl.value = '기타';
   const endWrap = document.getElementById('regContractEndWrap');
-  if (endWrap) endWrap.style.display = 'none';
+  if (endWrap) endWrap.style.display = 'none';  // 만기일 직접입력 패널 숨김
+
   // 미리보기
   preview.style.display = 'block';
   preview.innerHTML = `
-    <div style="margin-bottom:6px;color:#6b7280;">연장 전 만기일: <strong>${oldEnd}</strong></div>
-    <div style="color:var(--danger);font-weight:700;">연장 후 계약기간: ${ns} ~ ${ne} &nbsp;(${years}년)</div>
+    <div style="margin-bottom:6px;color:#6b7280;">연장 전 만기일: <strong>${dispOld}</strong></div>
+    <div style="color:var(--danger);font-weight:700;margin-bottom:2px;">연장 후 계약기간: <strong>${ns} ~ ${ne}</strong> &nbsp;(${years}년)</div>
     <div style="font-size:11px;color:#9ca3af;margin-top:4px;">수정 저장을 누르면 위 내용으로 반영됩니다.</div>`;
 }
 
@@ -2711,10 +2731,15 @@ function onRegBuildingChange() {
 
 function saveRegisterTenant() {
   const building = document.getElementById('regBuilding').value;
-  const room     = document.getElementById('regRoom').value.trim();
+  let   room     = document.getElementById('regRoom').value.trim();
   const name     = document.getElementById('regName').value.trim();
   const status   = document.getElementById('regStatus').value;
   if (!building) { showToast('건물을 선택해주세요.', 'error'); return; }
+  // 수정 모드에서 호실 드롭다운이 비어있으면 저장된 기존 값 사용
+  if (!room && _editingTenantId) {
+    const existing = getData('tenants').find(t => t.id === _editingTenantId);
+    if (existing?.room) room = existing.room;
+  }
   if (!room)     { showToast('호실을 선택해주세요.', 'error'); return; }
   if (status === '입주' && !name) { showToast('임차인명을 입력해주세요.', 'error'); return; }
   const tenants = getData('tenants');
