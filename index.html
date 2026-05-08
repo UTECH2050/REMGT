@@ -1054,11 +1054,11 @@
       <div class="form-row">
         <div class="form-group">
           <label>동 <span style="font-size:11px;color:var(--gray-400);">(없으면 공란)</span></label>
-          <input type="text" id="rmDong" placeholder="예: 101" oninput="updateRoomPreview()">
+          <input type="text" id="rmDong" placeholder="예: 101">
         </div>
         <div class="form-group">
           <label>호수 <span class="required">*</span></label>
-          <input type="text" id="rmHosu" placeholder="예: 203" oninput="updateRoomPreview()">
+          <input type="text" id="rmHosu" placeholder="예: 203">
         </div>
       </div>
       <div class="form-row">
@@ -1066,11 +1066,7 @@
           <label>전용면적 (㎡)</label>
           <input type="text" id="rmArea" placeholder="예: 33.5">
         </div>
-        <div class="form-group" style="display:flex;align-items:flex-end;">
-          <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--gray-600);width:100%;min-height:38px;" id="rmRoomPreview">
-            <span style="color:var(--gray-400);">자동 조합 미리보기</span>
-          </div>
-        </div>
+        <div class="form-group"></div>
       </div>
       <div class="form-group">
         <label>비고</label>
@@ -2197,18 +2193,15 @@ function openRoomModal(propId, roomId) {
   document.getElementById('rmHosu').value    = '';
   document.getElementById('rmArea').value    = '';
   document.getElementById('rmNote').value    = '';
-  updateRoomPreview();
   document.getElementById('roomModalTitle').textContent = roomId ? '호실 수정' : '호실 추가';
   if (roomId) {
     const prop = getData('properties').find(x => x.id === propId);
     const room = prop?.rooms?.find(r => r.id === roomId);
     if (room) {
-      // 기존 roomNo를 동/호수로 분리 (예: "101동 203호" → dong=101, hosu=203호)
       document.getElementById('rmDong').value  = room.dong || '';
       document.getElementById('rmHosu').value  = room.hosu || room.roomNo || '';
       document.getElementById('rmArea').value  = room.area || '';
       document.getElementById('rmNote').value  = room.note || '';
-      updateRoomPreview();
     }
   }
   openModal('roomModal');
