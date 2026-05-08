@@ -457,6 +457,10 @@
     <h2 id="pageTitle">대시보드</h2>
     <span class="topbar-date" id="topbarDate"></span>
     <div id="topbarActions"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:16px;padding-left:16px;border-left:1px solid var(--gray-200);">
+      <span id="topbarUserName" style="font-size:13px;color:var(--gray-600);"></span>
+      <button onclick="doLogout()" style="padding:6px 14px;border:1px solid var(--gray-300);border-radius:7px;background:white;color:var(--gray-700);font-size:13px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='white'">🚪 로그아웃</button>
+    </div>
   </div>
   <div class="content">
 
@@ -508,8 +512,8 @@
             <table id="tenantTable">
               <thead>
                 <tr>
-                  <th>호실</th><th>임차인명</th><th>연락처</th><th>보증금</th>
-                  <th>월세</th><th>관리비</th><th>입주일</th><th>상태</th><th>관리</th>
+                  <th>건물/호실</th><th>임차인명</th><th>연락처</th><th>보증금</th>
+                  <th>월세</th><th>관리비</th><th>계약기간</th><th>입주일</th><th>상태</th><th>관리</th>
                 </tr>
               </thead>
               <tbody id="tenantTbody"></tbody>
@@ -655,15 +659,22 @@
       <input type="hidden" id="tenantId">
       <div class="form-row">
         <div class="form-group">
+          <label>건물명</label>
+          <input type="text" id="tBuilding" placeholder="예: 한강빌라, A동">
+        </div>
+        <div class="form-group">
           <label>호실 번호 <span class="required">*</span></label>
           <input type="text" id="tRoom" placeholder="예: 101, 202호">
         </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label>임대 유형 <span class="required">*</span></label>
           <select id="tType">
             <option>월세</option><option>전세</option><option>상가</option><option>사무실</option>
           </select>
         </div>
+        <div class="form-group"></div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -695,9 +706,10 @@
           <input type="number" id="tPayDay" placeholder="5" min="1" max="28">
         </div>
       </div>
+      <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">📋 계약 기간</div>
       <div class="form-row">
         <div class="form-group">
-          <label>계약 시작일 <span class="required">*</span></label>
+          <label>계약일 (시작) <span class="required">*</span></label>
           <input type="date" id="tContractStart">
         </div>
         <div class="form-group">
@@ -707,7 +719,7 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>입주일</label>
+          <label>실제 입주일</label>
           <input type="date" id="tMoveIn">
         </div>
         <div class="form-group">
@@ -1001,12 +1013,15 @@ function showAuthError(el, msg) {
 function showApp() {
   document.getElementById('loginOverlay').classList.add('hidden');
   document.getElementById('changePwOverlay').classList.add('hidden');
-  // 사용자 정보 표시
+  // 사용자 정보 표시 (사이드바)
   const el = document.getElementById('sidebarUser');
   if (el && _currentSession) {
     const roleLabel = _currentSession.role === 'admin' ? '👑 관리자' : '👤 사용자';
     el.innerHTML = `<span style="color:#60a5fa;font-size:11px;">${roleLabel}</span><br><span style="color:#d1d5db;">${_currentSession.name}</span><br><span style="font-size:11px;color:#6b7280;">${_currentSession.userId}</span>`;
   }
+  // 상단 바 사용자명 표시
+  const tnEl = document.getElementById('topbarUserName');
+  if (tnEl && _currentSession) tnEl.textContent = _currentSession.name + '님';
   // 관리자 메뉴 표시/숨김
   const isAdmin = _currentSession && _currentSession.role === 'admin';
   document.getElementById('adminNavSection').style.display = isAdmin ? '' : 'none';
@@ -1577,17 +1592,23 @@ function renderTenants(filter, statusFilter) {
 
   const tbody = document.getElementById('tenantTbody');
   if (tenants.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
     return;
   }
-  tbody.innerHTML = tenants.map(t => `
+  tbody.innerHTML = tenants.map(t => {
+    const bldg = t.building ? `<span style="font-size:11px;color:var(--gray-500);">${t.building}</span><br>` : '';
+    const contractPeriod = (t.contractStart || t.contractEnd)
+      ? `<span style="font-size:11px;color:var(--gray-600);">${fmtDate(t.contractStart)} ~<br>${fmtDate(t.contractEnd)}</span>`
+      : '-';
+    return `
     <tr>
-      <td><strong>${t.room}호</strong></td>
+      <td>${bldg}<strong>${t.room}호</strong></td>
       <td>${t.name||'-'}</td>
       <td>${t.phone||'-'}</td>
       <td>${t.deposit ? fmtMoney(t.deposit) : '-'}</td>
       <td>${t.rent ? fmtMoney(t.rent) : '-'}</td>
       <td>${t.management ? fmtMoney(t.management) : '-'}</td>
+      <td>${contractPeriod}</td>
       <td>${fmtDate(t.moveIn)}</td>
       <td><span class="badge ${t.status==='입주'?'badge-success':'badge-gray'}">${t.status}</span></td>
       <td>
@@ -1596,15 +1617,15 @@ function renderTenants(filter, statusFilter) {
           <button class="btn btn-sm" style="background:var(--danger-light);color:var(--danger)" onclick="deleteTenant('${t.id}')">삭제</button>
         </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 function filterTenants(v) { renderTenants(v, tenantStatusFilter); }
 function filterTenantStatus(v) { renderTenants(tenantFilter, v); }
 
 function openTenantModal(id) {
-  const fields = ['tRoom','tName','tPhone','tDeposit','tRent','tManagement','tPayDay','tContractStart','tContractEnd','tMoveIn','tNote'];
-  fields.forEach(f => document.getElementById(f).value = '');
+  const fields = ['tBuilding','tRoom','tName','tPhone','tDeposit','tRent','tManagement','tPayDay','tContractStart','tContractEnd','tMoveIn','tNote'];
+  fields.forEach(f => { const el = document.getElementById(f); if(el) el.value = ''; });
   document.getElementById('tenantId').value = '';
   document.getElementById('tType').value = '월세';
   document.getElementById('tStatus').value = '입주';
@@ -1613,6 +1634,7 @@ function openTenantModal(id) {
     const t = getData('tenants').find(x => x.id === id);
     if (t) {
       document.getElementById('tenantId').value = t.id;
+      document.getElementById('tBuilding').value = t.building || '';
       document.getElementById('tRoom').value = t.room;
       document.getElementById('tName').value = t.name;
       document.getElementById('tPhone').value = t.phone;
@@ -1643,7 +1665,9 @@ function saveTenant() {
   const tenants = getData('tenants');
   const id = document.getElementById('tenantId').value;
   const obj = {
-    id: id || uid(), room, name, phone: document.getElementById('tPhone').value,
+    id: id || uid(),
+    building: document.getElementById('tBuilding').value.trim(),
+    room, name, phone: document.getElementById('tPhone').value,
     deposit: Number(document.getElementById('tDeposit').value)||0,
     rent: Number(document.getElementById('tRent').value)||0,
     management: Number(document.getElementById('tManagement').value)||0,
@@ -1833,7 +1857,7 @@ function renderContracts(filter, statusFilter) {
     else if (d <= 90) { badge = 'badge-warning'; dText = `${d}일 남음`; }
     else { badge = 'badge-success'; dText = `${d}일 남음`; }
     return `<tr>
-      <td><strong>${t.room}호</strong></td>
+      <td>${t.building ? `<span style="font-size:11px;color:var(--gray-500)">${t.building}</span><br>` : ''}<strong>${t.room}호</strong></td>
       <td>${t.name}</td>
       <td>${fmtDate(t.contractStart)}</td>
       <td>${fmtDate(t.contractEnd)}</td>
