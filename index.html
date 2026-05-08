@@ -1085,7 +1085,14 @@
           <input type="text" id="regMoveIn" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)"
             title="최초 계약일 (계약 연장 시 자동 고정)">
         </div>
-        <div class="form-group"></div>
+        <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end;">
+          <label style="visibility:hidden;">연장 횟수</label>
+          <div id="regExtendCountWrap" style="display:none;align-items:center;gap:8px;height:36px;padding:0 10px;
+            background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;font-size:13px;color:#92400e;font-weight:600;">
+            🔄 계약 연장 <span id="regExtendCountNum" style="background:#f59e0b;color:#fff;
+              border-radius:20px;padding:1px 9px;font-size:12px;font-weight:700;">0</span>회
+          </div>
+        </div>
       </div>
       <!-- 계약 연장 (계약경과 시만 표시) -->
       <div id="regExtendSection" style="display:none;margin-top:4px;">
@@ -2523,6 +2530,9 @@ function clearRegisterForm() {
     moveInElC.style.color = '';
     moveInElC.title = '';
   }
+  // 연장 횟수 뱃지 숨김
+  const cntWrapC = document.getElementById('regExtendCountWrap');
+  if (cntWrapC) cntWrapC.style.display = 'none';
 }
 
 function openRegisterModal() {
@@ -2653,6 +2663,19 @@ function prefillRegisterForm(id) {
   const moveInEl = document.getElementById('regMoveIn');
   if (moveInEl) moveInEl.value = t.moveIn || t.contractStart || '';
 
+  // 계약 연장 횟수 뱃지
+  const cntWrap = document.getElementById('regExtendCountWrap');
+  const cntNum  = document.getElementById('regExtendCountNum');
+  const cnt = t.extendCount || 0;
+  if (cntWrap && cntNum) {
+    if (cnt > 0) {
+      cntNum.textContent = cnt;
+      cntWrap.style.display = 'flex';
+    } else {
+      cntWrap.style.display = 'none';
+    }
+  }
+
   // 특이사항
   const noteEl = document.getElementById('regNote');
   if (noteEl) noteEl.value = t.note || '';
@@ -2713,6 +2736,11 @@ function saveRegisterTenant() {
   if (_editingTenantId) {
     const idx = tenants.findIndex(t => t.id === _editingTenantId);
     if (idx !== -1) {
+      // 계약 연장이 선택된 경우 extendCount 증가
+      const extYearsEl = document.getElementById('regExtendYears');
+      const wasExtended = extYearsEl && extYearsEl.value !== '';
+      const prevCount = tenants[idx].extendCount || 0;
+      if (wasExtended) fields.extendCount = prevCount + 1;
       tenants[idx] = { ...tenants[idx], ...fields };
       setData('tenants', tenants);
       _editingTenantId = null;
