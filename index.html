@@ -1604,7 +1604,7 @@ function renderTenants(filter, statusFilter) {
   }
   tbody.innerHTML = tenants.map(t => {
     const contractPeriod = (t.contractStart || t.contractEnd)
-      ? `<span style="font-size:11px;color:var(--gray-600);">${fmtDate(t.contractStart)} ~<br>${fmtDate(t.contractEnd)}</span>`
+      ? `<span style="font-size:12px;color:var(--gray-600);white-space:nowrap;">${fmtDate(t.contractStart)} ~ ${fmtDate(t.contractEnd)}</span>`
       : '-';
     return `
     <tr>
