@@ -1126,7 +1126,8 @@
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn btn-danger" id="regDeleteBtn" style="display:none;" onclick="deleteTenantFromModal()">🗑 삭제</button>
       <div style="display:flex;gap:10px;">
-        <button class="btn btn-outline" onclick="clearRegisterForm()">초기화</button>
+        <button class="btn btn-outline" id="regResetBtn" onclick="clearRegisterForm()">초기화</button>
+        <button class="btn btn-outline" id="regCancelBtn" style="display:none;" onclick="closeModal('registerModal')">취소</button>
         <button class="btn btn-primary" id="regSaveBtn" onclick="saveRegisterTenant()">💾 등록 저장</button>
       </div>
     </div>
@@ -2577,6 +2578,11 @@ function openRegisterModal() {
   const props = getData('properties');
   const alert = document.getElementById('regNoPropAlert');
   if (alert) alert.style.display = props.length === 0 ? 'flex' : 'none';
+  // 신규 등록: 초기화 표시, 취소 숨김
+  const resetBtn  = document.getElementById('regResetBtn');
+  const cancelBtn = document.getElementById('regCancelBtn');
+  if (resetBtn)  resetBtn.style.display  = 'inline-flex';
+  if (cancelBtn) cancelBtn.style.display = 'none';
   openModal('registerModal');
 }
 
@@ -2621,6 +2627,11 @@ function openRegisterEdit(id) {
       moveInEl.title = '';
     }
   }
+  // 수정 모드: 초기화 숨김, 취소 표시
+  const resetBtn  = document.getElementById('regResetBtn');
+  const cancelBtn = document.getElementById('regCancelBtn');
+  if (resetBtn)  resetBtn.style.display  = 'none';
+  if (cancelBtn) cancelBtn.style.display = 'inline-flex';
   openModal('registerModal');
 }
 
