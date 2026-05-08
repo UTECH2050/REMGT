@@ -2050,7 +2050,8 @@ function renderPropertiesPage() {
   }
   list.innerHTML = props.map(p => {
     const rooms = p.rooms || [];
-    const roomRows = rooms.length > 0
+    const roomCount = rooms.length;
+    const roomRows = roomCount > 0
       ? rooms.map(r => `<tr>
           <td style="padding:9px 14px;">${r.roomNo}</td>
           <td style="padding:9px 14px;">${r.area ? r.area + ' ㎡' : '-'}</td>
@@ -2061,41 +2062,55 @@ function renderPropertiesPage() {
           </td>
         </tr>`).join('')
       : `<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 호실이 없습니다.</td></tr>`;
+    const bodyId = 'propRooms_' + p.id;
     return `
     <div class="card" style="margin-bottom:20px;">
-      <div class="card-header">
-        <div>
+      <div class="card-header" style="cursor:pointer;" onclick="togglePropRooms('${p.id}')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="propArrow_${p.id}" style="font-size:12px;color:var(--gray-400);transition:transform 0.2s;">▶</span>
           <span style="font-size:15px;font-weight:700;">${p.name}</span>
-          <span class="badge badge-primary" style="margin-left:8px;">${p.type||'주거'}</span>
-          ${p.address ? `<span style="font-size:12px;color:var(--gray-500);margin-left:10px;">📍 ${p.address}</span>` : ''}
+          <span class="badge badge-primary">${p.type||'주거'}</span>
+          ${p.address ? `<span style="font-size:12px;color:var(--gray-500);">📍 ${p.address}</span>` : ''}
+          <span style="font-size:12px;color:var(--gray-400);margin-left:4px;">호실 ${roomCount}개</span>
         </div>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
           <button class="btn btn-outline btn-sm" onclick="openPropertyModal('${p.id}')">수정</button>
           <button class="btn btn-danger btn-sm" onclick="deleteProperty('${p.id}')">삭제</button>
         </div>
       </div>
-      <div class="card-body" style="padding:0;">
-        <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
-          <thead>
-            <tr style="background:var(--gray-50);">
-              <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">호실</th>
-              <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">전용면적</th>
-              <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">비고</th>
-              <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">관리</th>
-            </tr>
-          </thead>
-          <tbody>${roomRows}</tbody>
-          <tfoot>
-            <tr style="background:#f0f9ff;border-top:1px dashed #bae6fd;">
-              <td colspan="4" style="padding:10px 14px;">
-                <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}')">+ 호실 추가</button>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+      <div id="${bodyId}" style="display:none;">
+        <div style="padding:0;">
+          <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+            <thead>
+              <tr style="background:var(--gray-50);">
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">호실</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">전용면적</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">비고</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">관리</th>
+              </tr>
+            </thead>
+            <tbody>${roomRows}</tbody>
+            <tfoot>
+              <tr style="background:#f0f9ff;border-top:1px dashed #bae6fd;">
+                <td colspan="4" style="padding:10px 14px;">
+                  <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}')">+ 호실 추가</button>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+function togglePropRooms(propId) {
+  const body  = document.getElementById('propRooms_' + propId);
+  const arrow = document.getElementById('propArrow_' + propId);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display  = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(90deg)';
 }
 
 function openPropertyModal(id) {
@@ -2194,6 +2209,8 @@ function saveRoom() {
   setData('properties', props);
   closeModal('roomModal');
   renderPropertiesPage();
+  // 작업한 건물 드롭다운 다시 열기
+  setTimeout(() => { const b = document.getElementById('propRooms_'+propId); if(b){ b.style.display='block'; const a=document.getElementById('propArrow_'+propId); if(a) a.style.transform='rotate(90deg)'; } }, 0);
   showToast(roomId ? '호실 정보가 수정되었습니다.' : `'${roomNo}' 호실이 추가되었습니다.`);
 }
 
@@ -2205,6 +2222,8 @@ function deleteRoom(propId, roomId) {
     prop.rooms = prop.rooms.filter(r => r.id !== roomId);
     setData('properties', props);
     renderPropertiesPage();
+    // 작업한 건물 드롭다운 다시 열기
+    setTimeout(() => { const b = document.getElementById('propRooms_'+propId); if(b){ b.style.display='block'; const a=document.getElementById('propArrow_'+propId); if(a) a.style.transform='rotate(90deg)'; } }, 0);
     showToast('호실이 삭제되었습니다.');
   });
 }
