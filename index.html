@@ -355,9 +355,7 @@
       <label>비밀번호</label>
       <input type="password" id="loginPw" placeholder="비밀번호를 입력하세요" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
     </div>
-    <div class="auth-forgot"><a onclick="showForgotPw()">비밀번호를 잊으셨나요?</a></div>
     <button class="auth-btn" onclick="doLogin()">🔐 로그인</button>
-    <div class="auth-note">이 시스템은 초대된 사용자만 접근할 수 있습니다.<br>관리자에게 계정 생성을 요청하세요.</div>
   </div>
 </div>
 
@@ -385,41 +383,6 @@
   </div>
 </div>
 
-<!-- ===== 비밀번호 찾기 화면 ===== -->
-<div id="forgotPwOverlay" class="auth-overlay hidden">
-  <div class="auth-card">
-    <div class="auth-logo">📧</div>
-    <div class="auth-title">비밀번호 재설정</div>
-    <div class="auth-sub">등록된 아이디(이메일)를 입력하시면<br>비밀번호 재설정 링크를 발송합니다</div>
-    <div class="auth-error" id="forgotPwError"></div>
-    <div id="forgotPwSuccess" style="background:#dcfce7;color:#16a34a;padding:12px 14px;border-radius:8px;font-size:13px;display:none;line-height:1.7;margin-bottom:14px;"></div>
-    <div class="auth-field">
-      <label>아이디 (이메일 주소)</label>
-      <input type="text" id="forgotId" placeholder="등록된 이메일 주소" onkeydown="if(event.key==='Enter') doForgotPassword()">
-    </div>
-    <button class="auth-btn" id="forgotSubmitBtn" onclick="doForgotPassword()">📨 재설정 링크 발송</button>
-    <span class="auth-back" onclick="showLoginScreen()">← 로그인으로 돌아가기</span>
-  </div>
-</div>
-
-<!-- ===== 비밀번호 재설정 화면 (링크 클릭 후) ===== -->
-<div id="resetPwOverlay" class="auth-overlay hidden">
-  <div class="auth-card">
-    <div class="auth-logo">🔓</div>
-    <div class="auth-title">새 비밀번호 설정</div>
-    <div class="auth-sub" id="resetPwSub">비밀번호 재설정 링크로 접근하셨습니다</div>
-    <div class="auth-error" id="resetPwError"></div>
-    <div class="auth-field">
-      <label>새 비밀번호 (8자 이상)</label>
-      <input type="password" id="rpNew" placeholder="새 비밀번호">
-    </div>
-    <div class="auth-field">
-      <label>새 비밀번호 확인</label>
-      <input type="password" id="rpConfirm" placeholder="새 비밀번호 재입력" onkeydown="if(event.key==='Enter') doResetPassword()">
-    </div>
-    <button class="auth-btn" onclick="doResetPassword()">✅ 비밀번호 변경</button>
-  </div>
-</div>
 
 <!-- Sidebar -->
 <aside class="sidebar">
@@ -449,14 +412,14 @@
       <span class="icon">💳</span> 수납 관리
       <span class="nav-badge" id="unpaidBadge" style="display:none">0</span>
     </div>
-    <div class="nav-item" id="adminNavItem" style="display:none" onclick="navigate('admin')">
-      <span class="icon">👥</span> 사용자 관리
-    </div>
   </nav>
   <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:8px;">
-    <div id="sidebarUser" style="font-size:12px;color:#9ca3af;word-break:break-all;line-height:1.5;"></div>
+    <div id="sidebarSettingsItem" onclick="openSelfPasswordChange()" style="cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#d1d5db;font-size:13px;">
+      <span>⚙️ 설정</span>
+      <span id="sidebarAccountInfo" style="font-size:11px;color:#9ca3af;margin-left:auto;"></span>
+    </div>
     <button onclick="doLogout()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#e5e7eb;padding:7px 12px;border-radius:7px;font-size:12px;cursor:pointer;width:100%;">🚪 로그아웃</button>
-    <div style="font-size:11px;color:#4b5563;">v2.0 · 사용자별 독립 데이터</div>
+    <div style="font-size:11px;color:#4b5563;">v2.0</div>
   </div>
 </aside>
 
@@ -854,34 +817,6 @@
   </div>
 </div>
 
-<!-- Admin PW Change Modal (관리자가 타 사용자 비밀번호 직접 변경) -->
-<div class="modal-overlay" id="adminPwModal">
-  <div class="modal" style="max-width:420px;">
-    <div class="modal-header">
-      <span class="modal-title" id="adminPwModalTitle">🔑 비밀번호 변경</span>
-      <button class="modal-close" onclick="closeModal('adminPwModal')">×</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="adminPwTargetId">
-      <div class="auth-error" id="adminPwError" style="margin-bottom:12px;"></div>
-      <div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#713f12;margin-bottom:16px;">
-        ⚠️ 관리자 권한으로 해당 사용자의 비밀번호를 직접 변경합니다.<br>변경 후 사용자는 다음 로그인 시 비밀번호를 재설정해야 합니다.
-      </div>
-      <div class="form-group">
-        <label>새 비밀번호 (8자 이상)</label>
-        <input type="password" id="adminPwNew" placeholder="새 비밀번호">
-      </div>
-      <div class="form-group">
-        <label>새 비밀번호 확인</label>
-        <input type="password" id="adminPwConfirm" placeholder="새 비밀번호 재입력" onkeydown="if(event.key==='Enter') doAdminChangePw()">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('adminPwModal')">취소</button>
-      <button class="btn btn-primary" id="adminPwBtn" onclick="doAdminChangePw()">✅ 변경 저장</button>
-    </div>
-  </div>
-</div>
 
 <!-- Property Modal (건물 추가/수정) -->
 <div class="modal-overlay" id="propertyModal">
@@ -1123,80 +1058,6 @@
   </div>
 </div>
 
-<!-- Admin Page -->
-<div id="page-admin" class="page">
-
-    <!-- 사용자 목록 -->
-    <div class="card" style="margin-bottom:24px;text-align:left;">
-      <div class="card-header" style="justify-content:flex-start;gap:10px;">
-        <span style="font-size:15px;font-weight:700;">👥 등록된 사용자</span>
-      </div>
-      <div class="card-body" style="padding:0">
-        <table class="user-table" style="width:100%;">
-          <thead>
-            <tr>
-              <th>아이디</th><th>이름</th><th>이메일</th><th>역할</th><th>등록일</th><th>PW변경</th><th>작업</th>
-            </tr>
-          </thead>
-          <tbody id="userTbody"></tbody>
-          <!-- 인라인 사용자 추가 행 -->
-          <tfoot>
-            <tr style="background:#f0f9ff;border-top:2px dashed #bae6fd;">
-              <td style="padding:8px 6px;"><input type="text" id="newUserId" placeholder="아이디" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;"></td>
-              <td style="padding:8px 6px;"><input type="text" id="newUserName" placeholder="이름" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;"></td>
-              <td style="padding:8px 6px;"><input type="email" id="newUserEmail" placeholder="이메일" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;"></td>
-              <td style="padding:8px 6px;">
-                <select id="newUserRole" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;">
-                  <option value="user">일반</option>
-                  <option value="admin">관리자</option>
-                </select>
-              </td>
-              <td style="padding:8px 6px;" colspan="2"><input type="text" id="newUserPw" placeholder="임시 비밀번호" style="width:100%;padding:7px 9px;border:1.5px solid #7dd3fc;border-radius:7px;font-size:12px;" onkeydown="if(event.key==='Enter') addUser()"></td>
-              <td style="padding:8px 6px;text-align:center;">
-                <button class="btn btn-primary" onclick="addUser()" style="padding:7px 14px;font-size:12px;white-space:nowrap;">+ 추가</button>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-
-    <!-- 이메일 발송 설정 -->
-    <div class="card">
-      <div class="card-header" style="cursor:pointer;" onclick="toggleEmailConfig()">
-        ⚙️ 이메일 발송 설정 (비밀번호 재설정용) <span id="emailConfigToggle" style="float:right;font-size:12px;color:var(--gray-400);">▼ 펼치기</span>
-      </div>
-      <div id="emailConfigBody" style="display:none;">
-        <div class="card-body">
-          <div id="emailConfigStatus" style="margin-bottom:12px;"></div>
-          <div class="email-config-box">
-            <div style="font-size:13px;font-weight:700;color:#0369a1;margin-bottom:4px;">EmailJS 설정</div>
-            <div style="font-size:12px;color:#0284c7;margin-bottom:10px;">EmailJS 무료 계정으로 월 200건 발송 가능 — <a href="https://www.emailjs.com" target="_blank" style="color:#0284c7;">emailjs.com</a></div>
-            <label>Public Key (User ID)</label>
-            <input type="text" id="ejsPublicKey" placeholder="예: AbCdEfGhIjKlMnOp">
-            <label>Service ID</label>
-            <input type="text" id="ejsServiceId" placeholder="예: service_xxxxxxx">
-            <label>Template ID</label>
-            <input type="text" id="ejsTemplateId" placeholder="예: template_xxxxxxx">
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:20px;">
-            <button class="btn btn-primary" onclick="saveEmailConfig()">💾 설정 저장</button>
-            <button class="btn btn-outline" onclick="testEmailSend()">📨 테스트 발송</button>
-          </div>
-          <div class="setup-steps">
-            <strong>📋 EmailJS 설정 방법</strong>
-            <ol style="margin-top:8px;">
-              <li><a href="https://www.emailjs.com" target="_blank">emailjs.com</a> 무료 가입 → 로그인</li>
-              <li><strong>Email Services</strong> → Gmail/Outlook 연결 → Service ID 복사</li>
-              <li><strong>Email Templates</strong> → 새 템플릿 생성: 변수 <code>{{to_name}}</code> <code>{{reset_link}}</code> <code>{{to_email}}</code> 사용</li>
-              <li><strong>Account</strong> → Public Key 복사 → 위 설정에 입력 후 저장</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-
-</div>
 
 <!-- Toast -->
 <div id="toast"></div>
@@ -1229,19 +1090,12 @@ function saveUsers(users) {
 // 시스템 초기화: admin 계정이 없으면 생성
 async function initAuthSystem() {
   let users = getUsers();
-  // admin 이메일 자동 보정 (기존 계정에도 적용)
-  const adminUser = users.find(u => u.id === 'admin');
-  if (adminUser && adminUser.email !== 'wooyoung.yu@gmail.com') {
-    adminUser.email = 'wooyoung.yu@gmail.com';
-    saveUsers(users);
-  }
   if (!users.find(u => u.id === 'admin')) {
     const salt = makeSalt();
     const hash = await sha256(salt + ':' + 'qlalf@ek0');
     users.push({
       id: 'admin',
       name: '관리자',
-      email: 'wooyoung.yu@gmail.com',
       role: 'admin',
       salt,
       hash,
@@ -1258,17 +1112,14 @@ async function doLogin() {
   const errEl = document.getElementById('loginError');
   errEl.style.display = 'none';
   if (!id) { showAuthError(errEl, '아이디를 입력해주세요.'); return; }
+  if (!pw) { showAuthError(errEl, '비밀번호를 입력해주세요.'); return; }
   const users = getUsers();
   const user = users.find(u => u.id === id);
   if (!user) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
-  // admin 계정은 임시로 비밀번호 검증 없이 로그인
-  if (id !== 'admin') {
-    if (!pw) { showAuthError(errEl, '비밀번호를 입력해주세요.'); return; }
-    const hash = await sha256(user.salt + ':' + pw);
-    if (hash !== user.hash) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
-  }
+  const hash = await sha256(user.salt + ':' + pw);
+  if (hash !== user.hash) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
   // 로그인 성공
-  if (user.mustChangePassword && id !== 'admin') {
+  if (user.mustChangePassword) {
     sessionStorage.setItem('remgt_pending_user', user.id);
     document.getElementById('loginOverlay').classList.add('hidden');
     document.getElementById('changePwOverlay').classList.remove('hidden');
@@ -1328,299 +1179,18 @@ function showAuthError(el, msg) {
 function showApp() {
   document.getElementById('loginOverlay').classList.add('hidden');
   document.getElementById('changePwOverlay').classList.add('hidden');
-  // 사용자 정보 표시 (사이드바)
-  const el = document.getElementById('sidebarUser');
-  if (el && _currentSession) {
-    el.innerHTML = `<span style="color:#d1d5db;">${_currentSession.name}</span><br><span style="font-size:11px;color:#6b7280;">${_currentSession.userId}</span>`;
+  // 설정 버튼에 계정 정보 표시
+  const acctEl = document.getElementById('sidebarAccountInfo');
+  if (acctEl && _currentSession) {
+    const roleName = _currentSession.role === 'admin' ? '관리자' : '일반';
+    acctEl.textContent = `${_currentSession.userId} (${roleName})`;
   }
-  // 관리자 메뉴 표시/숨김
-  const isAdmin = _currentSession && _currentSession.role === 'admin';
-  document.getElementById('adminNavItem').style.display = isAdmin ? '' : 'none';
   // 앱 초기화
   seedDemoData();
   updateBadges();
   renderDashboard();
 }
 
-async function addUser() {
-  const id    = document.getElementById('newUserId').value.trim();
-  const name  = document.getElementById('newUserName').value.trim();
-  const email = document.getElementById('newUserEmail').value.trim();
-  const role  = document.getElementById('newUserRole').value;
-  const pw    = document.getElementById('newUserPw').value.trim();
-  if (!id || !name || !pw) { showToast('아이디, 이름, 임시 비밀번호는 필수입니다.', 'danger'); return; }
-  if (email && !email.includes('@')) { showToast('이메일 형식이 올바르지 않습니다.', 'danger'); return; }
-  const users = getUsers();
-  if (users.find(u => u.id === id)) { showToast('이미 존재하는 아이디입니다.', 'danger'); return; }
-  const salt = makeSalt();
-  const hash = await sha256(salt + ':' + pw);
-  users.push({ id, name, email: email || '', role, salt, hash, mustChangePassword: true, createdAt: new Date().toISOString().slice(0,10) });
-  saveUsers(users);
-  document.getElementById('newUserId').value    = '';
-  document.getElementById('newUserName').value  = '';
-  document.getElementById('newUserEmail').value = '';
-  document.getElementById('newUserPw').value    = '';
-  showToast(`사용자 '${name}' 이(가) 추가되었습니다.`);
-  renderAdminPage();
-}
-
-async function resetUserPassword(userId) {
-  const newPw = prompt(`'${userId}' 사용자의 임시 비밀번호를 입력하세요:`);
-  if (!newPw) return;
-  const users = getUsers();
-  const user = users.find(u => u.id === userId);
-  if (!user) return;
-  const salt = makeSalt();
-  const hash = await sha256(salt + ':' + newPw);
-  user.salt = salt; user.hash = hash; user.mustChangePassword = true;
-  saveUsers(users);
-  showToast(`'${userId}' 비밀번호가 초기화되었습니다. 다음 로그인 시 변경 필요.`);
-  renderAdminPage();
-}
-
-function deleteUser(userId) {
-  if (userId === 'admin') { showToast('admin 계정은 삭제할 수 없습니다.', 'danger'); return; }
-  if (userId === _currentSession?.userId) { showToast('현재 로그인 중인 계정은 삭제할 수 없습니다.', 'danger'); return; }
-  const user = getUsers().find(u => u.id === userId);
-  confirm(`'${user?.name || userId}' 사용자를 삭제하시겠습니까?\n해당 사용자의 모든 데이터도 함께 삭제됩니다.`, () => {
-    const users = getUsers().filter(u => u.id !== userId);
-    saveUsers(users);
-    Object.keys(localStorage).filter(k => k.startsWith(`remgt_u_${userId}_`)).forEach(k => localStorage.removeItem(k));
-    showToast(`'${userId}' 사용자가 삭제되었습니다.`);
-    renderAdminPage();
-  });
-}
-
-function renderAdminPage() {
-  const users   = getUsers();
-  const tbody   = document.getElementById('userTbody');
-  const isSelf  = uid => uid === _currentSession?.userId;
-  const isAdmin = _currentSession?.role === 'admin';
-  if (!tbody) return;
-  tbody.innerHTML = users.map(u => {
-    const emailOk = u.email && u.email.includes('@');
-    // ── 작업 버튼 결정 ──────────────────────────────
-    let actionBtns = '';
-    if (isSelf(u.id)) {
-      // 본인 계정: 내 비밀번호 변경
-      actionBtns = `<button class="btn btn-outline btn-sm" onclick="openSelfPasswordChange()" title="내 비밀번호 변경">🔑 내 PW 변경</button>`;
-    } else if (isAdmin) {
-      // 관리자가 다른 사용자 행: 비밀번호 직접 변경 + 메일 발송
-      actionBtns += `<button class="btn btn-outline btn-sm" onclick="openAdminPwChange('${u.id}','${u.name}')" title="비밀번호 직접 변경">🔑 PW 변경</button>`;
-      if (emailOk) {
-        actionBtns += ` <button class="btn btn-outline btn-sm" style="margin-left:4px;" onclick="adminSendResetEmail('${u.id}')" title="비밀번호 초기화 메일 발송">📨 메일 발송</button>`;
-      }
-      if (u.id !== 'admin') {
-        actionBtns += ` <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteUser('${u.id}')">삭제</button>`;
-      }
-    }
-    return `
-    <tr>
-      <td><code style="font-size:12px;">${u.id}</code></td>
-      <td>${u.name}</td>
-      <td>${emailOk ? `<span style="font-size:12px;">${u.email}</span>` : `<span style="color:#dc2626;font-size:12px;">⚠️ 미등록</span>`}</td>
-      <td><span class="${u.role === 'admin' ? 'badge-admin' : 'badge-user'}">${u.role === 'admin' ? '관리자' : '일반'}</span></td>
-      <td>${u.createdAt || '-'}</td>
-      <td>${u.mustChangePassword ? '<span style="color:#dc2626;font-size:12px;">⚠️ 미변경</span>' : '<span style="color:#16a34a;font-size:12px;">✅ 완료</span>'}</td>
-      <td style="white-space:nowrap;">${actionBtns}</td>
-    </tr>`;
-  }).join('');
-  const thead = tbody.closest('table').querySelector('thead tr');
-  if (thead) {
-    thead.innerHTML = '<th>아이디</th><th>이름</th><th>이메일</th><th>역할</th><th>등록일</th><th>최초PW변경</th><th>작업</th>';
-  }
-  renderAdminEmailStatus();
-}
-
-// ============================================================
-// PASSWORD RESET (비밀번호 재설정)
-// ============================================================
-const RESET_TOKENS_KEY  = 'remgt_sys_reset_tokens';
-const EMAIL_CONFIG_KEY  = 'remgt_sys_email_config';
-
-function getEmailConfig() {
-  try { return JSON.parse(localStorage.getItem(EMAIL_CONFIG_KEY)) || {}; } catch { return {}; }
-}
-function saveEmailConfig() {
-  const cfg = {
-    publicKey:  document.getElementById('ejsPublicKey').value.trim(),
-    serviceId:  document.getElementById('ejsServiceId').value.trim(),
-    templateId: document.getElementById('ejsTemplateId').value.trim()
-  };
-  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
-    showToast('세 가지 항목을 모두 입력해주세요.', 'danger'); return;
-  }
-  localStorage.setItem(EMAIL_CONFIG_KEY, JSON.stringify(cfg));
-  showToast('이메일 설정이 저장되었습니다.');
-  renderAdminEmailStatus();
-}
-
-function renderAdminEmailStatus() {
-  const cfg = getEmailConfig();
-  const el = document.getElementById('emailConfigStatus');
-  if (!el) return;
-  const ok = cfg.publicKey && cfg.serviceId && cfg.templateId;
-  el.innerHTML = ok
-    ? `<span class="tag-ok">✅ 이메일 발송 설정 완료</span> — 비밀번호 재설정 이메일을 발송할 수 있습니다.`
-    : `<span class="tag-no">⚠️ 이메일 설정 미완료</span> — 아래 설정을 완료해야 비밀번호 재설정 이메일이 발송됩니다.`;
-  // 저장된 값 채우기
-  if (document.getElementById('ejsPublicKey')) {
-    document.getElementById('ejsPublicKey').value  = cfg.publicKey  || '';
-    document.getElementById('ejsServiceId').value  = cfg.serviceId  || '';
-    document.getElementById('ejsTemplateId').value = cfg.templateId || '';
-  }
-}
-
-function generateToken() {
-  return Array.from(crypto.getRandomValues(new Uint8Array(24))).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-function getResetTokens() {
-  try {
-    const tokens = JSON.parse(localStorage.getItem(RESET_TOKENS_KEY)) || [];
-    // 만료 토큰 자동 제거
-    const valid = tokens.filter(t => t.expiresAt > Date.now());
-    if (valid.length !== tokens.length) localStorage.setItem(RESET_TOKENS_KEY, JSON.stringify(valid));
-    return valid;
-  } catch { return []; }
-}
-function saveResetTokens(tokens) {
-  localStorage.setItem(RESET_TOKENS_KEY, JSON.stringify(tokens));
-}
-
-function showLoginScreen() {
-  document.getElementById('forgotPwOverlay').classList.add('hidden');
-  document.getElementById('resetPwOverlay').classList.add('hidden');
-  document.getElementById('loginOverlay').classList.remove('hidden');
-}
-function showForgotPw() {
-  document.getElementById('loginOverlay').classList.add('hidden');
-  document.getElementById('forgotPwError').style.display = 'none';
-  document.getElementById('forgotPwSuccess').style.display = 'none';
-  document.getElementById('forgotId').value = '';
-  document.getElementById('forgotPwOverlay').classList.remove('hidden');
-}
-
-async function doForgotPassword() {
-  const inputId = document.getElementById('forgotId').value.trim();
-  const errEl = document.getElementById('forgotPwError');
-  const okEl  = document.getElementById('forgotPwSuccess');
-  const btn   = document.getElementById('forgotSubmitBtn');
-  errEl.style.display = 'none'; okEl.style.display = 'none';
-
-  if (!inputId) { showAuthError(errEl, '아이디(이메일)를 입력해주세요.'); return; }
-
-  const users = getUsers();
-  const user  = users.find(u => u.id === inputId || u.email === inputId);
-  // 보안: 사용자 존재 여부 노출 없이 동일 메시지
-  const targetEmail = user ? (user.email || user.id) : null;
-  const isEmail = targetEmail && targetEmail.includes('@');
-
-  if (!user || !isEmail) {
-    // 이메일이 없거나 유효하지 않아도 성공 메시지 (보안)
-    okEl.innerHTML = `✅ 해당 계정에 등록된 이메일로 재설정 링크를 발송했습니다.<br><small style="color:#166534;">이메일이 도착하지 않으면 관리자에게 문의하세요.</small>`;
-    okEl.style.display = 'block';
-    return;
-  }
-
-  const cfg = getEmailConfig();
-  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
-    showAuthError(errEl, '이메일 발송 설정이 완료되지 않았습니다. 관리자에게 문의하세요.'); return;
-  }
-
-  btn.disabled = true; btn.textContent = '발송 중...';
-
-  try {
-    // 토큰 생성 (1시간 유효)
-    const token = generateToken();
-    const tokens = getResetTokens();
-    // 기존 해당 사용자 토큰 제거
-    const fresh = tokens.filter(t => t.userId !== user.id);
-    fresh.push({ token, userId: user.id, expiresAt: Date.now() + 3600000 });
-    saveResetTokens(fresh);
-
-    const resetLink = `${window.location.origin}${window.location.pathname}?rt=${token}`;
-    const expiry = new Date(Date.now() + 3600000).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
-
-    emailjs.init(cfg.publicKey);
-    await emailjs.send(cfg.serviceId, cfg.templateId, {
-      to_name:    user.name,
-      to_email:   targetEmail,
-      reset_link: resetLink,
-      expiry_time: expiry + ' 까지 유효'
-    });
-
-    okEl.innerHTML = `✅ <strong>${targetEmail}</strong>으로 재설정 링크를 발송했습니다.<br><small style="color:#166534;">1시간 내에 링크를 클릭해 비밀번호를 변경해주세요.<br>이메일이 도착하지 않으면 스팸함을 확인해주세요.</small>`;
-    okEl.style.display = 'block';
-  } catch (e) {
-    showAuthError(errEl, `이메일 발송에 실패했습니다. EmailJS 설정을 확인해주세요. (${e?.text || e})`);
-  } finally {
-    btn.disabled = false; btn.textContent = '📨 재설정 링크 발송';
-  }
-}
-
-async function doResetPassword() {
-  const newPw    = document.getElementById('rpNew').value;
-  const confirm  = document.getElementById('rpConfirm').value;
-  const errEl    = document.getElementById('resetPwError');
-  errEl.style.display = 'none';
-  if (!newPw || !confirm) { showAuthError(errEl, '새 비밀번호를 입력해주세요.'); return; }
-  if (newPw.length < 8)   { showAuthError(errEl, '새 비밀번호는 8자 이상이어야 합니다.'); return; }
-  if (newPw !== confirm)  { showAuthError(errEl, '비밀번호가 일치하지 않습니다.'); return; }
-
-  const params = new URLSearchParams(window.location.search);
-  const token  = params.get('rt');
-  const tokens = getResetTokens();
-  const found  = tokens.find(t => t.token === token);
-  if (!found) { showAuthError(errEl, '재설정 링크가 만료되었거나 유효하지 않습니다. 다시 요청해주세요.'); return; }
-
-  const users = getUsers();
-  const user  = users.find(u => u.id === found.userId);
-  if (!user)  { showAuthError(errEl, '사용자를 찾을 수 없습니다.'); return; }
-
-  const newSalt = makeSalt();
-  const newHash = await sha256(newSalt + ':' + newPw);
-  user.salt = newSalt; user.hash = newHash; user.mustChangePassword = false;
-  saveUsers(users);
-
-  // 사용된 토큰 삭제
-  saveResetTokens(tokens.filter(t => t.token !== token));
-
-  // URL 파라미터 제거 후 로그인 화면으로
-  window.history.replaceState({}, document.title, window.location.pathname);
-  document.getElementById('resetPwOverlay').classList.add('hidden');
-  document.getElementById('loginOverlay').classList.remove('hidden');
-  // 아이디 자동 채우기
-  document.getElementById('loginId').value = user.id;
-  showToast('비밀번호가 변경되었습니다. 새 비밀번호로 로그인하세요.');
-}
-
-async function testEmailSend() {
-  const cfg = getEmailConfig();
-  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
-    showToast('먼저 설정을 저장해주세요.', 'danger'); return;
-  }
-  const me = _currentSession;
-  if (!me) { showToast('로그인이 필요합니다.', 'danger'); return; }
-  const users = getUsers();
-  const user = users.find(u => u.id === me.userId);
-  const email = user?.email || user?.id;
-  if (!email || !email.includes('@')) {
-    showToast('테스트 발송을 위해 관리자 계정에 이메일 주소를 먼저 등록하세요.', 'danger'); return;
-  }
-  try {
-    emailjs.init(cfg.publicKey);
-    await emailjs.send(cfg.serviceId, cfg.templateId, {
-      to_name:    user.name,
-      to_email:   email,
-      reset_link: window.location.href + '?rt=TEST_LINK_SAMPLE',
-      expiry_time: '1시간 후 까지 유효'
-    });
-    showToast(`테스트 이메일이 ${email}로 발송되었습니다.`);
-  } catch(e) {
-    showToast(`발송 실패: ${e?.text || e}`, 'danger');
-  }
-}
 
 // ============================================================
 // DATA STORE (localStorage - 사용자별 격리)
@@ -1713,7 +1283,6 @@ function navigate(page) {
   if (page === 'payments') renderPayments();
   if (page === 'contracts') renderContracts();
   if (page === 'analytics') renderAnalytics();
-  if (page === 'admin') renderAdminPage();
 }
 
 // ============================================================
@@ -2785,42 +2354,7 @@ function saveRegisterTenant() {
   }
 }
 
-// 관리자가 타 사용자 비밀번호 직접 변경
-function openAdminPwChange(userId, userName) {
-  document.getElementById('adminPwTargetId').value = userId;
-  document.getElementById('adminPwModalTitle').textContent = `🔑 비밀번호 변경 — ${userName} (${userId})`;
-  document.getElementById('adminPwNew').value     = '';
-  document.getElementById('adminPwConfirm').value = '';
-  const errEl = document.getElementById('adminPwError');
-  if (errEl) errEl.style.display = 'none';
-  openModal('adminPwModal');
-}
-
-async function doAdminChangePw() {
-  const userId = document.getElementById('adminPwTargetId').value;
-  const newPw  = document.getElementById('adminPwNew').value;
-  const conf   = document.getElementById('adminPwConfirm').value;
-  const errEl  = document.getElementById('adminPwError');
-  const btn    = document.getElementById('adminPwBtn');
-  errEl.style.display = 'none';
-  if (!newPw || !conf)   { errEl.textContent = '새 비밀번호를 입력해주세요.'; errEl.style.display = 'block'; return; }
-  if (newPw.length < 8)  { errEl.textContent = '비밀번호는 8자 이상이어야 합니다.'; errEl.style.display = 'block'; return; }
-  if (newPw !== conf)    { errEl.textContent = '비밀번호가 일치하지 않습니다.'; errEl.style.display = 'block'; return; }
-  const users = getUsers();
-  const user  = users.find(u => u.id === userId);
-  if (!user) { errEl.textContent = '사용자를 찾을 수 없습니다.'; errEl.style.display = 'block'; return; }
-  btn.disabled = true;
-  const newSalt = makeSalt();
-  const newHash = await sha256(newSalt + ':' + newPw);
-  user.salt = newSalt; user.hash = newHash; user.mustChangePassword = true;
-  saveUsers(users);
-  btn.disabled = false;
-  closeModal('adminPwModal');
-  showToast(`'${user.name}' 비밀번호가 변경되었습니다. 다음 로그인 시 변경 안내됩니다.`);
-  renderAdminPage();
-}
-
-// 본인 비밀번호 변경 (사용자 관리 → 작업 버튼)
+// 본인 비밀번호 변경 (설정 버튼)
 function openSelfPasswordChange() {
   ['selfCurrent','selfNew','selfConfirm'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
   const errEl = document.getElementById('selfPwError');
@@ -2852,51 +2386,6 @@ async function doSelfChangePassword() {
   btn.disabled = false;
   closeModal('selfPwModal');
   showToast('비밀번호가 변경되었습니다.');
-  renderAdminPage();
-}
-
-// 관리자가 다른 사용자에게 비밀번호 초기화 메일 발송
-async function adminSendResetEmail(userId) {
-  const users = getUsers();
-  const user  = users.find(u => u.id === userId);
-  if (!user || !user.email || !user.email.includes('@')) {
-    showToast('이메일이 등록되지 않은 사용자입니다.', 'error'); return;
-  }
-  const cfg = getEmailConfig();
-  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
-    showToast('이메일 발송 설정이 완료되지 않았습니다. 아래 이메일 설정을 먼저 완료해주세요.', 'error'); return;
-  }
-  if (!window.confirm(`'${user.name}' (${user.email}) 에게 비밀번호 초기화 메일을 발송하시겠습니까?`)) return;
-  const token  = generateToken();
-  const tokens = getResetTokens();
-  const fresh  = tokens.filter(t => t.userId !== userId);
-  fresh.push({ token, userId, expiresAt: Date.now() + 3600000 });
-  saveResetTokens(fresh);
-  const resetLink  = `${window.location.origin}${window.location.pathname}?rt=${token}`;
-  const expiry     = new Date(Date.now() + 3600000).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
-  try {
-    emailjs.init(cfg.publicKey);
-    await emailjs.send(cfg.serviceId, cfg.templateId, {
-      to_name: user.name, to_email: user.email,
-      reset_link: resetLink, expiry_time: expiry + ' 까지 유효'
-    });
-    showToast(`'${user.name}'에게 초기화 메일이 발송되었습니다.`);
-  } catch(e) {
-    showToast(`발송 실패: EmailJS 설정을 확인해주세요. (${e?.text || e})`, 'error');
-  }
-}
-
-function toggleEmailConfig() {
-  const body   = document.getElementById('emailConfigBody');
-  const toggle = document.getElementById('emailConfigToggle');
-  if (!body) return;
-  if (body.style.display === 'none') {
-    body.style.display = '';
-    if (toggle) toggle.textContent = '▲ 접기';
-  } else {
-    body.style.display = 'none';
-    if (toggle) toggle.textContent = '▼ 펼치기';
-  }
 }
 
 function deleteTenant(id) {
@@ -3322,26 +2811,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 인증 시스템 초기화 (admin 계정 최초 생성)
   await initAuthSystem();
-
-  // URL 비밀번호 재설정 토큰 확인 (이메일 링크 클릭 시)
-  const params = new URLSearchParams(window.location.search);
-  const resetToken = params.get('rt');
-  if (resetToken) {
-    const tokens = getResetTokens();
-    const found  = tokens.find(t => t.token === resetToken);
-    if (found) {
-      const users = getUsers();
-      const user  = users.find(u => u.id === found.userId);
-      document.getElementById('resetPwOverlay').classList.remove('hidden');
-      if (user) {
-        document.getElementById('resetPwSub').textContent = `${user.name}님, 새 비밀번호를 설정해주세요`;
-      }
-      return;
-    } else {
-      // 만료된 토큰
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }
 
   // 저장된 세션 복원
   try {
