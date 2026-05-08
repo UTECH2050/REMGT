@@ -1081,8 +1081,9 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>실제 입주일</label>
-          <input type="text" id="regMoveIn" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
+          <label>최초 계약일</label>
+          <input type="text" id="regMoveIn" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)"
+            title="최초 계약일 (계약 연장 시 자동 고정)">
         </div>
         <div class="form-group"></div>
       </div>
@@ -2514,6 +2515,14 @@ function clearRegisterForm() {
   if (delBtn) delBtn.style.display = 'none';
   const extSec = document.getElementById('regExtendSection');
   if (extSec) extSec.style.display = 'none';
+  // 최초계약일 필드 잠금 해제
+  const moveInElC = document.getElementById('regMoveIn');
+  if (moveInElC) {
+    moveInElC.readOnly = false;
+    moveInElC.style.background = '';
+    moveInElC.style.color = '';
+    moveInElC.title = '';
+  }
 }
 
 function openRegisterModal() {
@@ -2549,6 +2558,23 @@ function openRegisterEdit(id) {
   if (extManualWrap) extManualWrap.style.display = 'none';
   const extPreview = document.getElementById('regExtendPreview');
   if (extPreview) extPreview.style.display = 'none';
+  // 최초계약일 필드: 계약경과 시 읽기 전용으로 잠금 (연장해도 최초일 유지)
+  const moveInEl = document.getElementById('regMoveIn');
+  if (moveInEl) {
+    // moveIn이 없으면 contractStart를 최초계약일로 표시
+    if (!moveInEl.value) moveInEl.value = t?.contractStart || '';
+    if (expired) {
+      moveInEl.readOnly = true;
+      moveInEl.style.background = '#f3f4f6';
+      moveInEl.style.color = '#6b7280';
+      moveInEl.title = '최초 계약일 (계약 연장 시 변경되지 않습니다)';
+    } else {
+      moveInEl.readOnly = false;
+      moveInEl.style.background = '';
+      moveInEl.style.color = '';
+      moveInEl.title = '';
+    }
+  }
   openModal('registerModal');
 }
 
@@ -2623,9 +2649,9 @@ function prefillRegisterForm(id) {
     if (endEl) endEl.value = '';
   }
 
-  // 실제 입주일
+  // 최초 계약일 (moveIn 없으면 contractStart로 폴백)
   const moveInEl = document.getElementById('regMoveIn');
-  if (moveInEl) moveInEl.value = t.moveIn || '';
+  if (moveInEl) moveInEl.value = t.moveIn || t.contractStart || '';
 
   // 특이사항
   const noteEl = document.getElementById('regNote');
