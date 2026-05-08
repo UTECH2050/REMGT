@@ -2610,6 +2610,11 @@ function openRegisterEdit(id) {
   if (resetBtn)  resetBtn.style.display  = 'none';
   if (cancelBtn) cancelBtn.style.display = 'inline-flex';
   openModal('registerModal');
+  // 모달이 화면에 렌더된 뒤 특이사항 높이 재계산
+  setTimeout(() => {
+    const n = document.getElementById('regNote');
+    if (n) { n.style.height = 'auto'; n.style.height = n.scrollHeight + 'px'; }
+  }, 0);
 }
 
 function prefillRegisterForm(id) {
