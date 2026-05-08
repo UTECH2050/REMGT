@@ -590,13 +590,13 @@
             </div>
             <div class="form-group">
               <label>연락처</label>
-              <input type="text" id="regPhone" placeholder="010-0000-0000">
+              <input type="text" id="regPhone" placeholder="01012345678" maxlength="13" oninput="fmtPhone(this)">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>보증금 (만원)</label>
-              <input type="number" id="regDeposit" placeholder="5000">
+              <input type="text" id="regDeposit" placeholder="50,000" oninput="fmtComma(this)">
             </div>
             <div class="form-group">
               <label>월세 (만원)</label>
@@ -610,24 +610,30 @@
             </div>
             <div class="form-group">
               <label>납부일 (매월)</label>
-              <input type="number" id="regPayDay" placeholder="5" min="1" max="28">
+              <div style="display:flex;gap:6px;">
+                <input type="number" id="regPayDay" placeholder="5" min="1" max="28" style="flex:1;">
+                <select id="regPayType" style="width:80px;">
+                  <option value="선불">선불</option>
+                  <option value="후불">후불</option>
+                </select>
+              </div>
             </div>
           </div>
           <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">📋 계약 기간</div>
           <div class="form-row">
             <div class="form-group">
               <label>계약일 (시작)</label>
-              <input type="date" id="regContractStart">
+              <input type="text" id="regContractStart" placeholder="20250101" maxlength="14" oninput="fmtKorDate(this)">
             </div>
             <div class="form-group">
               <label>계약 종료일</label>
-              <input type="date" id="regContractEnd">
+              <input type="text" id="regContractEnd" placeholder="20260101" maxlength="14" oninput="fmtKorDate(this)">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>실제 입주일</label>
-              <input type="date" id="regMoveIn">
+              <input type="text" id="regMoveIn" placeholder="20250101" maxlength="14" oninput="fmtKorDate(this)">
             </div>
             <div class="form-group"></div>
           </div>
@@ -2224,6 +2230,34 @@ function initRegisterPage() {
   if (alert) alert.style.display = props.length === 0 ? 'flex' : 'none';
 }
 
+// ── 입력 자동 포맷 함수 ──────────────────────────────────
+function fmtPhone(el) {
+  let v = el.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length <= 3)       el.value = v;
+  else if (v.length <= 7)  el.value = v.slice(0,3) + '-' + v.slice(3);
+  else                     el.value = v.slice(0,3) + '-' + v.slice(3,7) + '-' + v.slice(7);
+}
+
+function fmtComma(el) {
+  const raw = el.value.replace(/[^\d]/g, '');
+  el.value = raw ? Number(raw).toLocaleString() : '';
+}
+
+function fmtKorDate(el) {
+  const digits = el.value.replace(/[^\d]/g, '').slice(0, 8);
+  let result = digits;
+  if (digits.length > 4) result = digits.slice(0,4) + '년 ' + digits.slice(4);
+  if (digits.length > 6) result = digits.slice(0,4) + '년 ' + digits.slice(4,6) + '월 ' + digits.slice(6);
+  if (digits.length === 8) result = digits.slice(0,4) + '년 ' + digits.slice(4,6) + '월 ' + digits.slice(6,8) + '일';
+  el.value = result;
+}
+
+function parseKorDate(str) {
+  const d = str.replace(/[^\d]/g, '');
+  if (d.length === 8) return d.slice(0,4) + '-' + d.slice(4,6) + '-' + d.slice(6,8);
+  return str;
+}
+
 function clearRegisterForm() {
   ['regName','regPhone','regDeposit','regRent','regManagement',
    'regPayDay','regContractStart','regContractEnd','regMoveIn','regNote'].forEach(f => {
@@ -2234,6 +2268,8 @@ function clearRegisterForm() {
   if (typeEl) typeEl.value = '월세';
   const statusEl = document.getElementById('regStatus');
   if (statusEl) statusEl.value = '입주';
+  const payTypeEl = document.getElementById('regPayType');
+  if (payTypeEl) payTypeEl.value = '선불';
   populateBuildingDropdown();
 }
 
@@ -2277,13 +2313,14 @@ function saveRegisterTenant() {
   const obj = {
     id: uid(), building, room, name,
     phone: document.getElementById('regPhone').value,
-    deposit: Number(document.getElementById('regDeposit').value) || 0,
+    deposit: Number(document.getElementById('regDeposit').value.replace(/,/g,'')) || 0,
     rent: Number(document.getElementById('regRent').value) || 0,
     management: Number(document.getElementById('regManagement').value) || 0,
     payDay: Number(document.getElementById('regPayDay').value) || 5,
-    contractStart: document.getElementById('regContractStart').value,
-    contractEnd: document.getElementById('regContractEnd').value,
-    moveIn: document.getElementById('regMoveIn').value,
+    payType: document.getElementById('regPayType')?.value || '선불',
+    contractStart: parseKorDate(document.getElementById('regContractStart').value),
+    contractEnd: parseKorDate(document.getElementById('regContractEnd').value),
+    moveIn: parseKorDate(document.getElementById('regMoveIn').value),
     type: document.getElementById('regType').value,
     status,
     note: document.getElementById('regNote').value
