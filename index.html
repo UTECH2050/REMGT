@@ -603,6 +603,7 @@
                   <th><button class="sort-btn" onclick="sortPayments('management')">관리비 <span class="sort-icon" id="psi-management">⇅</span></button></th>
                   <th>합계</th><th>월세 납부</th><th>관리비 납부</th>
                   <th><button class="sort-btn" onclick="sortPayments('paidDate')">납부일 <span class="sort-icon" id="psi-paidDate">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortPayments('unpaidMonths')">누적미납 <span class="sort-icon" id="psi-unpaidMonths">⇅</span></button></th>
                   <th>비고</th>
                 </tr>
               </thead>
@@ -1709,7 +1710,7 @@ function sortPayments(key) {
   renderPayments();
 }
 function updatePaymentSortIcons() {
-  ['building','room','name','rent','management','paidDate'].forEach(k => {
+  ['building','room','name','rent','management','paidDate','unpaidMonths'].forEach(k => {
     const el = document.getElementById('psi-' + k);
     if (!el) return;
     if (k === paymentSortKey) { el.textContent = paymentSortDir === 'asc' ? '↑' : '↓'; el.className = 'sort-icon ' + paymentSortDir; }
@@ -1853,6 +1854,11 @@ function renderPaymentTable() {
       const pb = payments.find(p => p.tenantId===b.id && p.yearMonth===selectedYM);
       va = pa?.paidDate || ''; vb = pb?.paidDate || '';
     }
+    if (paymentSortKey === 'unpaidMonths') {
+      va = payments.filter(x=>x.tenantId===a.id && (!x.rentPaid||!x.mgmtPaid)).length;
+      vb = payments.filter(x=>x.tenantId===b.id && (!x.rentPaid||!x.mgmtPaid)).length;
+      return paymentSortDir==='asc' ? va-vb : vb-va;
+    }
     const numKeys = ['rent','management'];
     if (numKeys.includes(paymentSortKey)) { va = Number(va); vb = Number(vb); return paymentSortDir==='asc' ? va-vb : vb-va; }
     const cmp = String(va).localeCompare(String(vb), undefined, {numeric:true});
@@ -1872,7 +1878,25 @@ function renderPaymentTable() {
     if (p.rentPaid) { paidCount++; paidAmt += Number(t.rent||0) + (p.mgmtPaid ? Number(t.management||0) : 0); }
     else unpaidCount++;
 
-    return `<tr>
+    // 누적 미납 계산: 해당 임차인의 전체 수납 기록 중 미납 월 수
+    const allP = payments.filter(x => x.tenantId === t.id);
+    const unpaidRentMonths = allP.filter(x => !x.rentPaid).length;
+    const unpaidMgmtMonths = allP.filter(x => !x.mgmtPaid).length;
+    const unpaidMonths = Math.max(unpaidRentMonths, unpaidMgmtMonths);
+    t._unpaidMonths = unpaidMonths; // 소팅용
+
+    let unpaidCell = '';
+    if (unpaidMonths === 0) {
+      unpaidCell = '<span style="color:var(--gray-400);font-size:12px;">-</span>';
+    } else if (unpaidMonths === 1) {
+      unpaidCell = '<span style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">⚠️ 1개월</span>';
+    } else if (unpaidMonths === 2) {
+      unpaidCell = `<span style="background:#fee2e2;color:#b91c1c;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;">🔴 ${unpaidMonths}개월 누적</span>`;
+    } else {
+      unpaidCell = `<span style="background:#7f1d1d;color:#fff;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:700;">🚨 ${unpaidMonths}개월 누적</span>`;
+    }
+
+    return `<tr${unpaidMonths >= 2 ? ' style="background:#fff5f5;"' : ''}>
       <td>${t.building ? t.building : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
       <td><strong>${t.room}호</strong></td>
       <td>${t.name}</td>
@@ -1892,11 +1916,12 @@ function renderPaymentTable() {
         </label>
       </td>
       <td>${p.paidDate ? fmtDate(p.paidDate) : '-'}</td>
+      <td>${unpaidCell}</td>
       <td><input type="text" value="${p.note||''}" placeholder="메모" style="width:120px;padding:4px 8px;font-size:12px" onchange="updatePaymentNote('${t.id}','${selectedYM}',this.value)"></td>
     </tr>`;
   }).join('');
 
-  document.getElementById('paymentTbody').innerHTML = rows || '<tr><td colspan="10"><div class="empty-state"><p>입주중인 임차인이 없습니다.</p></div></td></tr>';
+  document.getElementById('paymentTbody').innerHTML = rows || '<tr><td colspan="11"><div class="empty-state"><p>입주중인 임차인이 없습니다.</p></div></td></tr>';
   document.getElementById('paidCount').textContent = paidCount;
   document.getElementById('unpaidCount').textContent = unpaidCount;
   document.getElementById('paidAmount').textContent = paidAmt.toLocaleString() + '만원';
