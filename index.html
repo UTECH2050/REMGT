@@ -72,6 +72,17 @@
   .setup-steps code { background: #e5e7eb; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
   .tag-ok  { color: #16a34a; font-weight: 600; }
   .tag-no  { color: #dc2626; font-weight: 600; }
+  /* 소팅 버튼 */
+  .sort-btn {
+    display: inline-flex; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer;
+    color: inherit; font-size: inherit; font-weight: inherit;
+    padding: 0; white-space: nowrap;
+  }
+  .sort-btn:hover { color: var(--primary); }
+  .sort-icon { font-size: 10px; opacity: 0.4; }
+  .sort-icon.asc  { opacity: 1; color: var(--primary); }
+  .sort-icon.desc { opacity: 1; color: var(--primary); }
 
   :root {
     --primary: #2563eb;
@@ -514,10 +525,20 @@
         <div class="card-body" style="padding:0">
           <div class="table-wrap">
             <table id="tenantTable">
-              <thead>
+              <thead id="tenantThead">
                 <tr>
-                  <th>건물명</th><th>호실</th><th>임차인명</th><th>연락처</th><th>보증금</th>
-                  <th>월세</th><th>관리비</th><th>계약기간</th><th>입주일</th><th>상태</th><th>관리</th>
+                  <th><button class="sort-btn" onclick="sortTenants('building')">건물명 <span class="sort-icon" id="si-building">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortTenants('room')">호실 <span class="sort-icon" id="si-room">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortTenants('name')">임차인명 <span class="sort-icon" id="si-name">⇅</span></button></th>
+                  <th>연락처</th>
+                  <th><button class="sort-btn" onclick="sortTenants('deposit')">보증금 <span class="sort-icon" id="si-deposit">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortTenants('rent')">월세 <span class="sort-icon" id="si-rent">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortTenants('management')">관리비 <span class="sort-icon" id="si-management">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortTenants('contractStart')">계약 시작일 <span class="sort-icon" id="si-contractStart">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortTenants('contractEnd')">계약 종료일 <span class="sort-icon" id="si-contractEnd">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortTenants('moveIn')">입주일 <span class="sort-icon" id="si-moveIn">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortTenants('status')">상태 <span class="sort-icon" id="si-status">⇅</span></button></th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody id="tenantTbody"></tbody>
@@ -574,7 +595,16 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>건물명</th><th>호실</th><th>임차인명</th><th>월세</th><th>관리비</th><th>합계</th><th>월세 납부</th><th>관리비 납부</th><th>납부일</th><th>비고</th></tr>
+                <tr>
+                  <th><button class="sort-btn" onclick="sortPayments('building')">건물명 <span class="sort-icon" id="psi-building">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortPayments('room')">호실 <span class="sort-icon" id="psi-room">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortPayments('name')">임차인명 <span class="sort-icon" id="psi-name">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortPayments('rent')">월세 <span class="sort-icon" id="psi-rent">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortPayments('management')">관리비 <span class="sort-icon" id="psi-management">⇅</span></button></th>
+                  <th>합계</th><th>월세 납부</th><th>관리비 납부</th>
+                  <th><button class="sort-btn" onclick="sortPayments('paidDate')">납부일 <span class="sort-icon" id="psi-paidDate">⇅</span></button></th>
+                  <th>비고</th>
+                </tr>
               </thead>
               <tbody id="paymentTbody"></tbody>
             </table>
@@ -602,7 +632,18 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>건물명</th><th>호실</th><th>임차인명</th><th>계약 시작</th><th>계약 종료</th><th>임대유형</th><th>보증금</th><th>월세</th><th>남은 기간</th><th>상태</th><th>관리</th></tr>
+                <tr>
+                  <th><button class="sort-btn" onclick="sortContracts('building')">건물명 <span class="sort-icon" id="csi-building">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortContracts('room')">호실 <span class="sort-icon" id="csi-room">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortContracts('name')">임차인명 <span class="sort-icon" id="csi-name">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortContracts('contractStart')">계약 시작 <span class="sort-icon" id="csi-contractStart">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortContracts('contractEnd')">계약 종료 <span class="sort-icon" id="csi-contractEnd">⇅</span></button></th>
+                  <th>임대유형</th>
+                  <th><button class="sort-btn" onclick="sortContracts('deposit')">보증금 <span class="sort-icon" id="csi-deposit">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortContracts('rent')">월세 <span class="sort-icon" id="csi-rent">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortContracts('contractEnd')">남은 기간 <span class="sort-icon" id="csi-days">⇅</span></button></th>
+                  <th>상태</th><th>관리</th>
+                </tr>
               </thead>
               <tbody id="contractTbody"></tbody>
             </table>
@@ -1586,6 +1627,28 @@ function renderDashboard() {
 // TENANTS
 // ============================================================
 let tenantFilter = '', tenantStatusFilter = '';
+let tenantSortKey = 'room', tenantSortDir = 'asc';
+
+function sortTenants(key) {
+  if (tenantSortKey === key) tenantSortDir = tenantSortDir === 'asc' ? 'desc' : 'asc';
+  else { tenantSortKey = key; tenantSortDir = 'asc'; }
+  renderTenants();
+}
+
+function updateSortIcons() {
+  const keys = ['building','room','name','deposit','rent','management','contractStart','contractEnd','moveIn','status'];
+  keys.forEach(k => {
+    const el = document.getElementById('si-' + k);
+    if (!el) return;
+    if (k === tenantSortKey) {
+      el.textContent = tenantSortDir === 'asc' ? '↑' : '↓';
+      el.className = 'sort-icon ' + tenantSortDir;
+    } else {
+      el.textContent = '⇅'; el.className = 'sort-icon';
+    }
+  });
+}
+
 function renderTenants(filter, statusFilter) {
   if (filter !== undefined) tenantFilter = filter;
   if (statusFilter !== undefined) tenantStatusFilter = statusFilter;
@@ -1595,28 +1658,37 @@ function renderTenants(filter, statusFilter) {
     tenants = tenants.filter(t => t.name?.toLowerCase().includes(q) || t.room?.includes(q) || t.phone?.includes(q));
   }
   if (tenantStatusFilter) tenants = tenants.filter(t => t.status === tenantStatusFilter);
-  tenants.sort((a,b) => a.room.localeCompare(b.room, undefined, {numeric:true}));
+
+  // 정렬
+  tenants.sort((a, b) => {
+    let va = a[tenantSortKey] ?? '', vb = b[tenantSortKey] ?? '';
+    const numKeys = ['deposit','rent','management'];
+    if (numKeys.includes(tenantSortKey)) {
+      va = Number(va); vb = Number(vb);
+      return tenantSortDir === 'asc' ? va - vb : vb - va;
+    }
+    const cmp = String(va).localeCompare(String(vb), undefined, {numeric: true});
+    return tenantSortDir === 'asc' ? cmp : -cmp;
+  });
+  updateSortIcons();
 
   const tbody = document.getElementById('tenantTbody');
   if (tenants.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
     return;
   }
-  tbody.innerHTML = tenants.map(t => {
-    const contractPeriod = (t.contractStart || t.contractEnd)
-      ? `<span style="font-size:12px;color:var(--gray-600);white-space:nowrap;">${fmtDate(t.contractStart)} ~ ${fmtDate(t.contractEnd)}</span>`
-      : '-';
-    return `
+  tbody.innerHTML = tenants.map(t => `
     <tr>
-      <td>${t.building ? `<span style="font-size:13px;">${t.building}</span>` : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
+      <td>${t.building || '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
       <td><strong>${t.room}호</strong></td>
       <td>${t.name||'-'}</td>
       <td>${t.phone||'-'}</td>
       <td>${t.deposit ? fmtMoney(t.deposit) : '-'}</td>
       <td>${t.rent ? fmtMoney(t.rent) : '-'}</td>
       <td>${t.management ? fmtMoney(t.management) : '-'}</td>
-      <td>${contractPeriod}</td>
-      <td>${fmtDate(t.moveIn)}</td>
+      <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractStart)||'-'}</span></td>
+      <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractEnd)||'-'}</span></td>
+      <td>${fmtDate(t.moveIn)||'-'}</td>
       <td><span class="badge ${t.status==='입주'?'badge-success':'badge-gray'}">${t.status}</span></td>
       <td>
         <div style="display:flex;gap:6px">
@@ -1624,11 +1696,42 @@ function renderTenants(filter, statusFilter) {
           <button class="btn btn-sm" style="background:var(--danger-light);color:var(--danger)" onclick="deleteTenant('${t.id}')">삭제</button>
         </div>
       </td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
 }
 function filterTenants(v) { renderTenants(v, tenantStatusFilter); }
 function filterTenantStatus(v) { renderTenants(tenantFilter, v); }
+
+// 수납 관리 소팅
+let paymentSortKey = 'room', paymentSortDir = 'asc';
+function sortPayments(key) {
+  if (paymentSortKey === key) paymentSortDir = paymentSortDir === 'asc' ? 'desc' : 'asc';
+  else { paymentSortKey = key; paymentSortDir = 'asc'; }
+  renderPayments();
+}
+function updatePaymentSortIcons() {
+  ['building','room','name','rent','management','paidDate'].forEach(k => {
+    const el = document.getElementById('psi-' + k);
+    if (!el) return;
+    if (k === paymentSortKey) { el.textContent = paymentSortDir === 'asc' ? '↑' : '↓'; el.className = 'sort-icon ' + paymentSortDir; }
+    else { el.textContent = '⇅'; el.className = 'sort-icon'; }
+  });
+}
+
+// 계약 관리 소팅
+let contractSortKey = 'contractEnd', contractSortDir = 'asc';
+function sortContracts(key) {
+  if (contractSortKey === key) contractSortDir = contractSortDir === 'asc' ? 'desc' : 'asc';
+  else { contractSortKey = key; contractSortDir = 'asc'; }
+  renderContracts();
+}
+function updateContractSortIcons() {
+  ['building','room','name','contractStart','contractEnd','deposit','rent'].forEach(k => {
+    const el = document.getElementById('csi-' + k);
+    if (!el) return;
+    if (k === contractSortKey) { el.textContent = contractSortDir === 'asc' ? '↑' : '↓'; el.className = 'sort-icon ' + contractSortDir; }
+    else { el.textContent = '⇅'; el.className = 'sort-icon'; }
+  });
+}
 
 function openTenantModal(id) {
   const fields = ['tBuilding','tRoom','tName','tPhone','tDeposit','tRent','tManagement','tPayDay','tContractStart','tContractEnd','tMoveIn','tNote'];
@@ -1741,9 +1844,21 @@ function selectMonth(ym) {
 }
 
 function renderPaymentTable() {
-  const tenants = getData('tenants').filter(t => t.status==='입주' && t.name);
   const payments = getData('payments');
-  tenants.sort((a,b) => a.room.localeCompare(b.room, undefined, {numeric:true}));
+  const tenants = getData('tenants').filter(t => t.status==='입주' && t.name);
+  tenants.sort((a,b) => {
+    let va = a[paymentSortKey] ?? '', vb = b[paymentSortKey] ?? '';
+    if (paymentSortKey === 'paidDate') {
+      const pa = payments.find(p => p.tenantId===a.id && p.yearMonth===selectedYM);
+      const pb = payments.find(p => p.tenantId===b.id && p.yearMonth===selectedYM);
+      va = pa?.paidDate || ''; vb = pb?.paidDate || '';
+    }
+    const numKeys = ['rent','management'];
+    if (numKeys.includes(paymentSortKey)) { va = Number(va); vb = Number(vb); return paymentSortDir==='asc' ? va-vb : vb-va; }
+    const cmp = String(va).localeCompare(String(vb), undefined, {numeric:true});
+    return paymentSortDir==='asc' ? cmp : -cmp;
+  });
+  updatePaymentSortIcons();
 
   let paidCount = 0, unpaidCount = 0, paidAmt = 0, totalAmt = 0;
 
@@ -1850,7 +1965,14 @@ function renderContracts(filter, statusFilter) {
     if (contractStatusFilter === 'expiring') tenants = tenants.filter(t => daysUntil(t.contractEnd) <= 90 && daysUntil(t.contractEnd) >= 0);
     if (contractStatusFilter === 'expired') tenants = tenants.filter(t => daysUntil(t.contractEnd) < 0);
   }
-  tenants.sort((a,b) => new Date(a.contractEnd) - new Date(b.contractEnd));
+  tenants.sort((a,b) => {
+    let va = a[contractSortKey] ?? '', vb = b[contractSortKey] ?? '';
+    const numKeys = ['deposit','rent'];
+    if (numKeys.includes(contractSortKey)) { va = Number(va); vb = Number(vb); return contractSortDir==='asc' ? va-vb : vb-va; }
+    const cmp = String(va).localeCompare(String(vb), undefined, {numeric:true});
+    return contractSortDir==='asc' ? cmp : -cmp;
+  });
+  updateContractSortIcons();
 
   const tbody = document.getElementById('contractTbody');
   if (tenants.length === 0) {
