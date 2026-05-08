@@ -1696,6 +1696,7 @@ function navigate(page) {
 // UTILITIES
 // ============================================================
 function fmtMoney(v) { return Number(v||0).toLocaleString() + '만원'; }
+function fmtRoom(r) { if (!r) return ''; return r.endsWith('호') || r.endsWith('동') ? r : r + '호'; }
 function fmtDate(d) { if(!d) return '-'; return d.replace(/-/g, '.'); }
 function today() { return new Date().toISOString().slice(0,10); }
 function getYM() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
@@ -1827,7 +1828,7 @@ function renderDashboard() {
         const p = payments.find(x=>x.tenantId===t.id);
         const paid = p && p.rentPaid;
         return `<div style="display:flex;align-items:center;justify-content:space-between;font-size:13px">
-          <span>${t.room}호 ${t.name}</span>
+          <span>${fmtRoom(t.room)} ${t.name}</span>
           <span class="badge ${paid?'badge-success':'badge-danger'}">${paid?'✓ 납부':'미납'}</span>
         </div>`;
       }).join('')}
@@ -1841,7 +1842,7 @@ function renderDashboard() {
   alertsEl.innerHTML = expiring.map(t => {
     const d = daysUntil(t.contractEnd);
     return `<div class="alert-box ${d<=30?'alert-danger':'alert-warning'}">
-      ⚠️ <strong>${t.room}호 ${t.name}</strong> 계약 만료 <strong>${d}일</strong> 남음 (${fmtDate(t.contractEnd)})
+      ⚠️ <strong>${fmtRoom(t.room)} ${t.name}</strong> 계약 만료 <strong>${d}일</strong> 남음 (${fmtDate(t.contractEnd)})
     </div>`;
   }).join('');
 
@@ -1851,7 +1852,7 @@ function renderDashboard() {
     : expiring.map(t => {
         const d = daysUntil(t.contractEnd);
         return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gray-100)">
-          <div><span style="font-weight:600">${t.room}호</span> ${t.name}<br><small style="color:var(--gray-400)">${fmtDate(t.contractEnd)} 만료</small></div>
+          <div><span style="font-weight:600">${fmtRoom(t.room)}</span> ${t.name}<br><small style="color:var(--gray-400)">${fmtDate(t.contractEnd)} 만료</small></div>
           <span class="badge ${d<=30?'badge-danger':'badge-warning'}">${d}일 남음</span>
         </div>`;
       }).join('');
@@ -1862,7 +1863,7 @@ function renderDashboard() {
     const vacant = t.status === '공실';
     const exp = t.contractEnd && daysUntil(t.contractEnd) <= 90 && daysUntil(t.contractEnd) >= 0;
     return `<div style="background:${vacant?'var(--gray-100)':exp?'var(--warning-light)':'var(--success-light)'};border:1px solid ${vacant?'var(--gray-200)':exp?'#fde68a':'#bbf7d0'};border-radius:8px;padding:12px;text-align:center;cursor:pointer" onclick="navigate('tenants')">
-      <div style="font-size:13px;font-weight:700;color:${vacant?'var(--gray-400)':'var(--gray-800)'}">${t.room}호</div>
+      <div style="font-size:13px;font-weight:700;color:${vacant?'var(--gray-400)':'var(--gray-800)'}">${fmtRoom(t.room)}</div>
       <div style="font-size:11px;color:${vacant?'var(--gray-400)':'var(--gray-600)'};margin-top:2px">${vacant?'공실':t.name}</div>
       ${!vacant?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px">${Number(t.rent||0)+Number(t.management||0)}만</div>`:''}
     </div>`;
@@ -1927,7 +1928,7 @@ function renderTenants(filter, statusFilter) {
   tbody.innerHTML = tenants.map(t => `
     <tr>
       <td>${t.building || '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
-      <td><strong>${t.room}호</strong></td>
+      <td><strong>${fmtRoom(t.room)}</strong></td>
       <td>${t.name||'-'}</td>
       <td>${t.phone||'-'}</td>
       <td>${t.deposit ? fmtMoney(t.deposit) : '-'}</td>
@@ -2656,7 +2657,7 @@ function toggleEmailConfig() {
 
 function deleteTenant(id) {
   const t = getData('tenants').find(x => x.id === id);
-  confirm(`"${t.room}호 ${t.name}" 임차인을 삭제하시겠습니까?\n관련 수납 데이터도 함께 삭제됩니다.`, () => {
+  confirm(`"${fmtRoom(t.room)} ${t.name}" 임차인을 삭제하시겠습니까?\n관련 수납 데이터도 함께 삭제됩니다.`, () => {
     const tenants = getData('tenants').filter(x => x.id !== id);
     setData('tenants', tenants);
     const payments = getData('payments').filter(x => x.tenantId !== id);
@@ -2751,7 +2752,7 @@ function renderPaymentTable() {
 
     return `<tr${unpaidMonths >= 2 ? ' style="background:#fff5f5;"' : ''}>
       <td>${t.building ? t.building : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
-      <td><strong>${t.room}호</strong></td>
+      <td><strong>${fmtRoom(t.room)}</strong></td>
       <td>${t.name}</td>
       <td>${fmtMoney(t.rent)}</td>
       <td>${fmtMoney(t.management)}</td>
@@ -2866,7 +2867,7 @@ function renderContracts(filter, statusFilter) {
     else { badge = 'badge-success'; dText = `${d}일 남음`; }
     return `<tr>
       <td>${t.building ? t.building : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
-      <td><strong>${t.room}호</strong></td>
+      <td><strong>${fmtRoom(t.room)}</strong></td>
       <td>${t.name}</td>
       <td>${fmtDate(t.contractStart)}</td>
       <td>${fmtDate(t.contractEnd)}</td>
