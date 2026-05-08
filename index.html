@@ -924,7 +924,7 @@
 
 <!-- Room Modal (호실 추가/수정) -->
 <div class="modal-overlay" id="roomModal">
-  <div class="modal" style="max-width:420px;">
+  <div class="modal" style="max-width:500px;">
     <div class="modal-header">
       <span class="modal-title" id="roomModalTitle">동호수 추가</span>
       <button class="modal-close" onclick="closeModal('roomModal')">×</button>
@@ -932,26 +932,44 @@
     <div class="modal-body">
       <input type="hidden" id="rmPropId">
       <input type="hidden" id="rmRoomId">
-      <div class="form-row">
-        <div class="form-group">
+      <!-- 동 / 호수 / 전용면적 한 줄 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div class="form-group" style="margin:0;">
           <label>동 <span style="font-size:11px;color:var(--gray-400);">(없으면 공란)</span></label>
           <input type="text" id="rmDong" placeholder="예: 101">
         </div>
-        <div class="form-group">
+        <div class="form-group" style="margin:0;">
           <label>호수 <span class="required">*</span></label>
           <input type="text" id="rmHosu" placeholder="예: 203">
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
+        <div class="form-group" style="margin:0;">
           <label>전용면적 (㎡)</label>
           <input type="text" id="rmArea" placeholder="예: 33.5">
         </div>
-        <div class="form-group"></div>
+      </div>
+      <!-- 취득 정보 -->
+      <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:4px 0 10px;text-transform:uppercase;letter-spacing:0.04em;">📋 취득 정보</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div class="form-group" style="margin:0;">
+          <label>취득일자</label>
+          <input type="text" id="rmAcqDate" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>매수금액 (만원)</label>
+          <input type="text" id="rmAcqPrice" placeholder="" oninput="fmtComma(this)">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>세금 (만원)</label>
+          <input type="text" id="rmAcqTax" placeholder="" oninput="fmtComma(this)">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>수수료 (만원)</label>
+          <input type="text" id="rmAcqFee" placeholder="" oninput="fmtComma(this)">
+        </div>
       </div>
       <div class="form-group">
         <label>비고</label>
-        <input type="text" id="rmNote" placeholder="예: 남향, 복층">
+        <input type="text" id="rmNote" placeholder="">
       </div>
     </div>
     <div class="modal-footer">
@@ -2193,21 +2211,29 @@ function deleteProperty(id) {
 }
 
 function openRoomModal(propId, roomId) {
-  document.getElementById('rmPropId').value  = propId;
-  document.getElementById('rmRoomId').value  = roomId || '';
-  document.getElementById('rmDong').value    = '';
-  document.getElementById('rmHosu').value    = '';
-  document.getElementById('rmArea').value    = '';
-  document.getElementById('rmNote').value    = '';
+  document.getElementById('rmPropId').value   = propId;
+  document.getElementById('rmRoomId').value   = roomId || '';
+  document.getElementById('rmDong').value     = '';
+  document.getElementById('rmHosu').value     = '';
+  document.getElementById('rmArea').value     = '';
+  document.getElementById('rmAcqDate').value  = '';
+  document.getElementById('rmAcqPrice').value = '';
+  document.getElementById('rmAcqTax').value   = '';
+  document.getElementById('rmAcqFee').value   = '';
+  document.getElementById('rmNote').value     = '';
   document.getElementById('roomModalTitle').textContent = roomId ? '동호수 수정' : '동호수 추가';
   if (roomId) {
     const prop = getData('properties').find(x => x.id === propId);
     const room = prop?.rooms?.find(r => r.id === roomId);
     if (room) {
-      document.getElementById('rmDong').value  = room.dong || '';
-      document.getElementById('rmHosu').value  = room.hosu || room.roomNo || '';
-      document.getElementById('rmArea').value  = room.area || '';
-      document.getElementById('rmNote').value  = room.note || '';
+      document.getElementById('rmDong').value     = room.dong || '';
+      document.getElementById('rmHosu').value     = room.hosu || room.roomNo || '';
+      document.getElementById('rmArea').value     = room.area || '';
+      document.getElementById('rmAcqDate').value  = room.acqDate || '';
+      document.getElementById('rmAcqPrice').value = room.acqPrice ? Number(room.acqPrice).toLocaleString() : '';
+      document.getElementById('rmAcqTax').value   = room.acqTax   ? Number(room.acqTax).toLocaleString()   : '';
+      document.getElementById('rmAcqFee').value   = room.acqFee   ? Number(room.acqFee).toLocaleString()   : '';
+      document.getElementById('rmNote').value     = room.note || '';
     }
   }
   openModal('roomModal');
@@ -2245,7 +2271,15 @@ function saveRoom() {
   const prop   = props.find(x => x.id === propId);
   if (!prop) return;
   if (!prop.rooms) prop.rooms = [];
-  const obj = { id: roomId || uid(), dong, hosu, roomNo, area: document.getElementById('rmArea').value.trim(), note: document.getElementById('rmNote').value };
+  const obj = {
+    id: roomId || uid(), dong, hosu, roomNo,
+    area:     document.getElementById('rmArea').value.trim(),
+    acqDate:  document.getElementById('rmAcqDate').value.trim(),
+    acqPrice: Number(document.getElementById('rmAcqPrice').value.replace(/,/g,'')) || 0,
+    acqTax:   Number(document.getElementById('rmAcqTax').value.replace(/,/g,''))   || 0,
+    acqFee:   Number(document.getElementById('rmAcqFee').value.replace(/,/g,''))   || 0,
+    note:     document.getElementById('rmNote').value
+  };
   if (roomId) {
     const idx = prop.rooms.findIndex(r => r.id === roomId);
     if (idx >= 0) prop.rooms[idx] = obj;
