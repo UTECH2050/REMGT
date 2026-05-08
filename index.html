@@ -2006,7 +2006,10 @@ function renderTenants(filter, statusFilter) {
       <td style="text-align:right;">${t.deposit ? fmtMoney(t.deposit) : '-'}</td>
       <td style="text-align:right;">${t.rent ? fmtMoney(t.rent) : '0'}</td>
       <td style="text-align:right;">${t.management ? fmtMoney(t.management) : '0'}</td>
-      <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractStart)||'-'}</span></td>
+      <td>
+        <span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractStart)||'-'}</span>
+        ${(t.extendCount > 0 && t.moveIn && t.moveIn !== t.contractStart) ? `<br><span style="font-size:11px;color:var(--gray-400);">최초 ${fmtDate(t.moveIn)}</span>` : ''}
+      </td>
       <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractEnd)||'-'}</span></td>
       <td>${statusBadge}</td>
       <td>
