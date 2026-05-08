@@ -570,7 +570,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>호실</th><th>임차인명</th><th>월세</th><th>관리비</th><th>합계</th><th>월세 납부</th><th>관리비 납부</th><th>납부일</th><th>비고</th></tr>
+                <tr><th>건물명</th><th>호실</th><th>임차인명</th><th>월세</th><th>관리비</th><th>합계</th><th>월세 납부</th><th>관리비 납부</th><th>납부일</th><th>비고</th></tr>
               </thead>
               <tbody id="paymentTbody"></tbody>
             </table>
@@ -598,7 +598,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>호실</th><th>임차인명</th><th>계약 시작</th><th>계약 종료</th><th>임대유형</th><th>보증금</th><th>월세</th><th>남은 기간</th><th>상태</th><th>관리</th></tr>
+                <tr><th>건물명</th><th>호실</th><th>임차인명</th><th>계약 시작</th><th>계약 종료</th><th>임대유형</th><th>보증금</th><th>월세</th><th>남은 기간</th><th>상태</th><th>관리</th></tr>
               </thead>
               <tbody id="contractTbody"></tbody>
             </table>
@@ -1758,6 +1758,7 @@ function renderPaymentTable() {
     else unpaidCount++;
 
     return `<tr>
+      <td>${t.building ? t.building : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
       <td><strong>${t.room}호</strong></td>
       <td>${t.name}</td>
       <td>${fmtMoney(t.rent)}</td>
@@ -1780,7 +1781,7 @@ function renderPaymentTable() {
     </tr>`;
   }).join('');
 
-  document.getElementById('paymentTbody').innerHTML = rows || '<tr><td colspan="9"><div class="empty-state"><p>입주중인 임차인이 없습니다.</p></div></td></tr>';
+  document.getElementById('paymentTbody').innerHTML = rows || '<tr><td colspan="10"><div class="empty-state"><p>입주중인 임차인이 없습니다.</p></div></td></tr>';
   document.getElementById('paidCount').textContent = paidCount;
   document.getElementById('unpaidCount').textContent = unpaidCount;
   document.getElementById('paidAmount').textContent = paidAmt.toLocaleString() + '만원';
@@ -1853,7 +1854,7 @@ function renderContracts(filter, statusFilter) {
 
   const tbody = document.getElementById('contractTbody');
   if (tenants.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📄</div><p>계약 정보가 없습니다.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">📄</div><p>계약 정보가 없습니다.</p></div></td></tr>';
     return;
   }
   tbody.innerHTML = tenants.map(t => {
@@ -1864,7 +1865,8 @@ function renderContracts(filter, statusFilter) {
     else if (d <= 90) { badge = 'badge-warning'; dText = `${d}일 남음`; }
     else { badge = 'badge-success'; dText = `${d}일 남음`; }
     return `<tr>
-      <td>${t.building ? `<span style="font-size:11px;color:var(--gray-500)">${t.building}</span><br>` : ''}<strong>${t.room}호</strong></td>
+      <td>${t.building ? t.building : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
+      <td><strong>${t.room}호</strong></td>
       <td>${t.name}</td>
       <td>${fmtDate(t.contractStart)}</td>
       <td>${fmtDate(t.contractEnd)}</td>
