@@ -1194,7 +1194,7 @@ async function initAuthSystem() {
   }
   if (!users.find(u => u.id === 'admin')) {
     const salt = makeSalt();
-    const hash = await sha256(salt + ':' + 'admin1234');
+    const hash = await sha256(salt + ':' + 'qlalf@ek0');
     users.push({
       id: 'admin',
       name: '관리자',
