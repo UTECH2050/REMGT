@@ -456,7 +456,6 @@
 <!-- Main -->
 <div class="main">
   <div class="topbar">
-    <h2 id="pageTitle">대시보드</h2>
     <span class="topbar-date" id="topbarDate"></span>
     <div id="topbarActions"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-left:16px;padding-left:16px;border-left:1px solid var(--gray-200);">
@@ -1390,7 +1389,6 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => { if(n.getAttribute('onclick')?.includes(page)) n.classList.add('active'); });
-  document.getElementById('pageTitle').textContent = pageTitles[page];
   // Topbar actions
   const ta = document.getElementById('topbarActions');
   ta.innerHTML = '';
