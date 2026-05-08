@@ -585,17 +585,17 @@
           <div class="form-row">
             <div class="form-group">
               <label>임차인명 <span class="required">*</span></label>
-              <input type="text" id="regName" placeholder="홍길동">
+              <input type="text" id="regName" placeholder="">
             </div>
             <div class="form-group">
               <label>연락처</label>
-              <input type="text" id="regPhone" placeholder="01012345678" maxlength="13" oninput="fmtPhone(this)">
+              <input type="text" id="regPhone" placeholder="000-0000-0000" maxlength="13" oninput="fmtPhone(this)">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>보증금 (만원)</label>
-              <input type="text" id="regDeposit" placeholder="50,000" oninput="fmtComma(this)">
+              <input type="text" id="regDeposit" placeholder="" oninput="fmtComma(this)">
             </div>
             <div class="form-group">
               <label>월세 (만원)</label>
@@ -610,7 +610,7 @@
             <div class="form-group">
               <label>납부일 (매월)</label>
               <div style="display:flex;gap:6px;">
-                <input type="number" id="regPayDay" placeholder="5" min="1" max="28" style="flex:1;">
+                <input type="number" id="regPayDay" placeholder="" min="1" max="28" style="flex:1;">
                 <select id="regPayType" style="width:80px;">
                   <option value="선불">선불</option>
                   <option value="후불">후불</option>
@@ -622,7 +622,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>계약 시작일</label>
-              <input type="text" id="regContractStart" placeholder="20250101" maxlength="10" oninput="fmtIsoDate(this)">
+              <input type="text" id="regContractStart" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
             </div>
             <div class="form-group">
               <label>계약 기간</label>
@@ -636,25 +636,25 @@
           <div class="form-row">
             <div class="form-group">
               <label>계약 만기일 <span style="font-size:11px;color:var(--gray-400);">(자동 계산)</span></label>
-              <input type="text" id="regContractEnd" placeholder="자동 입력됩니다" maxlength="10" readonly
+              <input type="text" id="regContractEnd" placeholder="0000-00-00" maxlength="10" readonly
                 style="background:var(--gray-50);color:var(--gray-500);">
             </div>
             <div class="form-group" id="regContractEndWrap" style="display:none;">
               <label>만기일 직접 입력</label>
-              <input type="text" id="regContractEndManual" placeholder="20260101" maxlength="10"
+              <input type="text" id="regContractEndManual" placeholder="0000-00-00" maxlength="10"
                 oninput="fmtIsoDate(this);document.getElementById('regContractEnd').value=this.value;">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>실제 입주일</label>
-              <input type="text" id="regMoveIn" placeholder="20250101" maxlength="10" oninput="fmtIsoDate(this)">
+              <input type="text" id="regMoveIn" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
             </div>
             <div class="form-group"></div>
           </div>
           <div class="form-group">
             <label>특이사항</label>
-            <textarea id="regNote" placeholder="특이사항을 입력하세요"></textarea>
+            <textarea id="regNote" placeholder=""></textarea>
           </div>
           <div style="display:flex;gap:10px;margin-top:8px;">
             <button class="btn btn-outline" onclick="clearRegisterForm()">초기화</button>
