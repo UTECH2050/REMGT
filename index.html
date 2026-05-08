@@ -440,7 +440,7 @@
       <span class="icon">➕</span> 임대차 등록
     </div>
     <div class="nav-item" onclick="navigate('tenants')">
-      <span class="icon">👤</span> 임차인 관리
+      <span class="icon">👤</span> 임대차 관리
     </div>
     <div class="nav-item" onclick="navigate('payments')">
       <span class="icon">💳</span> 수납 관리
@@ -554,7 +554,7 @@
       </div>
       <div class="card">
         <div class="card-header">
-          <span class="card-title">➕ 임대차 등록</span>
+          <span class="card-title" id="regCardTitle">➕ 임대차 등록</span>
         </div>
         <div class="card-body">
           <div class="form-row">
@@ -600,13 +600,13 @@
             </div>
             <div class="form-group">
               <label>월세 (만원)</label>
-              <input type="number" id="regRent" placeholder="80">
+              <input type="number" id="regRent" placeholder="">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>관리비 (만원)</label>
-              <input type="number" id="regManagement" placeholder="10">
+              <input type="number" id="regManagement" placeholder="">
             </div>
             <div class="form-group">
               <label>납부일 (매월)</label>
@@ -659,7 +659,7 @@
           </div>
           <div style="display:flex;gap:10px;margin-top:8px;">
             <button class="btn btn-outline" onclick="clearRegisterForm()">초기화</button>
-            <button class="btn btn-primary" onclick="saveRegisterTenant()">💾 등록 저장</button>
+            <button class="btn btn-primary" id="regSaveBtn" onclick="saveRegisterTenant()">💾 등록 저장</button>
           </div>
         </div>
       </div>
@@ -1664,7 +1664,7 @@ function seedDemoData() {
 // ============================================================
 // NAVIGATION
 // ============================================================
-const pageTitles = { dashboard:'대시보드', tenants:'임차인 관리', payments:'수납 관리', contracts:'계약 관리', analytics:'손익분석', admin:'사용자 관리' };
+const pageTitles = { dashboard:'대시보드', tenants:'임대차 관리', payments:'수납 관리', contracts:'계약 관리', analytics:'손익분석', admin:'사용자 관리' };
 let currentPage = 'dashboard';
 let chartInstances = {};
 
@@ -1868,6 +1868,7 @@ function renderDashboard() {
 // ============================================================
 let tenantFilter = '', tenantStatusFilter = '';
 let tenantSortKey = 'room', tenantSortDir = 'asc';
+let _editingTenantId = null;
 
 function sortTenants(key) {
   if (tenantSortKey === key) tenantSortDir = tenantSortDir === 'asc' ? 'desc' : 'asc';
@@ -1932,7 +1933,7 @@ function renderTenants(filter, statusFilter) {
       <td><span class="badge ${t.status==='입주'?'badge-success':'badge-gray'}">${t.status}</span></td>
       <td>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-outline btn-sm" onclick="openTenantModal('${t.id}')">수정</button>
+          <button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${t.id}')">수정</button>
           <button class="btn btn-sm" style="background:var(--danger-light);color:var(--danger)" onclick="deleteTenant('${t.id}')">삭제</button>
         </div>
       </td>
@@ -2239,8 +2240,12 @@ function deleteRoom(propId, roomId) {
 // 임대차 등록 페이지 (소유부동산 드롭다운 연동)
 // ============================================================
 function initRegisterPage() {
-  clearRegisterForm();
   populateBuildingDropdown();
+  if (_editingTenantId) {
+    prefillRegisterForm(_editingTenantId);
+  } else {
+    clearRegisterForm();
+  }
   const props = getData('properties');
   const alert = document.getElementById('regNoPropAlert');
   if (alert) alert.style.display = props.length === 0 ? 'flex' : 'none';
@@ -2306,6 +2311,7 @@ function onContractDurChange() {
 }
 
 function clearRegisterForm() {
+  _editingTenantId = null;
   ['regName','regPhone','regDeposit','regRent','regManagement',
    'regPayDay','regContractStart','regContractEnd','regMoveIn','regNote'].forEach(f => {
     const el = document.getElementById(f);
@@ -2324,6 +2330,95 @@ function clearRegisterForm() {
   const manualEl = document.getElementById('regContractEndManual');
   if (manualEl) manualEl.value = '';
   populateBuildingDropdown();
+  const titleEl = document.getElementById('regCardTitle');
+  if (titleEl) titleEl.textContent = '➕ 임대차 등록';
+  const saveBtn = document.getElementById('regSaveBtn');
+  if (saveBtn) saveBtn.textContent = '💾 등록 저장';
+}
+
+function openRegisterEdit(id) {
+  _editingTenantId = id;
+  navigate('register');
+}
+
+function prefillRegisterForm(id) {
+  const t = getData('tenants').find(x => x.id === id);
+  if (!t) { clearRegisterForm(); return; }
+
+  // 카드 타이틀·버튼 변경
+  const titleEl = document.getElementById('regCardTitle');
+  if (titleEl) titleEl.textContent = '✏️ 임대차 수정';
+  const saveBtn = document.getElementById('regSaveBtn');
+  if (saveBtn) saveBtn.textContent = '💾 수정 저장';
+
+  // 건물 선택 후 호실 목록 로드
+  const buildingSel = document.getElementById('regBuilding');
+  if (buildingSel) {
+    buildingSel.value = t.building || '';
+    onRegBuildingChange();
+  }
+  // 호실 선택 (드롭다운 옵션이 채워진 뒤)
+  setTimeout(() => {
+    const roomSel = document.getElementById('regRoom');
+    if (roomSel) roomSel.value = t.room || '';
+  }, 0);
+
+  // 임대 유형 / 상태
+  const typeEl = document.getElementById('regType');
+  if (typeEl) typeEl.value = t.type || '월세';
+  const statusEl = document.getElementById('regStatus');
+  if (statusEl) statusEl.value = t.status || '입주';
+
+  // 임차인명 / 연락처
+  const nameEl = document.getElementById('regName');
+  if (nameEl) nameEl.value = t.name || '';
+  const phoneEl = document.getElementById('regPhone');
+  if (phoneEl) phoneEl.value = t.phone || '';
+
+  // 보증금 (콤마 포맷)
+  const depEl = document.getElementById('regDeposit');
+  if (depEl) depEl.value = t.deposit ? Number(t.deposit).toLocaleString() : '';
+
+  // 월세 / 관리비
+  const rentEl = document.getElementById('regRent');
+  if (rentEl) rentEl.value = t.rent != null && t.rent !== 0 ? t.rent : '';
+  const mgmtEl = document.getElementById('regManagement');
+  if (mgmtEl) mgmtEl.value = t.management != null && t.management !== 0 ? t.management : '';
+
+  // 납부일 / 선불후불
+  const payDayEl = document.getElementById('regPayDay');
+  if (payDayEl) payDayEl.value = t.payDay || '';
+  const payTypeEl = document.getElementById('regPayType');
+  if (payTypeEl) payTypeEl.value = t.payType || '선불';
+
+  // 계약 시작일
+  const startEl = document.getElementById('regContractStart');
+  if (startEl) startEl.value = t.contractStart || '';
+
+  // 계약 기간 및 만기일
+  const durEl = document.getElementById('regContractDur');
+  const endWrap = document.getElementById('regContractEndWrap');
+  const endEl = document.getElementById('regContractEnd');
+  const manualEl = document.getElementById('regContractEndManual');
+  // 만기일이 있으면 '기타'로 설정하고 수동 입력 필드에 채움
+  if (t.contractEnd) {
+    if (durEl) { durEl.value = '기타'; }
+    if (endWrap) endWrap.style.display = 'block';
+    if (manualEl) manualEl.value = t.contractEnd;
+    if (endEl) endEl.value = t.contractEnd;
+  } else {
+    if (durEl) durEl.value = '1';
+    if (endWrap) endWrap.style.display = 'none';
+    if (endEl) endEl.value = '';
+  }
+
+  // 실제 입주일
+  const moveInEl = document.getElementById('regMoveIn');
+  if (moveInEl) moveInEl.value = t.moveIn || '';
+
+  // 특이사항
+  const noteEl = document.getElementById('regNote');
+  if (noteEl) noteEl.value = t.note || '';
 }
 
 function populateBuildingDropdown() {
@@ -2363,8 +2458,8 @@ function saveRegisterTenant() {
   if (!room)     { showToast('호실을 선택해주세요.', 'error'); return; }
   if (status === '입주' && !name) { showToast('임차인명을 입력해주세요.', 'error'); return; }
   const tenants = getData('tenants');
-  const obj = {
-    id: uid(), building, room, name,
+  const fields = {
+    building, room, name,
     phone: document.getElementById('regPhone').value,
     deposit: Number(document.getElementById('regDeposit').value.replace(/,/g,'')) || 0,
     rent: Number(document.getElementById('regRent').value) || 0,
@@ -2378,11 +2473,27 @@ function saveRegisterTenant() {
     status,
     note: document.getElementById('regNote').value
   };
-  tenants.push(obj);
-  setData('tenants', tenants);
-  updateBadges();
-  showToast('임대차 정보가 등록되었습니다.');
-  navigate('tenants');
+  if (_editingTenantId) {
+    // 수정 모드: 기존 데이터 업데이트
+    const idx = tenants.findIndex(t => t.id === _editingTenantId);
+    if (idx !== -1) {
+      tenants[idx] = { ...tenants[idx], ...fields };
+      setData('tenants', tenants);
+      _editingTenantId = null;
+      updateBadges();
+      showToast('임대차 정보가 수정되었습니다.');
+      navigate('tenants');
+    } else {
+      showToast('수정할 데이터를 찾을 수 없습니다.', 'error');
+    }
+  } else {
+    // 신규 등록
+    tenants.push({ id: uid(), ...fields });
+    setData('tenants', tenants);
+    updateBadges();
+    showToast('임대차 정보가 등록되었습니다.');
+    navigate('tenants');
+  }
 }
 
 // 관리자가 타 사용자 비밀번호 직접 변경
@@ -2720,7 +2831,7 @@ function renderContracts(filter, statusFilter) {
       <td>${t.rent ? fmtMoney(t.rent) : '-'}</td>
       <td><span class="badge ${badge} ${d<=30&&d>=0?'expiry-soon':''}">${dText}</span></td>
       <td><span class="badge ${d<0?'badge-danger':d<=90?'badge-warning':'badge-success'}">${d<0?'만료':d<=90?'만료임박':'계약중'}</span></td>
-      <td><button class="btn btn-outline btn-sm" onclick="openTenantModal('${t.id}')">수정</button></td>
+      <td><button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${t.id}')">수정</button></td>
     </tr>`;
   }).join('');
 }
