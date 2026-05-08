@@ -1006,18 +1006,6 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>임대 유형 <span class="required">*</span></label>
-          <select id="regType">
-            <option>월세</option><option>전세</option><option>상가</option><option>사무실</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>상태</label>
-          <select id="regStatus"><option>입주</option><option>공실</option></select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
           <label>임차인명 <span class="required">*</span></label>
           <input type="text" id="regName" placeholder="">
         </div>
@@ -2517,10 +2505,6 @@ function clearRegisterForm() {
     const el = document.getElementById(f);
     if (el) el.value = '';
   });
-  const typeEl = document.getElementById('regType');
-  if (typeEl) typeEl.value = '월세';
-  const statusEl = document.getElementById('regStatus');
-  if (statusEl) statusEl.value = '입주';
   const payTypeEl = document.getElementById('regPayType');
   if (payTypeEl) payTypeEl.value = '선불';
   populateBuildingDropdown();
@@ -2626,11 +2610,6 @@ function prefillRegisterForm(id) {
     if (roomSel) roomSel.value = t.room || '';
   }, 0);
 
-  // 임대 유형 / 상태
-  const typeEl = document.getElementById('regType');
-  if (typeEl) typeEl.value = t.type || '월세';
-  const statusEl = document.getElementById('regStatus');
-  if (statusEl) statusEl.value = t.status || '입주';
 
   // 임차인명 / 연락처
   const nameEl = document.getElementById('regName');
@@ -2716,29 +2695,32 @@ function saveRegisterTenant() {
   const building = document.getElementById('regBuilding').value;
   let   room     = document.getElementById('regRoom').value.trim();
   const name     = document.getElementById('regName').value.trim();
-  const status   = document.getElementById('regStatus').value;
   if (!building) { showToast('건물을 선택해주세요.', 'error'); return; }
   // 수정 모드에서 호실 드롭다운이 비어있으면 저장된 기존 값 사용
   if (!room && _editingTenantId) {
     const existing = getData('tenants').find(t => t.id === _editingTenantId);
     if (existing?.room) room = existing.room;
   }
-  if (!room)     { showToast('호실을 선택해주세요.', 'error'); return; }
-  if (status === '입주' && !name) { showToast('임차인명을 입력해주세요.', 'error'); return; }
+  if (!room) { showToast('호실을 선택해주세요.', 'error'); return; }
+  const deposit = Number(document.getElementById('regDeposit').value.replace(/,/g,'')) || 0;
+  const rent    = Number(document.getElementById('regRent').value) || 0;
+  // 임대유형 자동 결정: 월세>0 → 월세, 보증금만 → 전세, 둘다0 → 공실
+  const type   = rent > 0 ? '월세' : deposit > 0 ? '전세' : '월세';
+  // 상태 자동 결정: 임차인명 + 계약시작일 있으면 입주, 없으면 공실
+  const contractStart = document.getElementById('regContractStart').value;
+  const status = (name && contractStart) ? '입주' : '공실';
   const tenants = getData('tenants');
   const fields = {
     building, room, name,
     phone: document.getElementById('regPhone').value,
-    deposit: Number(document.getElementById('regDeposit').value.replace(/,/g,'')) || 0,
-    rent: Number(document.getElementById('regRent').value) || 0,
+    deposit, rent,
     management: Number(document.getElementById('regManagement').value) || 0,
     payDay: Number(document.getElementById('regPayDay').value) || 5,
     payType: document.getElementById('regPayType')?.value || '선불',
-    contractStart: document.getElementById('regContractStart').value,
+    contractStart,
     contractEnd: document.getElementById('regContractEnd').value,
-    moveIn: document.getElementById('regMoveIn').value || document.getElementById('regContractStart').value,
-    type: document.getElementById('regType').value,
-    status,
+    moveIn: document.getElementById('regMoveIn').value || contractStart,
+    type, status,
     note: document.getElementById('regNote').value
   };
   if (_editingTenantId) {
