@@ -1340,13 +1340,14 @@ async function resetUserPassword(userId) {
 function deleteUser(userId) {
   if (userId === 'admin') { showToast('admin 계정은 삭제할 수 없습니다.', 'danger'); return; }
   if (userId === _currentSession?.userId) { showToast('현재 로그인 중인 계정은 삭제할 수 없습니다.', 'danger'); return; }
-  if (!confirm(`'${userId}' 사용자를 삭제하시겠습니까?\n해당 사용자의 모든 데이터도 함께 삭제됩니다.`)) return;
-  const users = getUsers().filter(u => u.id !== userId);
-  saveUsers(users);
-  // 해당 사용자의 데이터 삭제
-  Object.keys(localStorage).filter(k => k.startsWith(`remgt_u_${userId}_`)).forEach(k => localStorage.removeItem(k));
-  showToast(`'${userId}' 사용자가 삭제되었습니다.`);
-  renderAdminPage();
+  const user = getUsers().find(u => u.id === userId);
+  confirm(`'${user?.name || userId}' 사용자를 삭제하시겠습니까?\n해당 사용자의 모든 데이터도 함께 삭제됩니다.`, () => {
+    const users = getUsers().filter(u => u.id !== userId);
+    saveUsers(users);
+    Object.keys(localStorage).filter(k => k.startsWith(`remgt_u_${userId}_`)).forEach(k => localStorage.removeItem(k));
+    showToast(`'${userId}' 사용자가 삭제되었습니다.`);
+    renderAdminPage();
+  });
 }
 
 function renderAdminPage() {
