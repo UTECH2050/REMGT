@@ -1059,31 +1059,16 @@
           <input type="text" id="regContractStart" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
         </div>
         <div class="form-group">
-          <label>계약 기간</label>
-          <select id="regContractDur" onchange="onContractDurChange()">
-            <option value="1">1년</option>
-            <option value="2">2년</option>
-            <option value="기타">기타 (직접 입력)</option>
-          </select>
+          <label>계약 종료일</label>
+          <input type="text" id="regContractEnd" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>계약 만기일 <span style="font-size:11px;color:var(--gray-400);">(자동 계산)</span></label>
-          <input type="text" id="regContractEnd" placeholder="0000-00-00" maxlength="10" readonly
-            style="background:var(--gray-50);color:var(--gray-500);">
-        </div>
-        <div class="form-group" id="regContractEndWrap" style="display:none;">
-          <label>만기일 직접 입력</label>
-          <input type="text" id="regContractEndManual" placeholder="0000-00-00" maxlength="10"
-            oninput="fmtIsoDate(this);document.getElementById('regContractEnd').value=this.value;">
-        </div>
-      </div>
-      <div class="form-row">
+      <!-- 최초 계약일 + 연장 횟수: 계약경과 시만 표시 -->
+      <div class="form-row" id="regMoveInRow" style="display:none;">
         <div class="form-group">
           <label>최초 계약일</label>
           <input type="text" id="regMoveIn" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)"
-            title="최초 계약일 (계약 연장 시 자동 고정)">
+            title="최초 계약일 (계약 연장 시 변경되지 않습니다)">
         </div>
         <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end;">
           <label style="visibility:hidden;">연장 횟수</label>
@@ -2501,12 +2486,6 @@ function onExtendYearsChange() {
   if (startInp) startInp.value = ns;
   const endInp = document.getElementById('regContractEnd');
   if (endInp) endInp.value = ne;
-  const manualInp = document.getElementById('regContractEndManual');
-  if (manualInp) manualInp.value = ne;          // 수동 입력 필드도 동기화
-  const durEl  = document.getElementById('regContractDur');
-  if (durEl)  durEl.value = '기타';
-  const endWrap = document.getElementById('regContractEndWrap');
-  if (endWrap) endWrap.style.display = 'none';  // 만기일 직접입력 패널 숨김
 
   // 미리보기
   preview.style.display = 'block';
@@ -2544,12 +2523,6 @@ function clearRegisterForm() {
   if (statusEl) statusEl.value = '입주';
   const payTypeEl = document.getElementById('regPayType');
   if (payTypeEl) payTypeEl.value = '선불';
-  const durEl = document.getElementById('regContractDur');
-  if (durEl) durEl.value = '1';
-  const endWrap = document.getElementById('regContractEndWrap');
-  if (endWrap) endWrap.style.display = 'none';
-  const manualEl = document.getElementById('regContractEndManual');
-  if (manualEl) manualEl.value = '';
   populateBuildingDropdown();
   const titleEl = document.getElementById('regCardTitle');
   if (titleEl) titleEl.textContent = '➕ 임대차 등록';
@@ -2559,13 +2532,15 @@ function clearRegisterForm() {
   if (delBtn) delBtn.style.display = 'none';
   const extSec = document.getElementById('regExtendSection');
   if (extSec) extSec.style.display = 'none';
+  // 최초계약일 행 숨김 (신규 등록 시엔 불필요)
+  const moveInRow = document.getElementById('regMoveInRow');
+  if (moveInRow) moveInRow.style.display = 'none';
   // 최초계약일 필드 잠금 해제
   const moveInElC = document.getElementById('regMoveIn');
   if (moveInElC) {
     moveInElC.readOnly = false;
     moveInElC.style.background = '';
     moveInElC.style.color = '';
-    moveInElC.title = '';
   }
   // 연장 횟수 뱃지 숨김
   const cntWrapC = document.getElementById('regExtendCountWrap');
@@ -2610,22 +2585,16 @@ function openRegisterEdit(id) {
   if (extManualWrap) extManualWrap.style.display = 'none';
   const extPreview = document.getElementById('regExtendPreview');
   if (extPreview) extPreview.style.display = 'none';
-  // 최초계약일 필드: 계약경과 시 읽기 전용으로 잠금 (연장해도 최초일 유지)
+  // 최초계약일 행: 계약경과 시만 표시
+  const moveInRow = document.getElementById('regMoveInRow');
+  if (moveInRow) moveInRow.style.display = expired ? '' : 'none';
+  // 최초계약일 필드: 읽기 전용 (연장해도 변경 안 됨)
   const moveInEl = document.getElementById('regMoveIn');
-  if (moveInEl) {
-    // moveIn이 없으면 contractStart를 최초계약일로 표시
+  if (moveInEl && expired) {
     if (!moveInEl.value) moveInEl.value = t?.contractStart || '';
-    if (expired) {
-      moveInEl.readOnly = true;
-      moveInEl.style.background = '#f3f4f6';
-      moveInEl.style.color = '#6b7280';
-      moveInEl.title = '최초 계약일 (계약 연장 시 변경되지 않습니다)';
-    } else {
-      moveInEl.readOnly = false;
-      moveInEl.style.background = '';
-      moveInEl.style.color = '';
-      moveInEl.title = '';
-    }
+    moveInEl.readOnly = true;
+    moveInEl.style.background = '#f3f4f6';
+    moveInEl.style.color = '#6b7280';
   }
   // 수정 모드: 초기화 숨김, 취소 표시
   const resetBtn  = document.getElementById('regResetBtn');
@@ -2689,22 +2658,9 @@ function prefillRegisterForm(id) {
   const startEl = document.getElementById('regContractStart');
   if (startEl) startEl.value = t.contractStart || '';
 
-  // 계약 기간 및 만기일
-  const durEl = document.getElementById('regContractDur');
-  const endWrap = document.getElementById('regContractEndWrap');
+  // 계약 종료일
   const endEl = document.getElementById('regContractEnd');
-  const manualEl = document.getElementById('regContractEndManual');
-  // 만기일이 있으면 '기타'로 설정하고 수동 입력 필드에 채움
-  if (t.contractEnd) {
-    if (durEl) { durEl.value = '기타'; }
-    if (endWrap) endWrap.style.display = 'block';
-    if (manualEl) manualEl.value = t.contractEnd;
-    if (endEl) endEl.value = t.contractEnd;
-  } else {
-    if (durEl) durEl.value = '1';
-    if (endWrap) endWrap.style.display = 'none';
-    if (endEl) endEl.value = '';
-  }
+  if (endEl) endEl.value = t.contractEnd || '';
 
   // 최초 계약일 (moveIn 없으면 contractStart로 폴백)
   const moveInEl = document.getElementById('regMoveIn');
