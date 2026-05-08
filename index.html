@@ -436,6 +436,9 @@
       <span class="icon">📊</span> 대시보드
     </div>
     <div style="margin: 8px 0; border-top: 1px solid rgba(255,255,255,0.07);"></div>
+    <div class="nav-item" onclick="navigate('properties')">
+      <span class="icon">🏠</span> 소유부동산
+    </div>
     <div class="nav-item" onclick="navigate('register')">
       <span class="icon">➕</span> 임대차 등록
     </div>
@@ -548,92 +551,105 @@
       </div>
     </div>
 
+    <!-- ===== PROPERTIES (소유부동산 관리) ===== -->
+    <div id="page-properties" class="page">
+      <div style="display:flex;justify-content:flex-start;margin-bottom:16px;">
+        <button class="btn btn-primary" onclick="openPropertyModal()">🏠 건물 추가</button>
+      </div>
+      <div id="propList"></div>
+    </div>
+
     <!-- ===== REGISTER (임대차 등록 전용 페이지) ===== -->
     <div id="page-register" class="page">
-      <div style="max-width:620px;margin:0 auto;">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">➕ 임대차 등록</span>
-          </div>
-          <div class="card-body">
-            <div class="form-row">
-              <div class="form-group">
-                <label>건물명</label>
-                <input type="text" id="regBuilding" placeholder="예: 한강빌라, A동">
-              </div>
-              <div class="form-group">
-                <label>호실 번호 <span class="required">*</span></label>
-                <input type="text" id="regRoom" placeholder="예: 101, 202호">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>임대 유형 <span class="required">*</span></label>
-                <select id="regType">
-                  <option>월세</option><option>전세</option><option>상가</option><option>사무실</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>상태</label>
-                <select id="regStatus"><option>입주</option><option>공실</option></select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>임차인명 <span class="required">*</span></label>
-                <input type="text" id="regName" placeholder="홍길동">
-              </div>
-              <div class="form-group">
-                <label>연락처</label>
-                <input type="text" id="regPhone" placeholder="010-0000-0000">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>보증금 (만원)</label>
-                <input type="number" id="regDeposit" placeholder="5000">
-              </div>
-              <div class="form-group">
-                <label>월세 (만원)</label>
-                <input type="number" id="regRent" placeholder="80">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>관리비 (만원)</label>
-                <input type="number" id="regManagement" placeholder="10">
-              </div>
-              <div class="form-group">
-                <label>납부일 (매월)</label>
-                <input type="number" id="regPayDay" placeholder="5" min="1" max="28">
-              </div>
-            </div>
-            <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">📋 계약 기간</div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>계약일 (시작) <span class="required">*</span></label>
-                <input type="date" id="regContractStart">
-              </div>
-              <div class="form-group">
-                <label>계약 종료일 <span class="required">*</span></label>
-                <input type="date" id="regContractEnd">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>실제 입주일</label>
-                <input type="date" id="regMoveIn">
-              </div>
-              <div class="form-group"></div>
+      <div id="regNoPropAlert" class="alert-box alert-warning" style="display:none;margin-bottom:16px;">
+        ⚠️ 등록된 소유부동산이 없습니다. 먼저 <a href="#" onclick="navigate('properties')" style="color:#92400e;font-weight:700;text-decoration:underline;">소유부동산</a>에서 건물을 등록해주세요.
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">➕ 임대차 등록</span>
+        </div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>건물 선택 <span class="required">*</span></label>
+              <select id="regBuilding" onchange="onRegBuildingChange()">
+                <option value="">-- 건물 선택 --</option>
+              </select>
             </div>
             <div class="form-group">
-              <label>특이사항</label>
-              <textarea id="regNote" placeholder="특이사항을 입력하세요"></textarea>
+              <label>호실 선택 <span class="required">*</span></label>
+              <select id="regRoom">
+                <option value="">-- 건물 먼저 선택 --</option>
+              </select>
             </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-              <button class="btn btn-outline" onclick="clearRegisterForm()">초기화</button>
-              <button class="btn btn-primary" onclick="saveRegisterTenant()">💾 등록 저장</button>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>임대 유형 <span class="required">*</span></label>
+              <select id="regType">
+                <option>월세</option><option>전세</option><option>상가</option><option>사무실</option>
+              </select>
             </div>
+            <div class="form-group">
+              <label>상태</label>
+              <select id="regStatus"><option>입주</option><option>공실</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>임차인명 <span class="required">*</span></label>
+              <input type="text" id="regName" placeholder="홍길동">
+            </div>
+            <div class="form-group">
+              <label>연락처</label>
+              <input type="text" id="regPhone" placeholder="010-0000-0000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>보증금 (만원)</label>
+              <input type="number" id="regDeposit" placeholder="5000">
+            </div>
+            <div class="form-group">
+              <label>월세 (만원)</label>
+              <input type="number" id="regRent" placeholder="80">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>관리비 (만원)</label>
+              <input type="number" id="regManagement" placeholder="10">
+            </div>
+            <div class="form-group">
+              <label>납부일 (매월)</label>
+              <input type="number" id="regPayDay" placeholder="5" min="1" max="28">
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">📋 계약 기간</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>계약일 (시작)</label>
+              <input type="date" id="regContractStart">
+            </div>
+            <div class="form-group">
+              <label>계약 종료일</label>
+              <input type="date" id="regContractEnd">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>실제 입주일</label>
+              <input type="date" id="regMoveIn">
+            </div>
+            <div class="form-group"></div>
+          </div>
+          <div class="form-group">
+            <label>특이사항</label>
+            <textarea id="regNote" placeholder="특이사항을 입력하세요"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn btn-outline" onclick="clearRegisterForm()">초기화</button>
+            <button class="btn btn-primary" onclick="saveRegisterTenant()">💾 등록 저장</button>
           </div>
         </div>
       </div>
@@ -916,6 +932,75 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('expenseModal')">취소</button>
       <button class="btn btn-primary" onclick="saveExpense()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Property Modal (건물 추가/수정) -->
+<div class="modal-overlay" id="propertyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="propertyModalTitle">🏠 건물 추가</span>
+      <button class="modal-close" onclick="closeModal('propertyModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="propId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>건물명 <span class="required">*</span></label>
+          <input type="text" id="propName" placeholder="예: 한강빌라, 서초A동">
+        </div>
+        <div class="form-group">
+          <label>건물 유형</label>
+          <select id="propType">
+            <option>주거</option><option>상가</option><option>사무실</option><option>혼합</option><option>기타</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>주소</label>
+        <input type="text" id="propAddress" placeholder="예: 서울시 서초구 서초동 123-45">
+      </div>
+      <div class="form-group">
+        <label>메모</label>
+        <textarea id="propNote" placeholder="건물 관련 메모" style="min-height:60px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('propertyModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveProperty()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Room Modal (호실 추가/수정) -->
+<div class="modal-overlay" id="roomModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title" id="roomModalTitle">호실 추가</span>
+      <button class="modal-close" onclick="closeModal('roomModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rmPropId">
+      <input type="hidden" id="rmRoomId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>호실 번호 <span class="required">*</span></label>
+          <input type="text" id="rmRoomNo" placeholder="예: 101, 2층 201호">
+        </div>
+        <div class="form-group">
+          <label>전용면적 (㎡)</label>
+          <input type="text" id="rmArea" placeholder="예: 33.5">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>비고</label>
+        <input type="text" id="rmNote" placeholder="예: 남향, 복층">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('roomModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveRoom()">저장</button>
     </div>
   </div>
 </div>
@@ -1513,7 +1598,8 @@ function navigate(page) {
   // Render
   updateBadges();
   if (page === 'dashboard') renderDashboard();
-  if (page === 'register') clearRegisterForm();
+  if (page === 'properties') renderPropertiesPage();
+  if (page === 'register') initRegisterPage();
   if (page === 'tenants') renderTenants();
   if (page === 'payments') renderPayments();
   if (page === 'contracts') renderContracts();
@@ -1875,8 +1961,190 @@ function saveTenant() {
   showToast(id ? '임차인 정보가 수정되었습니다.' : '임차인이 추가되었습니다.');
 }
 
+// ============================================================
+// 소유부동산 (PROPERTIES)
+// ============================================================
+function renderPropertiesPage() {
+  const props = getData('properties');
+  const list  = document.getElementById('propList');
+  if (!list) return;
+  if (props.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:48px;color:var(--gray-400);">
+      <div style="font-size:48px;margin-bottom:12px;">🏠</div>
+      <div style="font-size:15px;font-weight:600;">등록된 건물이 없습니다.</div>
+      <div style="font-size:13px;margin-top:6px;">위의 "건물 추가" 버튼으로 소유 건물을 등록해주세요.</div>
+    </div>`;
+    return;
+  }
+  list.innerHTML = props.map(p => {
+    const rooms = p.rooms || [];
+    const roomRows = rooms.length > 0
+      ? rooms.map(r => `<tr>
+          <td style="padding:9px 14px;">${r.roomNo}</td>
+          <td style="padding:9px 14px;">${r.area ? r.area + ' ㎡' : '-'}</td>
+          <td style="padding:9px 14px;color:var(--gray-500);">${r.note || '-'}</td>
+          <td style="padding:9px 14px;">
+            <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}','${r.id}')">수정</button>
+            <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteRoom('${p.id}','${r.id}')">삭제</button>
+          </td>
+        </tr>`).join('')
+      : `<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 호실이 없습니다.</td></tr>`;
+    return `
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div>
+          <span style="font-size:15px;font-weight:700;">${p.name}</span>
+          <span class="badge badge-primary" style="margin-left:8px;">${p.type||'주거'}</span>
+          ${p.address ? `<span style="font-size:12px;color:var(--gray-500);margin-left:10px;">📍 ${p.address}</span>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" onclick="openPropertyModal('${p.id}')">수정</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProperty('${p.id}')">삭제</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+          <thead>
+            <tr style="background:var(--gray-50);">
+              <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">호실</th>
+              <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">전용면적</th>
+              <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">비고</th>
+              <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">관리</th>
+            </tr>
+          </thead>
+          <tbody>${roomRows}</tbody>
+          <tfoot>
+            <tr style="background:#f0f9ff;border-top:1px dashed #bae6fd;">
+              <td colspan="4" style="padding:10px 14px;">
+                <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}')">+ 호실 추가</button>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openPropertyModal(id) {
+  document.getElementById('propId').value    = '';
+  document.getElementById('propName').value  = '';
+  document.getElementById('propAddress').value = '';
+  document.getElementById('propNote').value  = '';
+  document.getElementById('propType').value  = '주거';
+  document.getElementById('propertyModalTitle').textContent = id ? '🏠 건물 수정' : '🏠 건물 추가';
+  if (id) {
+    const p = getData('properties').find(x => x.id === id);
+    if (p) {
+      document.getElementById('propId').value      = p.id;
+      document.getElementById('propName').value    = p.name;
+      document.getElementById('propAddress').value = p.address || '';
+      document.getElementById('propNote').value    = p.note || '';
+      document.getElementById('propType').value    = p.type  || '주거';
+    }
+  }
+  openModal('propertyModal');
+}
+
+function saveProperty() {
+  const name = document.getElementById('propName').value.trim();
+  if (!name) { showToast('건물명을 입력해주세요.', 'error'); return; }
+  const props = getData('properties');
+  const id    = document.getElementById('propId').value;
+  if (id) {
+    const idx = props.findIndex(x => x.id === id);
+    if (idx >= 0) {
+      props[idx].name    = name;
+      props[idx].type    = document.getElementById('propType').value;
+      props[idx].address = document.getElementById('propAddress').value.trim();
+      props[idx].note    = document.getElementById('propNote').value;
+    }
+  } else {
+    props.push({ id: uid(), name, type: document.getElementById('propType').value,
+      address: document.getElementById('propAddress').value.trim(),
+      note: document.getElementById('propNote').value, rooms: [] });
+  }
+  setData('properties', props);
+  closeModal('propertyModal');
+  renderPropertiesPage();
+  showToast(id ? '건물 정보가 수정되었습니다.' : `'${name}' 건물이 추가되었습니다.`);
+}
+
+function deleteProperty(id) {
+  const p = getData('properties').find(x => x.id === id);
+  confirm(`'${p.name}' 건물을 삭제하시겠습니까?\n등록된 호실 정보도 함께 삭제됩니다.`, () => {
+    setData('properties', getData('properties').filter(x => x.id !== id));
+    renderPropertiesPage();
+    showToast('건물이 삭제되었습니다.');
+  });
+}
+
+function openRoomModal(propId, roomId) {
+  document.getElementById('rmPropId').value  = propId;
+  document.getElementById('rmRoomId').value  = roomId || '';
+  document.getElementById('rmRoomNo').value  = '';
+  document.getElementById('rmArea').value    = '';
+  document.getElementById('rmNote').value    = '';
+  document.getElementById('roomModalTitle').textContent = roomId ? '호실 수정' : '호실 추가';
+  if (roomId) {
+    const prop = getData('properties').find(x => x.id === propId);
+    const room = prop?.rooms?.find(r => r.id === roomId);
+    if (room) {
+      document.getElementById('rmRoomNo').value = room.roomNo;
+      document.getElementById('rmArea').value   = room.area || '';
+      document.getElementById('rmNote').value   = room.note || '';
+    }
+  }
+  openModal('roomModal');
+}
+
+function saveRoom() {
+  const roomNo = document.getElementById('rmRoomNo').value.trim();
+  if (!roomNo) { showToast('호실 번호를 입력해주세요.', 'error'); return; }
+  const props  = getData('properties');
+  const propId = document.getElementById('rmPropId').value;
+  const roomId = document.getElementById('rmRoomId').value;
+  const prop   = props.find(x => x.id === propId);
+  if (!prop) return;
+  if (!prop.rooms) prop.rooms = [];
+  const obj = { id: roomId || uid(), roomNo, area: document.getElementById('rmArea').value.trim(), note: document.getElementById('rmNote').value };
+  if (roomId) {
+    const idx = prop.rooms.findIndex(r => r.id === roomId);
+    if (idx >= 0) prop.rooms[idx] = obj;
+  } else {
+    prop.rooms.push(obj);
+  }
+  setData('properties', props);
+  closeModal('roomModal');
+  renderPropertiesPage();
+  showToast(roomId ? '호실 정보가 수정되었습니다.' : `'${roomNo}' 호실이 추가되었습니다.`);
+}
+
+function deleteRoom(propId, roomId) {
+  const props = getData('properties');
+  const prop  = props.find(x => x.id === propId);
+  const room  = prop?.rooms?.find(r => r.id === roomId);
+  confirm(`'${room?.roomNo}' 호실을 삭제하시겠습니까?`, () => {
+    prop.rooms = prop.rooms.filter(r => r.id !== roomId);
+    setData('properties', props);
+    renderPropertiesPage();
+    showToast('호실이 삭제되었습니다.');
+  });
+}
+
+// ============================================================
+// 임대차 등록 페이지 (소유부동산 드롭다운 연동)
+// ============================================================
+function initRegisterPage() {
+  clearRegisterForm();
+  populateBuildingDropdown();
+  const props = getData('properties');
+  const alert = document.getElementById('regNoPropAlert');
+  if (alert) alert.style.display = props.length === 0 ? 'flex' : 'none';
+}
+
 function clearRegisterForm() {
-  ['regBuilding','regRoom','regName','regPhone','regDeposit','regRent','regManagement',
+  ['regName','regPhone','regDeposit','regRent','regManagement',
    'regPayDay','regContractStart','regContractEnd','regMoveIn','regNote'].forEach(f => {
     const el = document.getElementById(f);
     if (el) el.value = '';
@@ -1885,19 +2153,48 @@ function clearRegisterForm() {
   if (typeEl) typeEl.value = '월세';
   const statusEl = document.getElementById('regStatus');
   if (statusEl) statusEl.value = '입주';
+  populateBuildingDropdown();
+}
+
+function populateBuildingDropdown() {
+  const props = getData('properties');
+  const sel   = document.getElementById('regBuilding');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- 건물 선택 --</option>' +
+    props.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  const roomSel = document.getElementById('regRoom');
+  if (roomSel) roomSel.innerHTML = '<option value="">-- 건물 먼저 선택 --</option>';
+}
+
+function onRegBuildingChange() {
+  const buildingName = document.getElementById('regBuilding').value;
+  const roomSel      = document.getElementById('regRoom');
+  if (!roomSel) return;
+  if (!buildingName) {
+    roomSel.innerHTML = '<option value="">-- 건물 먼저 선택 --</option>';
+    return;
+  }
+  const prop = getData('properties').find(p => p.name === buildingName);
+  const rooms = prop?.rooms || [];
+  if (rooms.length === 0) {
+    roomSel.innerHTML = '<option value="">-- 등록된 호실 없음 --</option>';
+  } else {
+    roomSel.innerHTML = '<option value="">-- 호실 선택 --</option>' +
+      rooms.map(r => `<option value="${r.roomNo}">${r.roomNo}${r.area ? ' (' + r.area + '㎡)' : ''}</option>`).join('');
+  }
 }
 
 function saveRegisterTenant() {
-  const room   = document.getElementById('regRoom').value.trim();
-  const name   = document.getElementById('regName').value.trim();
-  const status = document.getElementById('regStatus').value;
-  if (!room) { showToast('호실 번호를 입력해주세요.', 'error'); return; }
+  const building = document.getElementById('regBuilding').value;
+  const room     = document.getElementById('regRoom').value.trim();
+  const name     = document.getElementById('regName').value.trim();
+  const status   = document.getElementById('regStatus').value;
+  if (!building) { showToast('건물을 선택해주세요.', 'error'); return; }
+  if (!room)     { showToast('호실을 선택해주세요.', 'error'); return; }
   if (status === '입주' && !name) { showToast('임차인명을 입력해주세요.', 'error'); return; }
   const tenants = getData('tenants');
   const obj = {
-    id: uid(),
-    building: document.getElementById('regBuilding').value.trim(),
-    room, name,
+    id: uid(), building, room, name,
     phone: document.getElementById('regPhone').value,
     deposit: Number(document.getElementById('regDeposit').value) || 0,
     rent: Number(document.getElementById('regRent').value) || 0,
