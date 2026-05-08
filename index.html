@@ -527,7 +527,6 @@
                   <th><button class="sort-btn" onclick="sortTenants('management')">관리비 <span class="sort-icon" id="si-management">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortTenants('contractStart')">계약 시작일 <span class="sort-icon" id="si-contractStart">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortTenants('contractEnd')">계약 종료일 <span class="sort-icon" id="si-contractEnd">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortTenants('moveIn')">입주일 <span class="sort-icon" id="si-moveIn">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortTenants('status')">상태 <span class="sort-icon" id="si-status">⇅</span></button></th>
                   <th>관리</th>
                 </tr>
@@ -1922,7 +1921,7 @@ function renderTenants(filter, statusFilter) {
 
   const tbody = document.getElementById('tenantTbody');
   if (tenants.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
     return;
   }
   tbody.innerHTML = tenants.map(t => `
@@ -1936,7 +1935,6 @@ function renderTenants(filter, statusFilter) {
       <td>${t.management ? fmtMoney(t.management) : '-'}</td>
       <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractStart)||'-'}</span></td>
       <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractEnd)||'-'}</span></td>
-      <td>${fmtDate(t.moveIn)||'-'}</td>
       <td><span class="badge ${t.status==='입주'?'badge-success':'badge-gray'}">${t.status}</span></td>
       <td>
         <div style="display:flex;gap:6px">
@@ -2500,7 +2498,7 @@ function saveRegisterTenant() {
     payType: document.getElementById('regPayType')?.value || '선불',
     contractStart: document.getElementById('regContractStart').value,
     contractEnd: document.getElementById('regContractEnd').value,
-    moveIn: document.getElementById('regMoveIn').value,
+    moveIn: document.getElementById('regMoveIn').value || document.getElementById('regContractStart').value,
     type: document.getElementById('regType').value,
     status,
     note: document.getElementById('regNote').value
