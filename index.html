@@ -936,6 +936,35 @@
   </div>
 </div>
 
+<!-- Self Password Change Modal (본인 비밀번호 변경) -->
+<div class="modal-overlay" id="selfPwModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">🔑 비밀번호 변경</span>
+      <button class="modal-close" onclick="closeModal('selfPwModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="auth-error" id="selfPwError" style="margin-bottom:12px;"></div>
+      <div class="form-group">
+        <label>현재 비밀번호</label>
+        <input type="password" id="selfCurrent" placeholder="현재 비밀번호">
+      </div>
+      <div class="form-group">
+        <label>새 비밀번호 (8자 이상)</label>
+        <input type="password" id="selfNew" placeholder="새 비밀번호">
+      </div>
+      <div class="form-group">
+        <label>새 비밀번호 확인</label>
+        <input type="password" id="selfConfirm" placeholder="새 비밀번호 재입력" onkeydown="if(event.key==='Enter') doSelfChangePassword()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('selfPwModal')">취소</button>
+      <button class="btn btn-primary" id="selfPwBtn" onclick="doSelfChangePassword()">✅ 변경</button>
+    </div>
+  </div>
+</div>
+
 <!-- Property Modal (건물 추가/수정) -->
 <div class="modal-overlay" id="propertyModal">
   <div class="modal">
@@ -953,7 +982,7 @@
         <div class="form-group">
           <label>건물 유형</label>
           <select id="propType">
-            <option>주거</option><option>상가</option><option>사무실</option><option>혼합</option><option>기타</option>
+            <option>아파트</option><option>오피스텔</option><option>상가</option><option>사무실</option><option>주택</option><option>기타</option>
           </select>
         </div>
       </div>
@@ -1024,9 +1053,8 @@
 
 <!-- Admin Page -->
 <div id="page-admin" class="page">
-  <div class="content-area" style="max-width:860px;margin:0 auto;">
 
-    <!-- 사용자 목록 (가운데 배치) -->
+    <!-- 사용자 목록 -->
     <div class="card" style="margin-bottom:24px;">
       <div class="card-header">👥 등록된 사용자</div>
       <div class="card-body" style="padding:0">
@@ -1094,7 +1122,6 @@
       </div>
     </div>
 
-  </div>
 </div>
 
 <!-- Toast -->
@@ -1292,11 +1319,31 @@ function deleteUser(userId) {
 }
 
 function renderAdminPage() {
-  const users = getUsers();
-  const tbody = document.getElementById('userTbody');
+  const users   = getUsers();
+  const tbody   = document.getElementById('userTbody');
+  const isSelf  = uid => uid === _currentSession?.userId;
+  const isAdmin = _currentSession?.role === 'admin';
   if (!tbody) return;
   tbody.innerHTML = users.map(u => {
     const emailOk = u.email && u.email.includes('@');
+    // ── 작업 버튼 결정 ──────────────────────────────
+    let actionBtns = '';
+    if (isSelf(u.id)) {
+      // 본인 계정: 비밀번호 초기화 버튼
+      actionBtns = `<button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="openSelfPasswordChange()">🔑 비밀번호 초기화</button>`;
+    } else if (isAdmin) {
+      // 관리자가 다른 사용자 행 보는 경우
+      if (emailOk) {
+        // 이메일 있는 경우 → 메일 발송
+        actionBtns = `<button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="adminSendResetEmail('${u.id}')">📨 초기화 메일 발송</button>`;
+      } else {
+        // 이메일 없는 경우 → 직접 초기화
+        actionBtns = `<button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="resetUserPassword('${u.id}')">🔑 PW 직접 초기화</button>`;
+      }
+      if (u.id !== 'admin' && u.id !== _currentSession?.userId) {
+        actionBtns += ` <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;margin-left:4px;" onclick="deleteUser('${u.id}')">삭제</button>`;
+      }
+    }
     return `
     <tr>
       <td><code style="font-size:12px;">${u.id}</code></td>
@@ -1305,15 +1352,11 @@ function renderAdminPage() {
       <td><span class="${u.role === 'admin' ? 'badge-admin' : 'badge-user'}">${u.role === 'admin' ? '관리자' : '일반'}</span></td>
       <td>${u.createdAt || '-'}</td>
       <td>${u.mustChangePassword ? '<span style="color:#dc2626;font-size:12px;">⚠️ 미변경</span>' : '<span style="color:#16a34a;font-size:12px;">✅ 완료</span>'}</td>
-      <td style="display:flex;gap:6px;">
-        <button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="resetUserPassword('${u.id}')">PW 초기화</button>
-        ${u.id !== 'admin' ? `<button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="deleteUser('${u.id}')">삭제</button>` : ''}
-      </td>
+      <td style="white-space:nowrap;">${actionBtns}</td>
     </tr>`;
   }).join('');
-  // 테이블 헤더도 이메일 컬럼 반영
   const thead = tbody.closest('table').querySelector('thead tr');
-  if (thead && thead.children.length < 7) {
+  if (thead) {
     thead.innerHTML = '<th>아이디</th><th>이름</th><th>이메일</th><th>역할</th><th>등록일</th><th>최초PW변경</th><th>작업</th>';
   }
   renderAdminEmailStatus();
@@ -2031,7 +2074,7 @@ function openPropertyModal(id) {
   document.getElementById('propName').value  = '';
   document.getElementById('propAddress').value = '';
   document.getElementById('propNote').value  = '';
-  document.getElementById('propType').value  = '주거';
+  document.getElementById('propType').value  = '아파트';
   document.getElementById('propertyModalTitle').textContent = id ? '🏠 건물 수정' : '🏠 건물 추가';
   if (id) {
     const p = getData('properties').find(x => x.id === id);
@@ -2040,7 +2083,7 @@ function openPropertyModal(id) {
       document.getElementById('propName').value    = p.name;
       document.getElementById('propAddress').value = p.address || '';
       document.getElementById('propNote').value    = p.note || '';
-      document.getElementById('propType').value    = p.type  || '주거';
+      document.getElementById('propType').value    = p.type  || '아파트';
     }
   }
   openModal('propertyModal');
@@ -2212,6 +2255,72 @@ function saveRegisterTenant() {
   updateBadges();
   showToast('임대차 정보가 등록되었습니다.');
   navigate('tenants');
+}
+
+// 본인 비밀번호 변경 (사용자 관리 → 작업 버튼)
+function openSelfPasswordChange() {
+  ['selfCurrent','selfNew','selfConfirm'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  const errEl = document.getElementById('selfPwError');
+  if (errEl) errEl.style.display = 'none';
+  openModal('selfPwModal');
+}
+
+async function doSelfChangePassword() {
+  const current = document.getElementById('selfCurrent').value;
+  const newPw   = document.getElementById('selfNew').value;
+  const conf    = document.getElementById('selfConfirm').value;
+  const errEl   = document.getElementById('selfPwError');
+  const btn     = document.getElementById('selfPwBtn');
+  errEl.style.display = 'none';
+  if (!current || !newPw || !conf) { errEl.textContent='모든 항목을 입력해주세요.'; errEl.style.display='block'; return; }
+  if (newPw.length < 8)  { errEl.textContent='새 비밀번호는 8자 이상이어야 합니다.'; errEl.style.display='block'; return; }
+  if (newPw !== conf)    { errEl.textContent='새 비밀번호가 일치하지 않습니다.'; errEl.style.display='block'; return; }
+  const users = getUsers();
+  const user  = users.find(u => u.id === _currentSession?.userId);
+  if (!user)  { errEl.textContent='오류가 발생했습니다.'; errEl.style.display='block'; return; }
+  const curHash = await sha256(user.salt + ':' + current);
+  if (curHash !== user.hash) { errEl.textContent='현재 비밀번호가 올바르지 않습니다.'; errEl.style.display='block'; return; }
+  if (newPw === current) { errEl.textContent='새 비밀번호는 기존 비밀번호와 달라야 합니다.'; errEl.style.display='block'; return; }
+  btn.disabled = true;
+  const newSalt = makeSalt();
+  const newHash = await sha256(newSalt + ':' + newPw);
+  user.salt = newSalt; user.hash = newHash; user.mustChangePassword = false;
+  saveUsers(users);
+  btn.disabled = false;
+  closeModal('selfPwModal');
+  showToast('비밀번호가 변경되었습니다.');
+  renderAdminPage();
+}
+
+// 관리자가 다른 사용자에게 비밀번호 초기화 메일 발송
+async function adminSendResetEmail(userId) {
+  const users = getUsers();
+  const user  = users.find(u => u.id === userId);
+  if (!user || !user.email || !user.email.includes('@')) {
+    showToast('이메일이 등록되지 않은 사용자입니다.', 'error'); return;
+  }
+  const cfg = getEmailConfig();
+  if (!cfg.publicKey || !cfg.serviceId || !cfg.templateId) {
+    showToast('이메일 발송 설정이 완료되지 않았습니다. 아래 이메일 설정을 먼저 완료해주세요.', 'error'); return;
+  }
+  if (!window.confirm(`'${user.name}' (${user.email}) 에게 비밀번호 초기화 메일을 발송하시겠습니까?`)) return;
+  const token  = generateToken();
+  const tokens = getResetTokens();
+  const fresh  = tokens.filter(t => t.userId !== userId);
+  fresh.push({ token, userId, expiresAt: Date.now() + 3600000 });
+  saveResetTokens(fresh);
+  const resetLink  = `${window.location.origin}${window.location.pathname}?rt=${token}`;
+  const expiry     = new Date(Date.now() + 3600000).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+  try {
+    emailjs.init(cfg.publicKey);
+    await emailjs.send(cfg.serviceId, cfg.templateId, {
+      to_name: user.name, to_email: user.email,
+      reset_link: resetLink, expiry_time: expiry + ' 까지 유효'
+    });
+    showToast(`'${user.name}'에게 초기화 메일이 발송되었습니다.`);
+  } catch(e) {
+    showToast(`발송 실패: EmailJS 설정을 확인해주세요. (${e?.text || e})`, 'error');
+  }
 }
 
 function toggleEmailConfig() {
