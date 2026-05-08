@@ -413,7 +413,7 @@
     </div>
   </nav>
   <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:8px;">
-    <div id="sidebarSettingsItem" onclick="openSelfPasswordChange()" style="cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#d1d5db;font-size:13px;">
+    <div id="sidebarSettingsItem" onclick="navigate('settings')" style="cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#d1d5db;font-size:13px;">
       <span>⚙️ 설정</span>
       <span id="sidebarAccountInfo" style="font-size:11px;color:#9ca3af;margin-left:auto;"></span>
     </div>
@@ -647,6 +647,67 @@
       </div>
     </div>
 
+    <!-- ===== SETTINGS ===== -->
+    <div id="page-settings" class="page">
+
+      <!-- 내 계정 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">👤 내 계정</span></div>
+        <div class="card-body" id="settingsMyAccount"></div>
+      </div>
+
+      <!-- 계정 관리 -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">👥 계정 관리</span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">아이디</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">이름</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">역할</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">등록일</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">비밀번호</th>
+                <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--gray-600);">관리</th>
+              </tr>
+            </thead>
+            <tbody id="settingsUserTbody"></tbody>
+          </table>
+        </div>
+        <!-- 새 계정 추가 폼 -->
+        <div style="border-top:1px solid var(--gray-200);padding:16px 20px;">
+          <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:12px;">➕ 새 계정 추가</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>아이디 <span class="required">*</span></label>
+              <input type="text" id="newUserId" placeholder="영문+숫자">
+            </div>
+            <div class="form-group">
+              <label>이름 <span class="required">*</span></label>
+              <input type="text" id="newUserName" placeholder="표시 이름">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>역할</label>
+              <select id="newUserRole">
+                <option value="user">일반</option>
+                <option value="admin">관리자</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>임시 비밀번호 <span class="required">*</span></label>
+              <input type="password" id="newUserPw" placeholder="8자 이상" onkeydown="if(event.key==='Enter') addUser()">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="addUser()" style="margin-top:4px;">➕ 계정 추가</button>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 </div>
 
@@ -783,6 +844,33 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('expenseModal')">취소</button>
       <button class="btn btn-primary" onclick="saveExpense()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Modal (관리자가 타 계정 비밀번호 재설정) -->
+<div class="modal-overlay" id="resetPwModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title" id="resetPwModalTitle">🔑 비밀번호 재설정</span>
+      <button class="modal-close" onclick="closeModal('resetPwModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="resetPwTargetId">
+      <div class="auth-error" id="resetPwModalError" style="margin-bottom:12px;"></div>
+      <div class="form-group">
+        <label>새 비밀번호 (8자 이상)</label>
+        <input type="password" id="resetPwNew" placeholder="새 비밀번호">
+      </div>
+      <div class="form-group">
+        <label>새 비밀번호 확인</label>
+        <input type="password" id="resetPwConfirm" placeholder="새 비밀번호 재입력" onkeydown="if(event.key==='Enter') doResetUserPassword()">
+      </div>
+      <div style="font-size:12px;color:var(--gray-500);margin-top:8px;">⚠️ 저장 후 해당 계정은 다음 로그인 시 비밀번호 변경이 요구됩니다.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('resetPwModal')">취소</button>
+      <button class="btn btn-primary" id="resetPwBtn" onclick="doResetUserPassword()">✅ 재설정</button>
     </div>
   </div>
 </div>
@@ -1264,7 +1352,7 @@ function seedDemoData() {
 // ============================================================
 // NAVIGATION
 // ============================================================
-const pageTitles = { dashboard:'대시보드', tenants:'임대차 관리', payments:'수납 관리', contracts:'계약 관리', analytics:'손익분석', admin:'사용자 관리' };
+const pageTitles = { dashboard:'대시보드', tenants:'임대차 관리', payments:'수납 관리', contracts:'계약 관리', analytics:'손익분석', settings:'설정' };
 let currentPage = 'dashboard';
 let chartInstances = {};
 
@@ -1282,6 +1370,7 @@ function navigate(page) {
   if (page === 'payments') renderPayments();
   if (page === 'contracts') renderContracts();
   if (page === 'analytics') renderAnalytics();
+  if (page === 'settings') renderSettings();
 }
 
 // ============================================================
@@ -2351,6 +2440,117 @@ function saveRegisterTenant() {
     showToast('임대차 정보가 등록되었습니다.');
     if (currentPage === 'tenants') renderTenants();
   }
+}
+
+// ============================================================
+// SETTINGS PAGE
+// ============================================================
+function renderSettings() {
+  // 내 계정 정보
+  const myEl = document.getElementById('settingsMyAccount');
+  if (myEl && _currentSession) {
+    const users = getUsers();
+    const me = users.find(u => u.id === _currentSession.userId);
+    const roleName = _currentSession.role === 'admin' ? '관리자' : '일반';
+    myEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="font-size:36px;">👤</div>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:700;color:var(--gray-800);">${me?.name || _currentSession.userId}</div>
+          <div style="font-size:13px;color:var(--gray-500);margin-top:2px;">아이디: <b>${_currentSession.userId}</b> &nbsp;·&nbsp; 역할: <b>${roleName}</b></div>
+          ${me?.mustChangePassword ? '<div style="font-size:12px;color:#dc2626;margin-top:4px;">⚠️ 비밀번호 변경이 필요합니다</div>' : ''}
+        </div>
+        <button class="btn btn-outline" onclick="openSelfPasswordChange()">🔑 비밀번호 변경</button>
+      </div>`;
+  }
+  // 계정 목록
+  const tbody = document.getElementById('settingsUserTbody');
+  if (!tbody) return;
+  const users = getUsers();
+  tbody.innerHTML = users.map(u => {
+    const roleName = u.role === 'admin' ? '관리자' : '일반';
+    const isSelf = u.id === _currentSession?.userId;
+    const pwStatus = u.mustChangePassword
+      ? '<span style="color:#dc2626;font-size:12px;">⚠️ 변경 필요</span>'
+      : '<span style="color:#16a34a;font-size:12px;">✅ 정상</span>';
+    const btns = isSelf
+      ? `<button class="btn btn-outline btn-sm" onclick="openSelfPasswordChange()">🔑 내 비밀번호</button>`
+      : `<button class="btn btn-outline btn-sm" onclick="openResetPwModal('${u.id}','${u.name}')">🔑 재설정</button>
+         <button class="btn btn-danger btn-sm" style="margin-left:6px;" onclick="deleteUser('${u.id}')">삭제</button>`;
+    return `<tr style="border-bottom:1px solid var(--gray-100);">
+      <td style="padding:11px 14px;font-size:13px;"><code>${u.id}</code>${isSelf ? ' <span style="font-size:11px;color:var(--primary);">(나)</span>' : ''}</td>
+      <td style="padding:11px 14px;font-size:13px;">${u.name}</td>
+      <td style="padding:11px 14px;font-size:13px;">${roleName}</td>
+      <td style="padding:11px 14px;font-size:12px;color:var(--gray-500);">${u.createdAt || '-'}</td>
+      <td style="padding:11px 14px;">${pwStatus}</td>
+      <td style="padding:11px 14px;text-align:center;white-space:nowrap;">${btns}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function addUser() {
+  const id   = document.getElementById('newUserId').value.trim();
+  const name = document.getElementById('newUserName').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  const pw   = document.getElementById('newUserPw').value;
+  if (!id || !name) { showToast('아이디와 이름은 필수입니다.', 'error'); return; }
+  if (!pw || pw.length < 8) { showToast('임시 비밀번호는 8자 이상이어야 합니다.', 'error'); return; }
+  const users = getUsers();
+  if (users.find(u => u.id === id)) { showToast('이미 존재하는 아이디입니다.', 'error'); return; }
+  const salt = makeSalt();
+  const hash = await sha256(salt + ':' + pw);
+  users.push({ id, name, role, salt, hash, mustChangePassword: true, createdAt: new Date().toISOString().slice(0,10) });
+  saveUsers(users);
+  document.getElementById('newUserId').value = '';
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserPw').value = '';
+  showToast(`'${name}' 계정이 추가되었습니다.`);
+  renderSettings();
+}
+
+function deleteUser(userId) {
+  if (userId === _currentSession?.userId) { showToast('현재 로그인 중인 계정은 삭제할 수 없습니다.', 'error'); return; }
+  const user = getUsers().find(u => u.id === userId);
+  confirm(`'${user?.name || userId}' 계정을 삭제하시겠습니까?`, () => {
+    const users = getUsers().filter(u => u.id !== userId);
+    saveUsers(users);
+    showToast(`'${userId}' 계정이 삭제되었습니다.`);
+    renderSettings();
+  });
+}
+
+function openResetPwModal(userId, userName) {
+  document.getElementById('resetPwTargetId').value = userId;
+  document.getElementById('resetPwModalTitle').textContent = `🔑 비밀번호 재설정 — ${userName}`;
+  document.getElementById('resetPwNew').value = '';
+  document.getElementById('resetPwConfirm').value = '';
+  const errEl = document.getElementById('resetPwModalError');
+  if (errEl) errEl.style.display = 'none';
+  openModal('resetPwModal');
+}
+
+async function doResetUserPassword() {
+  const userId = document.getElementById('resetPwTargetId').value;
+  const newPw  = document.getElementById('resetPwNew').value;
+  const conf   = document.getElementById('resetPwConfirm').value;
+  const errEl  = document.getElementById('resetPwModalError');
+  const btn    = document.getElementById('resetPwBtn');
+  errEl.style.display = 'none';
+  if (!newPw || !conf) { errEl.textContent = '비밀번호를 입력해주세요.'; errEl.style.display = 'block'; return; }
+  if (newPw.length < 8) { errEl.textContent = '비밀번호는 8자 이상이어야 합니다.'; errEl.style.display = 'block'; return; }
+  if (newPw !== conf) { errEl.textContent = '비밀번호가 일치하지 않습니다.'; errEl.style.display = 'block'; return; }
+  const users = getUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) { errEl.textContent = '사용자를 찾을 수 없습니다.'; errEl.style.display = 'block'; return; }
+  btn.disabled = true;
+  const newSalt = makeSalt();
+  const newHash = await sha256(newSalt + ':' + newPw);
+  user.salt = newSalt; user.hash = newHash; user.mustChangePassword = true;
+  saveUsers(users);
+  btn.disabled = false;
+  closeModal('resetPwModal');
+  showToast(`'${user.name}' 비밀번호가 재설정되었습니다.`);
+  renderSettings();
 }
 
 // 본인 비밀번호 변경 (설정 버튼)
