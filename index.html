@@ -2142,20 +2142,23 @@ function renderPropertiesPage() {
     const rooms = p.rooms || [];
     const roomCount = rooms.length;
     const roomRows = roomCount > 0
-      ? rooms.map(r => `<tr>
+      ? rooms.map(r => {
+          const total = (Number(r.acqPrice)||0) + (Number(r.acqTax)||0) + (Number(r.acqFee)||0);
+          return `<tr>
           <td style="padding:9px 14px;">${r.roomNo}</td>
           <td style="padding:9px 14px;">${r.area ? r.area + ' ㎡' : '-'}</td>
           <td style="padding:9px 14px;">${r.acqDate || '-'}</td>
           <td style="padding:9px 14px;text-align:right;">${r.acqPrice ? Number(r.acqPrice).toLocaleString()+'만원' : '-'}</td>
           <td style="padding:9px 14px;text-align:right;">${r.acqTax   ? Number(r.acqTax).toLocaleString()+'만원'   : '-'}</td>
           <td style="padding:9px 14px;text-align:right;">${r.acqFee   ? Number(r.acqFee).toLocaleString()+'만원'   : '-'}</td>
+          <td style="padding:9px 14px;text-align:right;font-weight:700;color:var(--primary);">${total ? total.toLocaleString()+'만원' : '-'}</td>
           <td style="padding:9px 14px;color:var(--gray-500);">${r.note || '-'}</td>
           <td style="padding:9px 14px;">
             <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}','${r.id}')">수정</button>
             <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteRoom('${p.id}','${r.id}')">삭제</button>
           </td>
-        </tr>`).join('')
-      : `<tr><td colspan="8" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 동호수가 없습니다.</td></tr>`;
+        </tr>`;}).join('')
+      : `<tr><td colspan="9" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 동호수가 없습니다.</td></tr>`;
     const bodyId = 'propRooms_' + p.id;
     const hasRooms = roomCount > 0;
     const deleteBtnStyle = hasRooms
@@ -2188,6 +2191,7 @@ function renderPropertiesPage() {
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">매수금액</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">세금</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">수수료</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--primary);font-size:12px;text-align:right;white-space:nowrap;">총 매입금액</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">비고</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">관리</th>
               </tr>
@@ -2195,7 +2199,7 @@ function renderPropertiesPage() {
             <tbody>${roomRows}</tbody>
             <tfoot>
               <tr style="background:#f0f9ff;border-top:1px dashed #bae6fd;">
-                <td colspan="8" style="padding:10px 14px;">
+                <td colspan="9" style="padding:10px 14px;">
                   <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}')">+ 동호수 추가</button>
                 </td>
               </tr>
