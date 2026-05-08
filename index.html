@@ -926,7 +926,7 @@
 <div class="modal-overlay" id="roomModal">
   <div class="modal" style="max-width:420px;">
     <div class="modal-header">
-      <span class="modal-title" id="roomModalTitle">호실 추가</span>
+      <span class="modal-title" id="roomModalTitle">동호수 추가</span>
       <button class="modal-close" onclick="closeModal('roomModal')">×</button>
     </div>
     <div class="modal-body">
@@ -2075,8 +2075,13 @@ function renderPropertiesPage() {
             <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteRoom('${p.id}','${r.id}')">삭제</button>
           </td>
         </tr>`).join('')
-      : `<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 호실이 없습니다.</td></tr>`;
+      : `<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 동호수가 없습니다.</td></tr>`;
     const bodyId = 'propRooms_' + p.id;
+    const hasRooms = roomCount > 0;
+    const deleteBtnStyle = hasRooms
+      ? 'opacity:0.35;cursor:not-allowed;pointer-events:none;'
+      : '';
+    const deleteBtnTitle = hasRooms ? `title="동호수가 있으면 건물을 삭제할 수 없습니다"` : '';
     return `
     <div class="card" style="margin-bottom:20px;">
       <div class="card-header" style="cursor:pointer;" onclick="togglePropRooms('${p.id}')">
@@ -2085,11 +2090,11 @@ function renderPropertiesPage() {
           <span style="font-size:15px;font-weight:700;">${p.name}</span>
           <span class="badge badge-primary">${p.type||'주거'}</span>
           ${p.address ? `<span style="font-size:12px;color:var(--gray-500);">📍 ${p.address}</span>` : ''}
-          <span style="font-size:12px;color:var(--gray-400);margin-left:4px;">호실 ${roomCount}개</span>
+          <span style="font-size:12px;color:var(--gray-400);margin-left:4px;">동호수 ${roomCount}개</span>
         </div>
         <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
           <button class="btn btn-outline btn-sm" onclick="openPropertyModal('${p.id}')">수정</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteProperty('${p.id}')">삭제</button>
+          <button class="btn btn-danger btn-sm" style="${deleteBtnStyle}" ${deleteBtnTitle} onclick="deleteProperty('${p.id}')">삭제</button>
         </div>
       </div>
       <div id="${bodyId}" style="display:none;">
@@ -2097,7 +2102,7 @@ function renderPropertiesPage() {
           <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
             <thead>
               <tr style="background:var(--gray-50);">
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">호실</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">동호수</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">전용면적</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">비고</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">관리</th>
@@ -2107,7 +2112,7 @@ function renderPropertiesPage() {
             <tfoot>
               <tr style="background:#f0f9ff;border-top:1px dashed #bae6fd;">
                 <td colspan="4" style="padding:10px 14px;">
-                  <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}')">+ 호실 추가</button>
+                  <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}')">+ 동호수 추가</button>
                 </td>
               </tr>
             </tfoot>
@@ -2175,7 +2180,7 @@ function deleteProperty(id) {
   const p = getData('properties').find(x => x.id === id);
   if (!p) return;
   if (p.rooms && p.rooms.length > 0) {
-    showToast(`'${p.name}' 건물에 등록된 호실(${p.rooms.length}개)이 있습니다. 호실을 모두 삭제한 후 건물을 삭제해주세요.`, 'error');
+    showToast(`'${p.name}' 건물에 등록된 동호수(${p.rooms.length}개)가 있습니다. 동호수를 모두 삭제한 후 건물을 삭제해주세요.`, 'error');
     return;
   }
   confirm(`'${p.name}' 건물을 삭제하시겠습니까?`, () => {
@@ -2192,7 +2197,7 @@ function openRoomModal(propId, roomId) {
   document.getElementById('rmHosu').value    = '';
   document.getElementById('rmArea').value    = '';
   document.getElementById('rmNote').value    = '';
-  document.getElementById('roomModalTitle').textContent = roomId ? '호실 수정' : '호실 추가';
+  document.getElementById('roomModalTitle').textContent = roomId ? '동호수 수정' : '동호수 추가';
   if (roomId) {
     const prop = getData('properties').find(x => x.id === propId);
     const room = prop?.rooms?.find(r => r.id === roomId);
@@ -2250,20 +2255,20 @@ function saveRoom() {
   renderPropertiesPage();
   // 작업한 건물 드롭다운 다시 열기
   setTimeout(() => { const b = document.getElementById('propRooms_'+propId); if(b){ b.style.display='block'; const a=document.getElementById('propArrow_'+propId); if(a) a.style.transform='rotate(90deg)'; } }, 0);
-  showToast(roomId ? '호실 정보가 수정되었습니다.' : `'${roomNo}' 호실이 추가되었습니다.`);
+  showToast(roomId ? '동호수 정보가 수정되었습니다.' : `'${roomNo}' 동호수가 추가되었습니다.`);
 }
 
 function deleteRoom(propId, roomId) {
   const props = getData('properties');
   const prop  = props.find(x => x.id === propId);
   const room  = prop?.rooms?.find(r => r.id === roomId);
-  confirm(`'${room?.roomNo}' 호실을 삭제하시겠습니까?`, () => {
+  confirm(`'${room?.roomNo}' 동호수를 삭제하시겠습니까?`, () => {
     prop.rooms = prop.rooms.filter(r => r.id !== roomId);
     setData('properties', props);
     renderPropertiesPage();
     // 작업한 건물 드롭다운 다시 열기
     setTimeout(() => { const b = document.getElementById('propRooms_'+propId); if(b){ b.style.display='block'; const a=document.getElementById('propArrow_'+propId); if(a) a.style.transform='rotate(90deg)'; } }, 0);
-    showToast('호실이 삭제되었습니다.');
+    showToast('동호수가 삭제되었습니다.');
   });
 }
 
