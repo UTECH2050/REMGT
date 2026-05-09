@@ -415,6 +415,7 @@
   <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:8px;">
     <div id="sidebarSettingsItem" onclick="navigate('settings')" style="cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#d1d5db;font-size:13px;">
       <span>⚙️ 설정</span>
+      <span id="syncDot" style="display:none;font-size:11px;margin-left:4px;"></span>
       <span id="sidebarAccountInfo" style="font-size:11px;color:#9ca3af;margin-left:auto;"></span>
     </div>
     <button onclick="doLogout()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#e5e7eb;padding:7px 12px;border-radius:7px;font-size:12px;cursor:pointer;width:100%;">🚪 로그아웃</button>
@@ -703,6 +704,38 @@
             </div>
           </div>
           <button class="btn btn-primary" onclick="addUser()" style="margin-top:4px;">➕ 계정 추가</button>
+        </div>
+      </div>
+
+      <!-- 데이터 동기화 -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header" style="display:flex;align-items:center;gap:10px;">
+          <span class="card-title">🔄 데이터 동기화</span>
+          <span id="syncStatusBadge" style="font-size:12px;color:var(--gray-500);margin-left:auto;"></span>
+        </div>
+        <div class="card-body">
+          <div style="font-size:13px;color:var(--gray-600);margin-bottom:16px;line-height:1.6;">
+            GitHub 저장소에 데이터를 저장하여 <strong>어떤 기기에서나 동일한 데이터</strong>를 사용할 수 있습니다.<br>
+            <span style="font-size:12px;color:var(--gray-400);">데이터 저장: 수정 시 자동으로 GitHub에 동기화됩니다.</span>
+          </div>
+          <div id="syncConfigStatus" style="margin-bottom:14px;"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>GitHub Personal Access Token</label>
+              <input type="password" id="syncToken" placeholder="ghp_..." autocomplete="off">
+              <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens (Contents: Read/Write)</div>
+            </div>
+            <div class="form-group">
+              <label>GitHub 저장소</label>
+              <input type="text" id="syncRepo" placeholder="username/repo-name">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+            <button class="btn btn-primary" onclick="saveSyncSettings()">💾 설정 저장</button>
+            <button class="btn btn-outline" onclick="testSyncConnection()">🔗 연결 테스트</button>
+            <button class="btn btn-outline" onclick="manualPull()">⬇ 지금 불러오기</button>
+            <button class="btn btn-outline" onclick="manualPush()">⬆ 지금 업로드</button>
+          </div>
         </div>
       </div>
 
@@ -1263,7 +1296,7 @@ function showAuthError(el, msg) {
   el.textContent = msg; el.style.display = 'block';
 }
 
-function showApp() {
+async function showApp() {
   document.getElementById('loginOverlay').classList.add('hidden');
   document.getElementById('changePwOverlay').classList.add('hidden');
   // 설정 버튼에 계정 정보 표시
@@ -1271,6 +1304,12 @@ function showApp() {
   if (acctEl && _currentSession) {
     const roleName = _currentSession.role === 'admin' ? '관리자' : '일반';
     acctEl.textContent = `${_currentSession.userId} (${roleName})`;
+  }
+  // 동기화 설정 시 GitHub에서 데이터 먼저 불러오기
+  if (isSyncEnabled()) {
+    setSyncStatus('syncing', '⬇ 데이터 불러오는 중...');
+    await pullFromGitHub(_currentSession.userId, true);
+    setSyncStatus('ok', '✅ 동기화됨');
   }
   // 앱 초기화
   seedDemoData();
@@ -1280,7 +1319,195 @@ function showApp() {
 
 
 // ============================================================
-// DATA STORE (localStorage - 사용자별 격리)
+// REMOTE SYNC (GitHub)
+// ============================================================
+const SYNC_CONFIG_KEY = 'remgt_sync_config';
+const SYNC_DATA_KEYS  = ['tenants', 'payments', 'properties', 'expenses'];
+let _remoteFileSHAs   = {};
+let _syncQueue        = {};
+let _syncTimer        = null;
+let _syncBusy         = false;
+
+function getSyncConfig() {
+  try { return JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)) || {}; } catch { return {}; }
+}
+function isSyncEnabled() {
+  const c = getSyncConfig(); return !!(c.token && c.repo);
+}
+
+// Encode JSON safely (supports Korean/unicode)
+function encodeJson(obj) {
+  const str = JSON.stringify(obj, null, 2);
+  const bytes = new TextEncoder().encode(str);
+  let bin = ''; for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+// Decode base64 → JSON
+function decodeJson(b64) {
+  const bin = atob(b64.replace(/\n/g,''));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+async function ghGet(path) {
+  const c = getSyncConfig();
+  return fetch(`https://api.github.com/repos/${c.repo}/contents/${path}`, {
+    headers: { 'Authorization': `token ${c.token}`, 'Accept': 'application/vnd.github.v3+json' }
+  });
+}
+async function ghPut(path, content, sha) {
+  const c = getSyncConfig();
+  return fetch(`https://api.github.com/repos/${c.repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: { 'Authorization': `token ${c.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: `remgt: sync ${path}`, content, ...(sha ? {sha} : {}) })
+  });
+}
+
+// Pull all keys from GitHub → update localStorage
+async function pullFromGitHub(userId, silent=false) {
+  if (!isSyncEnabled()) return;
+  if (!silent) setSyncStatus('syncing', '⬇ 불러오는 중...');
+  let ok = true;
+  for (const key of SYNC_DATA_KEYS) {
+    try {
+      const resp = await ghGet(`data/${userId}/${key}.json`);
+      if (resp.status === 200) {
+        const json = await resp.json();
+        _remoteFileSHAs[userId+'_'+key] = json.sha;
+        const data = decodeJson(json.content);
+        localStorage.setItem(`remgt_u_${userId}_${key}`, JSON.stringify(data));
+      } else if (resp.status === 404) {
+        // 파일 없음 - 아직 업로드 안 됨
+      } else { ok = false; }
+    } catch(e) { ok = false; }
+  }
+  if (!silent) setSyncStatus(ok ? 'ok' : 'error', ok ? '✅ 불러오기 완료' : '⚠️ 일부 오류');
+  return ok;
+}
+
+// Push one key to GitHub
+async function pushKeyToGitHub(userId, key, val) {
+  const shaKey = userId+'_'+key;
+  const path   = `data/${userId}/${key}.json`;
+  // SHA 없으면 먼저 조회
+  if (!_remoteFileSHAs[shaKey]) {
+    try {
+      const r = await ghGet(path);
+      if (r.status === 200) { const j = await r.json(); _remoteFileSHAs[shaKey] = j.sha; }
+    } catch {}
+  }
+  const resp = await ghPut(path, encodeJson(val), _remoteFileSHAs[shaKey]);
+  if (resp.ok) {
+    const j = await resp.json();
+    _remoteFileSHAs[shaKey] = j.content.sha;
+  } else {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.message || resp.status);
+  }
+}
+
+// Flush sync queue with debounce
+async function flushSyncQueue() {
+  if (_syncBusy || !isSyncEnabled() || !_currentSession) return;
+  const queue = {..._syncQueue}; _syncQueue = {};
+  if (!Object.keys(queue).length) return;
+  _syncBusy = true;
+  setSyncStatus('syncing', '🔄 저장 중...');
+  try {
+    for (const [key, val] of Object.entries(queue)) {
+      await pushKeyToGitHub(_currentSession.userId, key, val);
+    }
+    setSyncStatus('ok', '✅ 동기화됨');
+  } catch(e) {
+    setSyncStatus('error', '⚠️ 동기화 오류');
+    console.error('Sync push error:', e);
+  } finally { _syncBusy = false; }
+}
+
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('syncStatusBadge');
+  const colors = { syncing:'#6366f1', ok:'#16a34a', error:'#dc2626', idle:'' };
+  if (el) { el.textContent = msg; el.style.color = colors[state] || ''; }
+  // 사이드바 소형 인디케이터
+  const dot = document.getElementById('syncDot');
+  if (dot) {
+    if (state === 'syncing') { dot.textContent = '🔄'; dot.style.display='inline'; }
+    else if (state === 'ok')  { dot.style.display='none'; }
+    else if (state === 'error') { dot.textContent = '⚠️'; dot.style.display='inline'; }
+  }
+}
+
+// Settings UI functions
+function saveSyncSettings() {
+  const token = document.getElementById('syncToken')?.value.trim();
+  const repo  = document.getElementById('syncRepo')?.value.trim();
+  if (!token || !repo) { showToast('토큰과 저장소를 모두 입력해주세요.', 'error'); return; }
+  localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify({token, repo}));
+  showToast('동기화 설정이 저장되었습니다.');
+  renderSyncConfigStatus();
+}
+async function testSyncConnection() {
+  const token = document.getElementById('syncToken')?.value.trim();
+  const repo  = document.getElementById('syncRepo')?.value.trim();
+  if (!token || !repo) { showToast('먼저 설정을 저장해주세요.', 'error'); return; }
+  showToast('연결 테스트 중...');
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${repo}`, {
+      headers: { 'Authorization': `token ${token}` }
+    });
+    if (resp.ok) {
+      const json = await resp.json();
+      showToast(`✅ 연결 성공: ${json.full_name}`);
+    } else {
+      showToast('⚠️ 연결 실패: 토큰 또는 저장소를 확인하세요.', 'error');
+    }
+  } catch { showToast('⚠️ 네트워크 오류가 발생했습니다.', 'error'); }
+}
+async function manualPull() {
+  if (!isSyncEnabled()) { showToast('먼저 동기화 설정을 저장해주세요.', 'error'); return; }
+  const ok = await pullFromGitHub(_currentSession.userId);
+  if (ok) {
+    // 현재 페이지 다시 렌더
+    if (currentPage === 'tenants') renderTenants();
+    if (currentPage === 'payments') renderPayments();
+    if (currentPage === 'properties') renderPropertiesPage();
+    if (currentPage === 'dashboard') renderDashboard();
+    updateBadges();
+    showToast('최신 데이터를 불러왔습니다.');
+  }
+}
+async function manualPush() {
+  if (!isSyncEnabled()) { showToast('먼저 동기화 설정을 저장해주세요.', 'error'); return; }
+  setSyncStatus('syncing', '⬆ 업로드 중...');
+  const userId = _currentSession.userId;
+  let ok = true;
+  for (const key of SYNC_DATA_KEYS) {
+    try {
+      const val = JSON.parse(localStorage.getItem(`remgt_u_${userId}_${key}`) || '[]');
+      await pushKeyToGitHub(userId, key, val);
+    } catch(e) { ok = false; console.error(e); }
+  }
+  setSyncStatus(ok ? 'ok' : 'error', ok ? '✅ 업로드 완료' : '⚠️ 일부 오류');
+  showToast(ok ? '모든 데이터를 GitHub에 업로드했습니다.' : '일부 데이터 업로드에 실패했습니다.', ok ? 'success' : 'error');
+}
+
+function renderSyncConfigStatus() {
+  const el = document.getElementById('syncConfigStatus');
+  if (!el) return;
+  const cfg = getSyncConfig();
+  if (cfg.token && cfg.repo) {
+    el.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:13px;color:#15803d;">✅ 동기화 설정 완료 — <strong>${cfg.repo}</strong> 저장소에 연결됨</div>`;
+    if (document.getElementById('syncToken')) document.getElementById('syncToken').value = cfg.token;
+    if (document.getElementById('syncRepo')) document.getElementById('syncRepo').value  = cfg.repo;
+  } else {
+    el.innerHTML = `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;font-size:13px;color:#854d0e;">⚠️ 동기화 미설정 — 아래 항목을 입력하고 저장하세요.</div>`;
+  }
+}
+
+// ============================================================
+// DATA STORE (localStorage + GitHub 자동 동기화)
 // ============================================================
 function _dataPrefix() {
   return _currentSession ? `remgt_u_${_currentSession.userId}_` : 'remgt_tmp_';
@@ -1290,6 +1517,12 @@ function getData(key) {
 }
 function setData(key, val) {
   localStorage.setItem(_dataPrefix() + key, JSON.stringify(val));
+  // 변경된 키를 동기화 큐에 추가 (1.5초 디바운스)
+  if (_currentSession && isSyncEnabled()) {
+    _syncQueue[key] = val;
+    if (_syncTimer) clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(flushSyncQueue, 1500);
+  }
 }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
@@ -2486,6 +2719,8 @@ function renderSettings() {
       <td style="padding:11px 14px;text-align:center;white-space:nowrap;">${btns}</td>
     </tr>`;
   }).join('');
+  // 동기화 설정 상태 표시
+  renderSyncConfigStatus();
 }
 
 async function addUser() {
