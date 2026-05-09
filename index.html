@@ -715,19 +715,20 @@
         </div>
         <div class="card-body">
           <div style="font-size:13px;color:var(--gray-600);margin-bottom:16px;line-height:1.6;">
-            GitHub 저장소에 데이터를 저장하여 <strong>어떤 기기에서나 동일한 데이터</strong>를 사용할 수 있습니다.<br>
-            <span style="font-size:12px;color:var(--gray-400);">데이터 저장: 수정 시 자동으로 GitHub에 동기화됩니다.</span>
+            Supabase 클라우드에 데이터를 저장합니다. <strong>어느 기기에서나 로그인만 하면 동일한 데이터</strong>가 자동으로 보입니다.<br>
+            <span style="font-size:12px;color:var(--gray-400);">수정 시 자동 동기화 · 로그인 시 서버 데이터 자동 로드</span>
           </div>
           <div id="syncConfigStatus" style="margin-bottom:14px;"></div>
           <div class="form-row">
             <div class="form-group">
-              <label>GitHub Personal Access Token</label>
-              <input type="password" id="syncToken" placeholder="ghp_..." autocomplete="off">
-              <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens (Contents: Read/Write)</div>
+              <label>Supabase Project URL</label>
+              <input type="text" id="syncUrl" placeholder="https://xxxxxxxxxxxx.supabase.co" autocomplete="off">
+              <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Supabase 프로젝트 → Settings → API → Project URL</div>
             </div>
             <div class="form-group">
-              <label>GitHub 저장소</label>
-              <input type="text" id="syncRepo" placeholder="username/repo-name">
+              <label>Supabase Anon Key</label>
+              <input type="password" id="syncKey" placeholder="eyJhbGciOi..." autocomplete="off">
+              <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Supabase 프로젝트 → Settings → API → anon public 키</div>
             </div>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
@@ -735,6 +736,19 @@
             <button class="btn btn-outline" onclick="testSyncConnection()">🔗 연결 테스트</button>
             <button class="btn btn-outline" onclick="manualPull()">⬇ 지금 불러오기</button>
             <button class="btn btn-outline" onclick="manualPush()">⬆ 지금 업로드</button>
+          </div>
+          <div style="margin-top:16px;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid var(--gray-200);">
+            <div style="font-size:12px;font-weight:700;color:var(--gray-700);margin-bottom:8px;">📋 Supabase 테이블 생성 SQL (최초 1회 실행)</div>
+            <pre style="font-size:11px;color:#374151;background:#f1f5f9;padding:10px;border-radius:6px;overflow-x:auto;line-height:1.6;margin:0;">CREATE TABLE app_data (
+  user_id TEXT NOT NULL,
+  key     TEXT NOT NULL,
+  value   JSONB NOT NULL DEFAULT '[]',
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, key)
+);
+ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</pre>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:6px;">Supabase → SQL Editor → 위 SQL 붙여넣기 → Run</div>
           </div>
         </div>
       </div>
@@ -1318,96 +1332,70 @@ async function showApp() {
 
 
 // ============================================================
-// REMOTE SYNC (GitHub)
+// REMOTE SYNC (Supabase)
 // ============================================================
 const SYNC_CONFIG_KEY = 'remgt_sync_config';
 const SYNC_DATA_KEYS  = ['tenants', 'payments', 'properties', 'expenses'];
-let _remoteFileSHAs   = {};
-let _syncQueue        = {};
-let _syncTimer        = null;
-let _syncBusy         = false;
+let _syncQueue = {};
+let _syncTimer = null;
+let _syncBusy  = false;
 
 function getSyncConfig() {
   try { return JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)) || {}; } catch { return {}; }
 }
 function isSyncEnabled() {
-  const c = getSyncConfig(); return !!(c.token && c.repo);
+  const c = getSyncConfig(); return !!(c.url && c.key);
 }
 
-// Encode JSON safely (supports Korean/unicode)
-function encodeJson(obj) {
-  const str = JSON.stringify(obj, null, 2);
-  const bytes = new TextEncoder().encode(str);
-  let bin = ''; for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin);
-}
-// Decode base64 → JSON
-function decodeJson(b64) {
-  const bin = atob(b64.replace(/\n/g,''));
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return JSON.parse(new TextDecoder().decode(bytes));
-}
-
-async function ghGet(path) {
+// Supabase REST: 데이터 조회
+async function sbGet(userId, key) {
   const c = getSyncConfig();
-  return fetch(`https://api.github.com/repos/${c.repo}/contents/${path}`, {
-    headers: { 'Authorization': `token ${c.token}`, 'Accept': 'application/vnd.github.v3+json' }
-  });
-}
-async function ghPut(path, content, sha) {
-  const c = getSyncConfig();
-  return fetch(`https://api.github.com/repos/${c.repo}/contents/${path}`, {
-    method: 'PUT',
-    headers: { 'Authorization': `token ${c.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: `remgt: sync ${path}`, content, ...(sha ? {sha} : {}) })
-  });
+  const resp = await fetch(
+    `${c.url}/rest/v1/app_data?user_id=eq.${encodeURIComponent(userId)}&key=eq.${encodeURIComponent(key)}&select=value`,
+    { headers: { 'apikey': c.key, 'Authorization': `Bearer ${c.key}` } }
+  );
+  if (!resp.ok) throw new Error(`GET ${resp.status}`);
+  const rows = await resp.json();
+  return rows.length > 0 ? rows[0].value : null;
 }
 
-// Pull all keys from GitHub → update localStorage
-async function pullFromGitHub(userId, silent=false) {
-  if (!isSyncEnabled()) return;
+// Supabase REST: 데이터 저장 (upsert)
+async function sbUpsert(userId, key, value) {
+  const c = getSyncConfig();
+  const resp = await fetch(`${c.url}/rest/v1/app_data`, {
+    method: 'POST',
+    headers: {
+      'apikey': c.key,
+      'Authorization': `Bearer ${c.key}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify({ user_id: userId, key, value, updated_at: new Date().toISOString() })
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`UPSERT ${resp.status}: ${err}`);
+  }
+}
+
+// 서버에서 모든 데이터 → localStorage 로 불러오기
+async function pullFromServer(userId, silent = false) {
+  if (!isSyncEnabled()) return false;
   if (!silent) setSyncStatus('syncing', '⬇ 불러오는 중...');
   let ok = true;
   for (const key of SYNC_DATA_KEYS) {
     try {
-      const resp = await ghGet(`data/${userId}/${key}.json`);
-      if (resp.status === 200) {
-        const json = await resp.json();
-        _remoteFileSHAs[userId+'_'+key] = json.sha;
-        const data = decodeJson(json.content);
+      const data = await sbGet(userId, key);
+      if (data !== null) {
         localStorage.setItem(`remgt_u_${userId}_${key}`, JSON.stringify(data));
-      } else if (resp.status === 404) {
-        // 파일 없음 - 아직 업로드 안 됨
-      } else { ok = false; }
-    } catch(e) { ok = false; }
+      }
+    } catch(e) { ok = false; console.error('Pull error:', key, e); }
   }
   if (!silent) setSyncStatus(ok ? 'ok' : 'error', ok ? '✅ 불러오기 완료' : '⚠️ 일부 오류');
   return ok;
 }
 
-// Push one key to GitHub
-async function pushKeyToGitHub(userId, key, val) {
-  const shaKey = userId+'_'+key;
-  const path   = `data/${userId}/${key}.json`;
-  // SHA 없으면 먼저 조회
-  if (!_remoteFileSHAs[shaKey]) {
-    try {
-      const r = await ghGet(path);
-      if (r.status === 200) { const j = await r.json(); _remoteFileSHAs[shaKey] = j.sha; }
-    } catch {}
-  }
-  const resp = await ghPut(path, encodeJson(val), _remoteFileSHAs[shaKey]);
-  if (resp.ok) {
-    const j = await resp.json();
-    _remoteFileSHAs[shaKey] = j.content.sha;
-  } else {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.message || resp.status);
-  }
-}
-
-// Flush sync queue with debounce
+// 변경 큐를 서버로 플러시 (1.5초 디바운스)
 async function flushSyncQueue() {
   if (_syncBusy || !isSyncEnabled() || !_currentSession) return;
   const queue = {..._syncQueue}; _syncQueue = {};
@@ -1416,59 +1404,96 @@ async function flushSyncQueue() {
   setSyncStatus('syncing', '🔄 저장 중...');
   try {
     for (const [key, val] of Object.entries(queue)) {
-      await pushKeyToGitHub(_currentSession.userId, key, val);
+      await sbUpsert(_currentSession.userId, key, val);
     }
-    setSyncStatus('ok', '✅ 동기화됨');
+    setSyncStatus('ok', '✅ 저장됨');
   } catch(e) {
     setSyncStatus('error', '⚠️ 동기화 오류');
-    console.error('Sync push error:', e);
+    console.error('Sync error:', e);
   } finally { _syncBusy = false; }
 }
 
 function setSyncStatus(state, msg) {
   const el = document.getElementById('syncStatusBadge');
-  const colors = { syncing:'#6366f1', ok:'#16a34a', error:'#dc2626', idle:'' };
+  const colors = { syncing: '#6366f1', ok: '#16a34a', error: '#dc2626', idle: '' };
   if (el) { el.textContent = msg; el.style.color = colors[state] || ''; }
-  // 사이드바 소형 인디케이터
   const dot = document.getElementById('syncDot');
   if (dot) {
-    if (state === 'syncing') { dot.textContent = '🔄'; dot.style.display='inline'; }
-    else if (state === 'ok')  { dot.style.display='none'; }
-    else if (state === 'error') { dot.textContent = '⚠️'; dot.style.display='inline'; }
+    if (state === 'syncing')      { dot.textContent = '🔄'; dot.style.display = 'inline'; }
+    else if (state === 'ok')       { dot.style.display = 'none'; }
+    else if (state === 'error')    { dot.textContent = '⚠️'; dot.style.display = 'inline'; }
   }
 }
 
-// Settings UI functions
+// 로그인 시 스마트 동기화
+// - 서버에 데이터 있으면 → 서버 데이터 로드 (서버가 정본)
+// - 서버에 데이터 없고 로컬에 있으면 → 서버로 업로드
+async function syncOnStartup() {
+  if (!isSyncEnabled() || !_currentSession) return;
+  const userId = _currentSession.userId;
+  setSyncStatus('syncing', '☁ 서버 확인 중...');
+  try {
+    const serverTenants = await sbGet(userId, 'tenants');
+    if (serverTenants !== null) {
+      // 서버에 데이터 있음 → 전체 풀
+      setSyncStatus('syncing', '⬇ 서버에서 불러오는 중...');
+      await pullFromServer(userId, true);
+      setSyncStatus('ok', '✅ 서버 데이터 로드 완료');
+    } else {
+      // 서버 비어있음 → 로컬 데이터 있으면 업로드
+      const localTenants = JSON.parse(localStorage.getItem(`remgt_u_${userId}_tenants`) || '[]');
+      if (localTenants.length > 0) {
+        setSyncStatus('syncing', '⬆ 로컬 데이터를 서버에 업로드 중...');
+        for (const key of SYNC_DATA_KEYS) {
+          const val = JSON.parse(localStorage.getItem(`remgt_u_${userId}_${key}`) || '[]');
+          await sbUpsert(userId, key, val);
+        }
+        setSyncStatus('ok', '✅ 서버 업로드 완료');
+        showToast('이 PC의 데이터를 서버에 저장했습니다.');
+      } else {
+        setSyncStatus('idle', '');
+      }
+    }
+  } catch(e) {
+    setSyncStatus('error', '⚠️ 서버 연결 실패');
+    console.error('Startup sync error:', e);
+  }
+}
+
+// 설정 저장
 function saveSyncSettings() {
-  const token = document.getElementById('syncToken')?.value.trim();
-  const repo  = document.getElementById('syncRepo')?.value.trim();
-  if (!token || !repo) { showToast('토큰과 저장소를 모두 입력해주세요.', 'error'); return; }
-  localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify({token, repo}));
+  const url = document.getElementById('syncUrl')?.value.trim().replace(/\/$/, '');
+  const key = document.getElementById('syncKey')?.value.trim();
+  if (!url || !key) { showToast('URL과 API Key를 모두 입력해주세요.', 'error'); return; }
+  localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify({ url, key }));
   showToast('동기화 설정이 저장되었습니다.');
   renderSyncConfigStatus();
 }
+
+// 연결 테스트
 async function testSyncConnection() {
-  const token = document.getElementById('syncToken')?.value.trim();
-  const repo  = document.getElementById('syncRepo')?.value.trim();
-  if (!token || !repo) { showToast('먼저 설정을 저장해주세요.', 'error'); return; }
+  const url = document.getElementById('syncUrl')?.value.trim().replace(/\/$/, '');
+  const key = document.getElementById('syncKey')?.value.trim();
+  if (!url || !key) { showToast('먼저 설정을 저장해주세요.', 'error'); return; }
   showToast('연결 테스트 중...');
   try {
-    const resp = await fetch(`https://api.github.com/repos/${repo}`, {
-      headers: { 'Authorization': `token ${token}` }
+    const resp = await fetch(`${url}/rest/v1/app_data?limit=1`, {
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
     });
     if (resp.ok) {
-      const json = await resp.json();
-      showToast(`✅ 연결 성공: ${json.full_name}`);
+      showToast('✅ Supabase 연결 성공!');
     } else {
-      showToast('⚠️ 연결 실패: 토큰 또는 저장소를 확인하세요.', 'error');
+      const err = await resp.json().catch(() => ({}));
+      showToast(`⚠️ 연결 실패: ${err.message || resp.status} — 테이블이 생성되었는지 확인하세요.`, 'error');
     }
-  } catch { showToast('⚠️ 네트워크 오류가 발생했습니다.', 'error'); }
+  } catch { showToast('⚠️ 네트워크 오류', 'error'); }
 }
+
+// 수동 불러오기
 async function manualPull() {
   if (!isSyncEnabled()) { showToast('먼저 동기화 설정을 저장해주세요.', 'error'); return; }
-  const ok = await pullFromGitHub(_currentSession.userId);
+  const ok = await pullFromServer(_currentSession.userId);
   if (ok) {
-    // 현재 페이지 다시 렌더
     if (currentPage === 'tenants') renderTenants();
     if (currentPage === 'payments') renderPayments();
     if (currentPage === 'properties') renderPropertiesPage();
@@ -1477,71 +1502,40 @@ async function manualPull() {
     showToast('최신 데이터를 불러왔습니다.');
   }
 }
+
+// 수동 업로드
 async function manualPush() {
+  if (!isSyncEnabled()) { showToast('먼저 동기화 설정을 저장해주세요.', 'error'); return; }
   setSyncStatus('syncing', '⬆ 업로드 중...');
   const userId = _currentSession.userId;
   let ok = true;
   for (const key of SYNC_DATA_KEYS) {
     try {
       const val = JSON.parse(localStorage.getItem(`remgt_u_${userId}_${key}`) || '[]');
-      await pushKeyToGitHub(userId, key, val);
+      await sbUpsert(userId, key, val);
     } catch(e) { ok = false; console.error(e); }
   }
   setSyncStatus(ok ? 'ok' : 'error', ok ? '✅ 업로드 완료' : '⚠️ 일부 오류');
-  showToast(ok ? '모든 데이터를 서버에 업로드했습니다.' : '일부 데이터 업로드에 실패했습니다.', ok ? 'success' : 'error');
+  showToast(ok ? '모든 데이터를 서버에 업로드했습니다.' : '일부 업로드 실패', ok ? 'success' : 'error');
 }
 
-// 로그인 시 스마트 동기화: 서버 데이터 우선, 로컬 데이터 없으면 업로드
-async function syncOnStartup() {
-  if (!isSyncEnabled() || !_currentSession) return;
-  const userId = _currentSession.userId;
-  setSyncStatus('syncing', '☁ 서버 확인 중...');
-  try {
-    // 서버에 tenants 파일 존재 여부 확인
-    const resp = await ghGet(`data/${userId}/tenants.json`);
-    if (resp.status === 200) {
-      // 서버에 데이터 있음 → 서버 데이터를 모두 불러옴 (서버가 정본)
-      setSyncStatus('syncing', '⬇ 서버에서 불러오는 중...');
-      await pullFromGitHub(userId, true);
-      setSyncStatus('ok', '✅ 서버 데이터 로드 완료');
-    } else if (resp.status === 404) {
-      // 서버에 데이터 없음 → 로컬 데이터가 있으면 서버에 올림
-      const localData = JSON.parse(localStorage.getItem(`remgt_u_${userId}_tenants`) || '[]');
-      if (localData.length > 0) {
-        setSyncStatus('syncing', '⬆ 로컬 데이터를 서버에 업로드 중...');
-        for (const key of SYNC_DATA_KEYS) {
-          const val = JSON.parse(localStorage.getItem(`remgt_u_${userId}_${key}`) || '[]');
-          await pushKeyToGitHub(userId, key, val);
-        }
-        setSyncStatus('ok', '✅ 서버 동기화 완료');
-        showToast('이 PC의 데이터를 서버에 업로드했습니다.', 'success');
-      } else {
-        setSyncStatus('idle', '');
-      }
-    } else {
-      setSyncStatus('error', '⚠️ 서버 응답 오류');
-    }
-  } catch(e) {
-    setSyncStatus('error', '⚠️ 서버 연결 실패');
-    console.error('Startup sync error:', e);
-  }
-}
-
+// 동기화 상태 표시
 function renderSyncConfigStatus() {
   const el = document.getElementById('syncConfigStatus');
   if (!el) return;
   const cfg = getSyncConfig();
-  if (cfg.token && cfg.repo) {
-    el.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:13px;color:#15803d;">✅ 서버 동기화 활성화 — <strong>${cfg.repo}</strong> 저장소에 연결됨</div>`;
-    if (document.getElementById('syncToken')) document.getElementById('syncToken').value = cfg.token;
-    if (document.getElementById('syncRepo'))  document.getElementById('syncRepo').value  = cfg.repo;
+  if (cfg.url && cfg.key) {
+    const projectId = cfg.url.replace('https://', '').split('.')[0];
+    el.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:13px;color:#15803d;">✅ Supabase 동기화 활성화 — 프로젝트: <strong>${projectId}</strong></div>`;
+    if (document.getElementById('syncUrl')) document.getElementById('syncUrl').value = cfg.url;
+    if (document.getElementById('syncKey')) document.getElementById('syncKey').value = cfg.key;
   } else {
-    el.innerHTML = `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;font-size:13px;color:#854d0e;">⚠️ 동기화 미설정 — GitHub Token과 저장소를 입력하고 저장하세요.</div>`;
+    el.innerHTML = `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 14px;font-size:13px;color:#854d0e;">⚠️ 동기화 미설정 — 아래 Supabase 정보를 입력하고 저장하세요.</div>`;
   }
 }
 
 // ============================================================
-// DATA STORE (localStorage + GitHub 자동 동기화)
+// DATA STORE (localStorage + Supabase 자동 동기화)
 // ============================================================
 function _dataPrefix() {
   return _currentSession ? `remgt_u_${_currentSession.userId}_` : 'remgt_tmp_';
