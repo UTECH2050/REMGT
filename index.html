@@ -1099,26 +1099,17 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
 <div class="modal-overlay" id="registerModal">
   <div class="modal" style="max-width:660px;width:100%;">
     <div class="modal-header">
-      <span class="modal-title" id="regCardTitle">➕ 임대차 등록</span>
+      <span class="modal-title" id="regCardTitle" style="font-weight:400;">➕ 임대차 등록</span>
       <button class="modal-close" onclick="closeModal('registerModal')">×</button>
     </div>
     <div class="modal-body" style="max-height:75vh;overflow-y:auto;padding:20px 24px;">
       <div id="regNoPropAlert" class="alert-box alert-warning" style="display:none;margin-bottom:14px;">
         ⚠️ 등록된 물건이 없습니다. 먼저 <a href="#" onclick="closeModal('registerModal');navigate('properties')" style="color:#92400e;font-weight:700;text-decoration:underline;">물건 등록</a>에서 건물을 등록해주세요.
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>건물 선택 <span class="required">*</span></label>
-          <select id="regBuilding" onchange="onRegBuildingChange()">
-            <option value="">-- 건물 선택 --</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>호실 선택 <span class="required">*</span></label>
-          <select id="regRoom">
-            <option value="">-- 건물 먼저 선택 --</option>
-          </select>
-        </div>
+      <!-- 건물·호실: 숨김 처리 (임대 등록에서 수정 버튼으로 자동 선택됨) -->
+      <div style="display:none;">
+        <select id="regBuilding" onchange="onRegBuildingChange()"><option value="">-- 건물 선택 --</option></select>
+        <select id="regRoom"><option value="">-- 건물 먼저 선택 --</option></select>
       </div>
       <div class="form-row">
         <div class="form-group">
