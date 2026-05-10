@@ -1241,6 +1241,27 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
 </div>
 
 <!-- Confirm Modal -->
+<!-- 조기 퇴거 사유 입력 모달 -->
+<div class="modal-overlay" id="evictReasonModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:12px 12px 0 0;">
+      <span class="modal-title" style="color:#fff;">🚪 조기 퇴거 처리</span>
+      <button class="modal-close" onclick="closeModal('evictReasonModal')" style="color:#fff;">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="evictReasonInfo" style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#92400e;line-height:1.6;"></div>
+      <div class="form-group" style="margin:0;">
+        <label style="font-weight:600;">조기 퇴거 사유 <span class="required">*</span></label>
+        <textarea id="evictReasonText" placeholder="퇴거 사유를 입력해주세요. (예: 임차인 사정, 건물주 요청, 계약 위반 등)" rows="3"
+          style="resize:none;width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:10px;font-size:13px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end;gap:10px;">
+      <button class="btn btn-outline" onclick="closeModal('evictReasonModal')">취소</button>
+      <button class="btn btn-danger" onclick="confirmEvictWithReason()">🚪 퇴거 처리</button>
+    </div>
+  </div>
+</div>
 <!-- KB 시세 조회 모달 -->
 <div class="modal-overlay" id="kbModal">
   <div class="modal" style="max-width:520px;">
@@ -3839,10 +3860,13 @@ function renderContractHistory() {
 // ============================================================
 // 퇴거 처리 (현재 임차인 → contractHistory 아카이브)
 // ============================================================
-function archiveTenant(tenantId) {
+function archiveTenant(tenantId, extraNote) {
   const tenants = getData('tenants');
   const t = tenants.find(x => x.id === tenantId);
   if (!t || !t.name) return false;
+
+  // 비고: 기존 note + 조기퇴거 사유 합산
+  const combinedNote = [t.note, extraNote].filter(Boolean).join('\n');
 
   const history = getData('contractHistory') || [];
   history.push({
@@ -3854,7 +3878,7 @@ function archiveTenant(tenantId) {
     payDay: t.payDay, payType: t.payType,
     contractStart: t.contractStart, contractEnd: t.contractEnd,
     moveIn: t.moveIn, extendCount: t.extendCount || 0,
-    note: t.note,
+    note: combinedNote,
     archivedAt: new Date().toISOString().slice(0, 10)
   });
   setData('contractHistory', history);
@@ -3872,23 +3896,56 @@ function archiveTenant(tenantId) {
   return true;
 }
 
+let _evictingTenantId = null;
+
 function evictTenant() {
   const id = _editingTenantId;
   if (!id) return;
   const t = getData('tenants').find(x => x.id === id);
   if (!t?.name) return;
-  confirm(
-    `'${t.name}' 임차인을 퇴거 처리하시겠습니까?\n계약 정보가 히스토리로 보존되고,\n해당 호실은 공실로 변경됩니다.`,
-    () => {
-      archiveTenant(id);
-      updateBadges();
-      closeModal('registerModal');
-      showToast(`'${t.name}' 퇴거 처리 완료. 계약 히스토리에 기록됐습니다.`);
-      if (currentPage === 'tenants')   renderTenants();
-      if (currentPage === 'contracts') renderContracts();
-    },
-    '퇴거 처리', 'btn-danger'
-  );
+
+  // 계약 종료일까지 1개월(30일) 초과 남았으면 조기 퇴거 → 사유 입력
+  const daysLeft = t.contractEnd ? daysUntil(t.contractEnd) : 0;
+  if (daysLeft > 30) {
+    _evictingTenantId = id;
+    const infoEl = document.getElementById('evictReasonInfo');
+    if (infoEl) {
+      infoEl.innerHTML = `<strong>⚠️ 조기 퇴거 안내</strong><br>
+        임차인: <b>${t.name}</b> &nbsp;|&nbsp; 호실: <b>${t.building} ${fmtRoom(t.room)}</b><br>
+        계약 종료일: <b>${fmtDate(t.contractEnd)}</b> (${daysLeft}일 남음)<br>
+        계약 기간이 <b>${daysLeft}일</b> 남아 있습니다. 퇴거 사유를 입력해 주세요.`;
+    }
+    const reasonEl = document.getElementById('evictReasonText');
+    if (reasonEl) reasonEl.value = '';
+    openModal('evictReasonModal');
+  } else {
+    // 계약 종료 임박 or 경과 → 바로 확인
+    _evictingTenantId = id;
+    confirm(
+      `'${t.name}' 임차인을 퇴거 처리하시겠습니까?\n계약 정보가 히스토리로 보존되고,\n해당 호실은 공실로 변경됩니다.`,
+      () => { _doEvict(id, ''); },
+      '퇴거 처리', 'btn-danger'
+    );
+  }
+}
+
+function confirmEvictWithReason() {
+  const reason = document.getElementById('evictReasonText')?.value.trim();
+  if (!reason) { showToast('퇴거 사유를 입력해주세요.', 'error'); return; }
+  const id = _evictingTenantId;
+  if (!id) return;
+  closeModal('evictReasonModal');
+  _doEvict(id, `[조기퇴거] ${reason}`);
+}
+
+function _doEvict(id, extraNote) {
+  const t = getData('tenants').find(x => x.id === id);
+  archiveTenant(id, extraNote);
+  updateBadges();
+  closeModal('registerModal');
+  showToast(`'${t?.name}' 퇴거 처리 완료. 계약 히스토리에 기록됐습니다.`);
+  if (currentPage === 'tenants')   renderTenants();
+  if (currentPage === 'contracts') renderContracts();
 }
 
 // ============================================================
