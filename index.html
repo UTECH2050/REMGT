@@ -3852,6 +3852,7 @@ function onHistBuildingChange() {
   } else {
     dongSel.disabled = true;
   }
+  renderContractHistory();
 }
 
 function onHistDongChange() {
@@ -3871,6 +3872,7 @@ function onHistDongChange() {
       rooms.map(r => `<option value="${r.roomNo}">${fmtRoom(r.roomNo)}</option>`).join('');
     roomSel.disabled = false;
   }
+  renderContractHistory();
 }
 
 function renderContractHistory() {
@@ -3880,8 +3882,8 @@ function renderContractHistory() {
   const dongFilter  = document.getElementById('histDongSel')?.value    || '';
   const roomFilter  = document.getElementById('histRoomSel')?.value    || '';
 
-  // 호수가 선택되지 않으면 표시 안 함
-  if (!roomFilter) { tbody.innerHTML = ''; return; }
+  // 건물이 선택되지 않으면 표시 안 함
+  if (!buildFilter) { tbody.innerHTML = ''; return; }
 
   // 과거 계약 이력 (contractHistory)
   let records = (getData('contractHistory') || []).map(r => ({...r, _isCurrent: false}));
@@ -3922,9 +3924,7 @@ function renderContractHistory() {
   // 합산 후 정렬: 건물→동→호수→계약시작일 오름차순
   const allRecords = [...records, ...activeRecords];
   allRecords.sort((a, b) => {
-    const bc = String(a.building||'').localeCompare(String(b.building||''));
-    if (bc !== 0) return bc;
-    const dc = String(a.dong||'').localeCompare(String(b.dong||''));
+    const dc = String(a.dong||'').localeCompare(String(b.dong||''), undefined, {numeric:true});
     if (dc !== 0) return dc;
     const rc = String(a.room||'').localeCompare(String(b.room||''), undefined, {numeric:true});
     if (rc !== 0) return rc;
