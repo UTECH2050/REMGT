@@ -2208,7 +2208,7 @@ function renderPropertiesPage() {
           <span style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}${roomCount > 0 ? `<span style="font-size:13px;font-weight:400;color:var(--gray-400);margin-left:5px;">(${roomCount})</span>` : ''}</span>
           <span style="display:flex;align-items:center;gap:6px;overflow:hidden;">
             <span class="badge badge-primary" style="white-space:nowrap;flex-shrink:0;">${p.type||'주거'}</span>
-            ${p.address ? `<span style="font-size:12px;color:var(--primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;text-decoration:underline;text-underline-offset:2px;" data-addr="${p.address.replace(/"/g,'&quot;')}" data-bldg="${p.name.replace(/"/g,'&quot;')}" onclick="event.stopPropagation();openNaverLandSearch(this.dataset.addr,this.dataset.bldg)">📍 ${p.address}</span>` : ''}
+            ${p.address ? `<span style="font-size:12px;color:var(--primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;text-decoration:underline;text-underline-offset:2px;" onclick="event.stopPropagation();openNaverLandSearchById('${p.id}')">📍 ${p.address}</span>` : ''}
           </span>
         </div>
         <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
@@ -2522,6 +2522,14 @@ function openNaverLandSearch(address, buildingName) {
   const query = [dong, buildingName].filter(Boolean).join(' ').trim();
   if (!query) return;
   window.open('https://new.land.naver.com/search?query=' + encodeURIComponent(query), '_blank');
+}
+
+// 물건 ID로 주소·건물명을 getData()에서 직접 조회 → 한글 인코딩 문제 없음
+function openNaverLandSearchById(propId) {
+  const props = getData('properties');
+  const p = props.find(x => x.id === propId);
+  if (!p) return;
+  openNaverLandSearch(p.address || '', p.name || '');
 }
 
 function applyKBPrice() {
