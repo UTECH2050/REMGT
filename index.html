@@ -1189,6 +1189,11 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
           <input type="text" id="regOrigStart" placeholder="0000-00-00" maxlength="10"
                  oninput="fmtIsoDate(this)" style="width:100%;text-align:center;background:#f3f4f6;color:#6b7280;" readonly>
         </div>
+        <div id="regExtendCountWrap" style="flex:0 0 auto;display:none;">
+          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">연장횟수</label>
+          <input type="number" id="regExtendCount" min="0" max="99"
+                 style="width:72px;height:36px;text-align:center;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;">
+        </div>
       </div>
       <!-- 전세/월세 + 보증금/월세/관리비/선불후불 -->
       <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:nowrap;">
@@ -3186,6 +3191,8 @@ function clearRegisterForm() {
   if (extSel) extSel.value = '';
   const origWrap = document.getElementById('regOrigStartWrap');
   if (origWrap) origWrap.style.display = 'none';
+  const ecWrap = document.getElementById('regExtendCountWrap');
+  if (ecWrap) ecWrap.style.display = 'none';
   // 입금일자 리셋
   const pd = document.getElementById('regPayDateDisplay');
   if (pd) pd.textContent = '-';
@@ -3343,6 +3350,12 @@ function prefillRegisterForm(id) {
   if (origStartEl) origStartEl.value = origDate || t.contractStart || '';
   if (origWrap2) origWrap2.style.display = isExtended ? 'block' : 'none';
 
+  // 연장횟수 입력란: 수정 모드에서 항상 표시
+  const extCountEl   = document.getElementById('regExtendCount');
+  const extCountWrap = document.getElementById('regExtendCountWrap');
+  if (extCountEl)   extCountEl.value = extCount;
+  if (extCountWrap) extCountWrap.style.display = 'flex';
+
   // 입금일자 표시 업데이트
   updatePayDateDisplay();
 
@@ -3430,7 +3443,14 @@ function saveRegisterTenant() {
       const origStartEl2 = document.getElementById('regOrigStart');
       const wasExtended  = origStartEl2 && origStartEl2.value !== '' && origStartEl2.value !== fields.contractStart;
       const prevCount = tenants[idx].extendCount || 0;
-      fields.extendCount = wasExtended ? prevCount + 1 : (tenants[idx].extendCount || 0);
+      // 연장횟수 입력란이 표시된 경우 해당 값 우선 사용
+      const ecInput = document.getElementById('regExtendCount');
+      const ecWrapVisible = document.getElementById('regExtendCountWrap')?.style.display !== 'none';
+      if (ecInput && ecWrapVisible) {
+        fields.extendCount = Number(ecInput.value) || 0;
+      } else {
+        fields.extendCount = wasExtended ? prevCount + 1 : prevCount;
+      }
       tenants[idx] = { ...tenants[idx], ...fields };
       setData('tenants', tenants);
       _editingTenantId = null;
