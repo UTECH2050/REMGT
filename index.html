@@ -470,8 +470,7 @@
                 <tr>
                   <th>건물명</th>
                   <th>동-호수</th>
-                  <th>임차인명</th>
-                  <th>연락처</th>
+                  <th>임차인</th>
                   <th style="text-align:right;">보증금</th>
                   <th style="text-align:right;">월세</th>
                   <th style="text-align:right;">관리비</th>
@@ -1962,7 +1961,7 @@ function renderTenants(filter, statusFilter) {
   // 등록된 물건이 없으면 안내
   const hasAnyRoom = properties.some(p => (p.rooms||[]).length > 0);
   if (properties.length === 0 || !hasAnyRoom) {
-    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state">
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">
       <div class="empty-icon">🏠</div>
       <p>등록된 동호수가 없습니다.<br><small style="color:var(--gray-400)">물건 등록 메뉴에서 동호수를 먼저 등록해주세요.</small></p>
     </div></td></tr>`;
@@ -2011,7 +2010,6 @@ function renderTenants(filter, statusFilter) {
         <td>${prop.name}</td>
         <td><strong>${fmtRoom(room.roomNo)}</strong></td>
         <td>${t?.name || '<span style="color:var(--gray-400);">-</span>'}</td>
-        <td style="font-size:12px;">${t?.phone || '-'}</td>
         <td style="text-align:right;">${t?.deposit ? Number(t.deposit).toLocaleString() : '-'}</td>
         <td style="text-align:right;">${t?.rent ? Number(t.rent).toLocaleString() : '-'}</td>
         <td style="text-align:right;">${t?.management ? Number(t.management).toLocaleString() : '-'}</td>
@@ -2028,7 +2026,7 @@ function renderTenants(filter, statusFilter) {
   });
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과가 없습니다.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과가 없습니다.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = rows.join('');
