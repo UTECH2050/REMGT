@@ -2216,7 +2216,7 @@ function renderPropertiesPage() {
           <span style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}${roomCount > 0 ? `<span style="font-size:13px;font-weight:400;color:var(--gray-400);margin-left:5px;">(${roomCount})</span>` : ''}</span>
           <span style="display:flex;align-items:center;gap:6px;overflow:hidden;">
             <span class="badge badge-primary" style="white-space:nowrap;flex-shrink:0;">${p.type||'주거'}</span>
-            ${p.address ? `<span style="font-size:12px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.address}${p.roadAddress ? ` <span style="color:var(--gray-300);">/</span> <span style="color:var(--primary);font-weight:600;">(도로명)</span> ${p.roadAddress}` : ''}</span>` : ''}
+            ${p.address ? `<span style="font-size:12px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.address}${p.roadAddress ? ` <span style="color:var(--gray-300);">/</span> ${p.roadAddress}` : ''}</span>` : ''}
           </span>
         </div>
         <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
@@ -2446,7 +2446,7 @@ function setPropAddrDisplay(jibun, road) {
   if (jibun && road) {
     span.innerHTML = jibun
       + ' <span style="color:var(--gray-300);margin:0 6px;">/</span>'
-      + ' <span style="color:var(--primary);font-weight:600;">(도로명)</span> '
+      + ' '
       + road;
   } else if (jibun) {
     span.textContent = jibun;
