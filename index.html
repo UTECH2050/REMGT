@@ -2972,6 +2972,36 @@ function extendContract() {
   confirm(
     `${extendYears}년 연장 후 계약기간을\n${newStartStr} ~ ${newEndStr}\n으로 반영할까요?`,
     () => {
+      // ── 연장 전 계약 조건을 히스토리에 스냅샷 저장 ──
+      const tid = _editingTenantId;
+      if (tid) {
+        const tenants = getData('tenants');
+        const t = tenants.find(x => x.id === tid);
+        if (t && t.name) {
+          const prop = getData('properties').find(p => p.name === t.building);
+          const rm   = (prop?.rooms||[]).find(r => String(r.roomNo) === String(t.room));
+          const extNo = (t.extendCount || 0) + 1;
+          const history = getData('contractHistory') || [];
+          history.push({
+            id: uid(), originalId: t.id,
+            building: t.building, dong: rm?.dong || '', room: t.room,
+            name: t.name, phone: t.phone,
+            type: t.type || '월세',
+            deposit: t.deposit, rent: t.rent, management: t.management,
+            payDay: t.payDay, payType: t.payType,
+            contractStart: t.contractStart, contractEnd: t.contractEnd,
+            moveIn: t.moveIn, extendCount: t.extendCount || 0,
+            note: (t.note ? t.note + '\n' : '') + `[${extNo}차 연장 전 계약]`,
+            archivedAt: today()
+          });
+          setData('contractHistory', history);
+          // 연장 횟수 즉시 반영
+          const idx = tenants.findIndex(x => x.id === tid);
+          tenants[idx] = { ...tenants[idx], extendCount: extNo };
+          setData('tenants', tenants);
+        }
+      }
+
       // 최초 계약일 고정 (첫 연장 시만 현재 시작일로 설정)
       const origStartEl   = document.getElementById('regOrigStart');
       const origStartWrap = document.getElementById('regOrigStartWrap');
