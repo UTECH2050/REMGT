@@ -2087,26 +2087,22 @@ function renderTenantFilterBar() {
   if (!bar) return;
   const properties = getData('properties');
 
-  // 버튼 스타일 헬퍼
-  const btn = (label, active, onclick) =>
-    `<button onclick="${onclick}" style="height:32px;padding:0 12px;border-radius:20px;border:1px solid ${active?'var(--primary)':'var(--gray-200)'};background:${active?'var(--primary)':'#fff'};color:${active?'#fff':'var(--gray-600)'};font-size:13px;cursor:pointer;white-space:nowrap;font-weight:${active?'600':'400'};">${label}</button>`;
+  const buildOptions = ['<option value="">전체 건물</option>']
+    .concat(properties.map(p =>
+      `<option value="${p.name.replace(/"/g,'&quot;')}"${tenantFilter===p.name?' selected':''}>${p.name}</option>`
+    )).join('');
 
-  // 건물 버튼
-  const buildBtns = [btn('전체', tenantFilter === '', "filterTenantBuilding('')")]
-    .concat(properties.map(p => btn(p.name, tenantFilter === p.name, `filterTenantBuilding('${p.name.replace(/'/g,"\\'")}')`))).join('');
-
-  // 구분선
-  const divider = `<span style="color:var(--gray-300);font-size:18px;line-height:32px;margin:0 2px;">|</span>`;
-
-  // 상태 버튼
-  const statusBtns = [
-    btn('임대중', tenantStatusFilter === '입주', "filterTenantStatus('입주')"),
-    btn('공실',   tenantStatusFilter === '공실', "filterTenantStatus('공실')"),
-  ].join('');
+  const sel = (id, onchange, options) =>
+    `<select id="${id}" onchange="${onchange}" style="height:34px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;">${options}</select>`;
 
   bar.innerHTML = `
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;">
-      ${buildBtns}${divider}${statusBtns}
+    <div style="display:flex;gap:8px;align-items:center;flex:1;">
+      ${sel('tenantBuildSel', 'filterTenantBuilding(this.value)', buildOptions)}
+      ${sel('tenantStatusSel', 'filterTenantStatus(this.value)',
+        `<option value=""${tenantStatusFilter===''?' selected':''}>전체 상태</option>
+         <option value="입주"${tenantStatusFilter==='입주'?' selected':''}>임대중</option>
+         <option value="공실"${tenantStatusFilter==='공실'?' selected':''}>공실</option>`
+      )}
     </div>
     <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:8px;">(단위: 만원)</span>
   `;
