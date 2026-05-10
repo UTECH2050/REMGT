@@ -610,13 +610,13 @@
       <div id="ctab-history" style="display:none;">
         <div class="filter-bar" style="gap:8px;">
           <select id="histBuildingSel" onchange="onHistBuildingChange()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;">
-            <option value="">전체 건물</option>
+            <option value="">건물</option>
           </select>
-          <select id="histDongSel" onchange="onHistDongChange()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;">
-            <option value="">전체 동</option>
+          <select id="histDongSel" onchange="onHistDongChange()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;" disabled>
+            <option value="">동</option>
           </select>
-          <select id="histRoomSel" onchange="renderContractHistory()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;">
-            <option value="">전체 호수</option>
+          <select id="histRoomSel" onchange="renderContractHistory()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;" disabled>
+            <option value="">호수</option>
           </select>
           <span style="font-size:12px;color:var(--gray-400);margin-left:auto;">(단위: 만원)</span>
         </div>
@@ -3804,7 +3804,7 @@ function switchContractTab(tab) {
   const off = 'padding:10px 24px;border:none;background:none;font-size:14px;font-weight:400;color:var(--gray-500);border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;';
   activeBtn.style.cssText = tab === 'active' ? on : off;
   histBtn.style.cssText   = tab === 'history' ? on : off;
-  if (tab === 'history') { initHistoryFilters(); renderContractHistory(); }
+  if (tab === 'history') { initHistoryFilters(); }
 }
 
 // ============================================================
@@ -3814,42 +3814,63 @@ function initHistoryFilters() {
   const buildSel = document.getElementById('histBuildingSel');
   if (!buildSel) return;
   const props = getData('properties');
-  buildSel.innerHTML = '<option value="">전체 건물</option>' +
+  buildSel.innerHTML = '<option value="">건물</option>' +
     props.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-  document.getElementById('histDongSel').innerHTML = '<option value="">전체 동</option>';
-  document.getElementById('histRoomSel').innerHTML = '<option value="">전체 호수</option>';
+  const dongSel = document.getElementById('histDongSel');
+  const roomSel = document.getElementById('histRoomSel');
+  dongSel.innerHTML = '<option value="">동</option>';
+  dongSel.disabled = true;
+  roomSel.innerHTML = '<option value="">호수</option>';
+  roomSel.disabled = true;
+  document.getElementById('historyTbody').innerHTML = '';
 }
 
 function onHistBuildingChange() {
   const buildName = document.getElementById('histBuildingSel').value;
   const dongSel   = document.getElementById('histDongSel');
   const roomSel   = document.getElementById('histRoomSel');
-  dongSel.innerHTML = '<option value="">전체 동</option>';
-  roomSel.innerHTML = '<option value="">전체 호수</option>';
+  dongSel.innerHTML = '<option value="">동</option>';
+  roomSel.innerHTML = '<option value="">호수</option>';
+  roomSel.disabled = true;
+  document.getElementById('historyTbody').innerHTML = '';
+
   if (buildName) {
     const prop  = getData('properties').find(p => p.name === buildName);
     const dongs = [...new Set((prop?.rooms || []).map(r => r.dong).filter(Boolean))].sort();
     if (dongs.length > 0) {
       dongSel.innerHTML += dongs.map(d => `<option value="${d}">${d}</option>`).join('');
+      dongSel.disabled = false;
+    } else {
+      // 동 구분 없는 건물 → 동 skip, 바로 호수 채우기
+      dongSel.disabled = true;
+      let rooms = (prop?.rooms || []).slice().sort((a, b) =>
+        String(a.roomNo).localeCompare(String(b.roomNo), undefined, {numeric: true}));
+      roomSel.innerHTML = '<option value="">호수</option>' +
+        rooms.map(r => `<option value="${r.roomNo}">${fmtRoom(r.roomNo)}</option>`).join('');
+      roomSel.disabled = false;
     }
+  } else {
+    dongSel.disabled = true;
   }
-  renderContractHistory();
 }
 
 function onHistDongChange() {
   const buildName = document.getElementById('histBuildingSel').value;
   const dongVal   = document.getElementById('histDongSel').value;
   const roomSel   = document.getElementById('histRoomSel');
-  roomSel.innerHTML = '<option value="">전체 호수</option>';
-  if (buildName) {
+  roomSel.innerHTML = '<option value="">호수</option>';
+  roomSel.disabled = true;
+  document.getElementById('historyTbody').innerHTML = '';
+
+  if (buildName && dongVal) {
     const prop  = getData('properties').find(p => p.name === buildName);
-    let rooms = (prop?.rooms || []);
-    if (dongVal) rooms = rooms.filter(r => r.dong === dongVal);
+    let rooms = (prop?.rooms || []).filter(r => r.dong === dongVal);
     rooms = rooms.slice().sort((a, b) =>
       String(a.roomNo).localeCompare(String(b.roomNo), undefined, {numeric: true}));
-    roomSel.innerHTML += rooms.map(r => `<option value="${r.roomNo}">${r.dong ? r.dong + ' ' : ''}${r.roomNo}</option>`).join('');
+    roomSel.innerHTML = '<option value="">호수</option>' +
+      rooms.map(r => `<option value="${r.roomNo}">${fmtRoom(r.roomNo)}</option>`).join('');
+    roomSel.disabled = false;
   }
-  renderContractHistory();
 }
 
 function renderContractHistory() {
@@ -3858,6 +3879,9 @@ function renderContractHistory() {
   const buildFilter = document.getElementById('histBuildingSel')?.value || '';
   const dongFilter  = document.getElementById('histDongSel')?.value    || '';
   const roomFilter  = document.getElementById('histRoomSel')?.value    || '';
+
+  // 호수가 선택되지 않으면 표시 안 함
+  if (!roomFilter) { tbody.innerHTML = ''; return; }
 
   // 과거 계약 이력 (contractHistory)
   let records = (getData('contractHistory') || []).map(r => ({...r, _isCurrent: false}));
