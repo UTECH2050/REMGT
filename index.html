@@ -981,6 +981,16 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
           </select>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>세대수</label>
+          <input type="number" id="propUnits" placeholder="예: 300" min="0">
+        </div>
+        <div class="form-group">
+          <label>용적률 (%)</label>
+          <input type="number" id="propFar" placeholder="예: 250" min="0">
+        </div>
+      </div>
       <div class="form-group">
         <label>주소</label>
         <div style="display:flex;gap:8px;align-items:flex-start;">
@@ -2224,7 +2234,7 @@ function renderPropertiesPage() {
           <span class="prop-name-cell" style="font-size:15px;font-weight:700;white-space:nowrap;">${p.name}${roomCount > 0 ? `<span style="font-size:13px;font-weight:400;color:var(--gray-400);margin-left:5px;">(${roomCount})</span>` : ''}</span>
           <span style="display:flex;align-items:center;gap:6px;overflow:hidden;">
             <span class="badge badge-primary" style="white-space:nowrap;flex-shrink:0;">${p.type||'주거'}</span>
-            ${p.address ? `<span style="font-size:12px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.address}${p.roadAddress ? ` <span style="color:var(--gray-300);">/</span> ${p.roadAddress}` : ''}</span>` : ''}
+            ${p.address ? `<span style="font-size:12px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.address}${p.roadAddress ? ` <span style="color:var(--gray-300);">/</span> ${p.roadAddress}` : ''}${p.units ? ` <span style="color:var(--gray-300);">/</span> ${p.units}세대` : ''}${p.far ? ` <span style="color:var(--gray-300);">/</span> 용적률 ${p.far}%` : ''}</span>` : ''}
           </span>
         </div>
         <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
@@ -2286,6 +2296,8 @@ function openPropertyModal(id) {
   document.getElementById('propName').value     = '';
   document.getElementById('propAddress').value  = '';
   document.getElementById('propRoadAddress').value = '';
+  document.getElementById('propUnits').value    = '';
+  document.getElementById('propFar').value      = '';
   document.getElementById('propNote').value     = '';
   document.getElementById('propType').value     = '아파트';
   const addrSpan = document.getElementById('propAddrText');
@@ -2299,7 +2311,9 @@ function openPropertyModal(id) {
       document.getElementById('propName').value    = p.name;
       document.getElementById('propAddress').value = p.address || '';
       document.getElementById('propRoadAddress').value = p.roadAddress || '';
-      document.getElementById('propNote').value    = p.note || '';
+      document.getElementById('propUnits').value   = p.units || '';
+      document.getElementById('propFar').value     = p.far   || '';
+      document.getElementById('propNote').value    = p.note  || '';
       document.getElementById('propType').value    = p.type  || '아파트';
       if (p.address) {
         setPropAddrDisplay(p.address, p.roadAddress || '');
@@ -2345,6 +2359,8 @@ function saveProperty() {
       props[idx].type        = document.getElementById('propType').value;
       props[idx].address     = document.getElementById('propAddress').value.trim();
       props[idx].roadAddress = document.getElementById('propRoadAddress').value.trim();
+      props[idx].units       = document.getElementById('propUnits').value.trim();
+      props[idx].far         = document.getElementById('propFar').value.trim();
       props[idx].note        = document.getElementById('propNote').value;
       // 건물명이 바뀐 경우 임대차 데이터의 building 필드도 일괄 업데이트
       if (oldName !== name) {
@@ -2358,6 +2374,8 @@ function saveProperty() {
     props.push({ id: uid(), name, type: document.getElementById('propType').value,
       address: document.getElementById('propAddress').value.trim(),
       roadAddress: document.getElementById('propRoadAddress').value.trim(),
+      units: document.getElementById('propUnits').value.trim(),
+      far:   document.getElementById('propFar').value.trim(),
       note: document.getElementById('propNote').value, rooms: [] });
   }
   setData('properties', props);
