@@ -4062,7 +4062,7 @@ function renderContractHistory() {
       statusBadge = `<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">퇴거</span>`;
       rowStyle = '';
     }
-    const evictDate = r._isCurrent ? '-' : (r.archivedAt || '-');
+    const evictDate = (r._isCurrent || isExtension(r)) ? '-' : (r.archivedAt || '-');
     const manageBtns = r._isCurrent ? '' : `
       <div style="display:flex;gap:4px;">
         <button class="btn btn-outline btn-sm" onclick="openHistoryEdit('${r.id}')">수정</button>
