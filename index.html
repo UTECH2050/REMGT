@@ -137,16 +137,17 @@
   .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
   .nav-section { padding: 8px 16px 4px; font-size: 10px; text-transform: uppercase; color: var(--gray-500); letter-spacing: 0.08em; }
   .nav-item {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
     padding: 10px 16px; cursor: pointer; font-size: 13.5px;
     color: var(--gray-400); transition: all 0.15s; border-radius: 0;
     position: relative;
   }
   .nav-item:hover { color: white; background: rgba(255,255,255,0.06); }
   .nav-item.active { color: white; background: var(--primary); }
-  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
   .nav-badge {
-    margin-left: auto; background: var(--danger); color: white;
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: var(--danger); color: white;
     font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600;
   }
   .sidebar-footer {
