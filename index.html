@@ -566,39 +566,80 @@
 
     <!-- ===== CONTRACTS ===== -->
     <div id="page-contracts" class="page">
-      <div class="filter-bar">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" placeholder="임차인명, 호실 검색..." oninput="filterContracts(this.value)" style="padding-left:36px">
-        </div>
-        <select onchange="filterContractStatus(this.value)" style="width:auto;min-width:140px">
-          <option value="">전체</option>
-          <option value="active">계약중</option>
-          <option value="expiring">만료 임박 (90일)</option>
-          <option value="expired">만료</option>
-        </select>
-        <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:auto;">(단위: 만원)</span>
+      <!-- 탭 헤더 -->
+      <div style="display:flex;border-bottom:2px solid var(--gray-200);margin-bottom:16px;gap:0;">
+        <button id="ctab-btn-active" onclick="switchContractTab('active')"
+          style="padding:10px 24px;border:none;background:none;font-size:14px;font-weight:700;color:var(--primary);border-bottom:3px solid var(--primary);margin-bottom:-2px;cursor:pointer;">현재 계약</button>
+        <button id="ctab-btn-history" onclick="switchContractTab('history')"
+          style="padding:10px 24px;border:none;background:none;font-size:14px;font-weight:400;color:var(--gray-500);border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;">계약 히스토리</button>
       </div>
-      <div class="card">
-        <div class="card-body" style="padding:0">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th><button class="sort-btn" onclick="sortContracts('building')">건물명 <span class="sort-icon" id="csi-building">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortContracts('room')">호실 <span class="sort-icon" id="csi-room">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortContracts('name')">임차인명 <span class="sort-icon" id="csi-name">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortContracts('contractStart')">계약 시작 <span class="sort-icon" id="csi-contractStart">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortContracts('contractEnd')">계약 종료 <span class="sort-icon" id="csi-contractEnd">⇅</span></button></th>
-                  <th>임대유형</th>
-                  <th><button class="sort-btn" onclick="sortContracts('deposit')">보증금 <span class="sort-icon" id="csi-deposit">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortContracts('rent')">월세 <span class="sort-icon" id="csi-rent">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortContracts('contractEnd')">남은 기간 <span class="sort-icon" id="csi-days">⇅</span></button></th>
-                  <th>상태</th><th>관리</th>
-                </tr>
-              </thead>
-              <tbody id="contractTbody"></tbody>
-            </table>
+
+      <!-- 탭1: 현재 계약 -->
+      <div id="ctab-active">
+        <div class="filter-bar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="임차인명, 호실 검색..." oninput="filterContracts(this.value)" style="padding-left:36px">
+          </div>
+          <select onchange="filterContractStatus(this.value)" style="width:auto;min-width:140px">
+            <option value="">전체</option>
+            <option value="active">계약중</option>
+            <option value="expiring">만료 임박 (90일)</option>
+            <option value="expired">만료</option>
+          </select>
+          <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:auto;">(단위: 만원)</span>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th><button class="sort-btn" onclick="sortContracts('building')">건물명 <span class="sort-icon" id="csi-building">⇅</span></button></th>
+                    <th><button class="sort-btn" onclick="sortContracts('room')">호실 <span class="sort-icon" id="csi-room">⇅</span></button></th>
+                    <th><button class="sort-btn" onclick="sortContracts('name')">임차인 <span class="sort-icon" id="csi-name">⇅</span></button></th>
+                    <th><button class="sort-btn" onclick="sortContracts('contractStart')">계약 시작 <span class="sort-icon" id="csi-contractStart">⇅</span></button></th>
+                    <th><button class="sort-btn" onclick="sortContracts('contractEnd')">계약 종료 <span class="sort-icon" id="csi-contractEnd">⇅</span></button></th>
+                    <th>임대유형</th>
+                    <th><button class="sort-btn" onclick="sortContracts('deposit')">보증금 <span class="sort-icon" id="csi-deposit">⇅</span></button></th>
+                    <th><button class="sort-btn" onclick="sortContracts('rent')">월세 <span class="sort-icon" id="csi-rent">⇅</span></button></th>
+                    <th>남은 기간</th>
+                    <th>상태</th><th>관리</th>
+                  </tr>
+                </thead>
+                <tbody id="contractTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 탭2: 계약 히스토리 -->
+      <div id="ctab-history" style="display:none;">
+        <div class="filter-bar" style="gap:8px;">
+          <select id="histBuildingSel" onchange="onHistBuildingChange()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;">
+            <option value="">전체 건물</option>
+          </select>
+          <select id="histRoomSel" onchange="renderContractHistory()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;">
+            <option value="">전체 호실</option>
+          </select>
+          <span style="font-size:12px;color:var(--gray-400);margin-left:auto;">(단위: 만원)</span>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>건물명</th><th>호실</th><th>임차인</th><th>유형</th>
+                    <th>보증금</th><th>월세</th><th>관리비</th>
+                    <th>계약 시작</th><th>계약 종료</th>
+                    <th>연장횟수</th><th>퇴거일</th><th>비고</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTbody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -1198,7 +1239,10 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
       </div>
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button class="btn btn-danger" id="regDeleteBtn" style="display:none;" onclick="deleteTenantFromModal()">🗑 삭제</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-danger" id="regDeleteBtn" style="display:none;" onclick="deleteTenantFromModal()">🗑 삭제</button>
+        <button class="btn btn-warning" id="regEvictBtn" style="display:none;background:#f59e0b;border-color:#f59e0b;color:#fff;" onclick="evictTenant()">🚪 퇴거 처리</button>
+      </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-outline" id="regResetBtn" onclick="clearRegisterForm()">초기화</button>
         <button class="btn btn-outline" id="regCancelBtn" style="display:none;" onclick="closeModal('registerModal')">취소</button>
@@ -2996,6 +3040,8 @@ function clearRegisterForm() {
   if (saveBtn) saveBtn.textContent = '💾 등록 저장';
   const delBtn = document.getElementById('regDeleteBtn');
   if (delBtn) delBtn.style.display = 'none';
+  const evictBtn2 = document.getElementById('regEvictBtn');
+  if (evictBtn2) evictBtn2.style.display = 'none';
 }
 
 function openRegisterModal() {
@@ -3020,6 +3066,12 @@ function openRegisterEdit(id) {
   if (alert) alert.style.display = 'none';
   const delBtn = document.getElementById('regDeleteBtn');
   if (delBtn) delBtn.style.display = 'inline-flex';
+  // 퇴거 처리 버튼: 임차인 이름이 있을 때만 표시
+  const evictBtn = document.getElementById('regEvictBtn');
+  if (evictBtn) {
+    const tForEvict = getData('tenants').find(x => x.id === id);
+    evictBtn.style.display = tForEvict?.name ? 'inline-flex' : 'none';
+  }
   // 원본 만기일 저장 (연장 계산 기준)
   const t = getData('tenants').find(x => x.id === id);
   _originalContractEnd = t?.contractEnd || '';
@@ -3636,6 +3688,145 @@ function renderContracts(filter, statusFilter) {
 }
 function filterContracts(v) { renderContracts(v, contractStatusFilter); }
 function filterContractStatus(v) { renderContracts(contractFilter, v); }
+
+// ============================================================
+// 계약 탭 전환
+// ============================================================
+let _contractTab = 'active';
+function switchContractTab(tab) {
+  _contractTab = tab;
+  document.getElementById('ctab-active').style.display  = tab === 'active'  ? 'block' : 'none';
+  document.getElementById('ctab-history').style.display = tab === 'history' ? 'block' : 'none';
+  const activeBtn  = document.getElementById('ctab-btn-active');
+  const histBtn    = document.getElementById('ctab-btn-history');
+  const on  = 'padding:10px 24px;border:none;background:none;font-size:14px;font-weight:700;color:var(--primary);border-bottom:3px solid var(--primary);margin-bottom:-2px;cursor:pointer;';
+  const off = 'padding:10px 24px;border:none;background:none;font-size:14px;font-weight:400;color:var(--gray-500);border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;';
+  activeBtn.style.cssText = tab === 'active' ? on : off;
+  histBtn.style.cssText   = tab === 'history' ? on : off;
+  if (tab === 'history') { initHistoryFilters(); renderContractHistory(); }
+}
+
+// ============================================================
+// 계약 히스토리
+// ============================================================
+function initHistoryFilters() {
+  const buildSel = document.getElementById('histBuildingSel');
+  if (!buildSel) return;
+  const props = getData('properties');
+  buildSel.innerHTML = '<option value="">전체 건물</option>' +
+    props.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  document.getElementById('histRoomSel').innerHTML = '<option value="">전체 호실</option>';
+}
+
+function onHistBuildingChange() {
+  const buildName = document.getElementById('histBuildingSel').value;
+  const roomSel   = document.getElementById('histRoomSel');
+  roomSel.innerHTML = '<option value="">전체 호실</option>';
+  if (buildName) {
+    const prop  = getData('properties').find(p => p.name === buildName);
+    const rooms = (prop?.rooms || []).slice().sort((a, b) =>
+      String(a.roomNo).localeCompare(String(b.roomNo), undefined, {numeric: true}));
+    roomSel.innerHTML += rooms.map(r => `<option value="${r.roomNo}">${r.roomNo}</option>`).join('');
+  }
+  renderContractHistory();
+}
+
+function renderContractHistory() {
+  const tbody    = document.getElementById('historyTbody');
+  if (!tbody) return;
+  const buildFilter = document.getElementById('histBuildingSel')?.value || '';
+  const roomFilter  = document.getElementById('histRoomSel')?.value    || '';
+
+  let records = getData('contractHistory') || [];
+  if (buildFilter) records = records.filter(r => r.building === buildFilter);
+  if (roomFilter)  records = records.filter(r => r.room === roomFilter);
+
+  // 정렬: 건물→호실→퇴거일 내림차순
+  records.sort((a, b) => {
+    const bc = String(a.building||'').localeCompare(String(b.building||''));
+    if (bc !== 0) return bc;
+    const rc = String(a.room||'').localeCompare(String(b.room||''), undefined, {numeric:true});
+    if (rc !== 0) return rc;
+    return String(b.archivedAt||'').localeCompare(String(a.archivedAt||''));
+  });
+
+  if (records.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">📋</div>
+      <p>계약 히스토리가 없습니다.<br><small style="color:var(--gray-400);">퇴거 처리를 하면 이력이 여기에 쌓입니다.</small></p>
+    </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = records.map(r => `<tr>
+    <td>${r.building||'-'}</td>
+    <td><strong>${fmtRoom(r.room)}</strong></td>
+    <td>${r.name||'-'}</td>
+    <td><span class="badge badge-primary">${r.type||'월세'}</span></td>
+    <td style="text-align:right;">${r.deposit ? Number(r.deposit).toLocaleString() : '-'}</td>
+    <td style="text-align:right;">${r.rent    ? Number(r.rent).toLocaleString()    : '-'}</td>
+    <td style="text-align:right;">${r.management ? Number(r.management).toLocaleString() : '-'}</td>
+    <td>${fmtDate(r.contractStart)||'-'}</td>
+    <td>${fmtDate(r.contractEnd)||'-'}</td>
+    <td style="text-align:center;">${r.extendCount || 0}회</td>
+    <td style="color:#dc2626;">${r.archivedAt||'-'}</td>
+    <td style="font-size:12px;color:var(--gray-500);">${r.note||'-'}</td>
+  </tr>`).join('');
+}
+
+// ============================================================
+// 퇴거 처리 (현재 임차인 → contractHistory 아카이브)
+// ============================================================
+function archiveTenant(tenantId) {
+  const tenants = getData('tenants');
+  const t = tenants.find(x => x.id === tenantId);
+  if (!t || !t.name) return false;
+
+  const history = getData('contractHistory') || [];
+  history.push({
+    id: uid(), originalId: t.id,
+    building: t.building, room: t.room,
+    name: t.name, phone: t.phone,
+    type: t.type || '월세',
+    deposit: t.deposit, rent: t.rent, management: t.management,
+    payDay: t.payDay, payType: t.payType,
+    contractStart: t.contractStart, contractEnd: t.contractEnd,
+    moveIn: t.moveIn, extendCount: t.extendCount || 0,
+    note: t.note,
+    archivedAt: new Date().toISOString().slice(0, 10)
+  });
+  setData('contractHistory', history);
+
+  // 해당 임차인을 공실 상태로 초기화
+  const idx = tenants.findIndex(x => x.id === tenantId);
+  tenants[idx] = {
+    ...tenants[idx],
+    name: '', phone: '', deposit: 0, rent: 0, management: 0,
+    contractStart: '', contractEnd: '', moveIn: '',
+    extendCount: 0, note: '', type: '월세', status: '공실',
+    payDay: 5, payType: '선불'
+  };
+  setData('tenants', tenants);
+  return true;
+}
+
+function evictTenant() {
+  const id = _editingTenantId;
+  if (!id) return;
+  const t = getData('tenants').find(x => x.id === id);
+  if (!t?.name) return;
+  confirm(
+    `'${t.name}' 임차인을 퇴거 처리하시겠습니까?\n계약 정보가 히스토리로 보존되고,\n해당 호실은 공실로 변경됩니다.`,
+    () => {
+      archiveTenant(id);
+      updateBadges();
+      closeModal('registerModal');
+      showToast(`'${t.name}' 퇴거 처리 완료. 계약 히스토리에 기록됐습니다.`);
+      if (currentPage === 'tenants')   renderTenants();
+      if (currentPage === 'contracts') renderContracts();
+    },
+    '퇴거 처리', 'btn-danger'
+  );
+}
 
 // ============================================================
 // ANALYTICS
