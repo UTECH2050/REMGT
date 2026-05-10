@@ -972,7 +972,7 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
       <div class="form-row">
         <div class="form-group">
           <label>건물명 <span class="required">*</span></label>
-          <input type="text" id="propName" placeholder="예: 한강빌라, 서초A동">
+          <input type="text" id="propName" placeholder="예: 한강빌라, 서초A동" style="text-align:center;">
         </div>
         <div class="form-group">
           <label>건물 유형</label>
@@ -984,11 +984,11 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
       <div class="form-row">
         <div class="form-group">
           <label>세대수</label>
-          <input type="text" id="propUnits" placeholder="" oninput="fmtComma(this)">
+          <input type="text" id="propUnits" placeholder="" oninput="fmtComma(this)" style="text-align:right;">
         </div>
         <div class="form-group">
           <label>용적률 (%)</label>
-          <input type="text" id="propFar" placeholder="">
+          <input type="text" id="propFar" placeholder="" style="text-align:right;">
         </div>
       </div>
       <div class="form-group">
@@ -1030,20 +1030,20 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
         <div class="form-group" style="margin:0;">
           <label>동 <span style="font-size:11px;color:var(--gray-400);">(없으면 공란)</span></label>
-          <input type="text" id="rmDong" placeholder="">
+          <input type="text" id="rmDong" placeholder="" style="text-align:center;">
         </div>
         <div class="form-group" style="margin:0;">
           <label>호수 <span class="required">*</span></label>
-          <input type="text" id="rmHosu" placeholder="">
+          <input type="text" id="rmHosu" placeholder="" style="text-align:center;">
         </div>
         <div class="form-group" style="margin:0;">
           <label>공급면적 <span style="font-size:11px;color:var(--gray-400);">평</span></label>
-          <input type="text" id="rmSupplyPyeong" placeholder="" oninput="updateAreaHint('rmSupplyPyeong','rmSupplyHint')">
+          <input type="text" id="rmSupplyPyeong" placeholder="" oninput="updateAreaHint('rmSupplyPyeong','rmSupplyHint')" style="text-align:right;">
           <div id="rmSupplyHint" style="font-size:11px;color:#9ca3af;margin-top:3px;min-height:15px;"></div>
         </div>
         <div class="form-group" style="margin:0;">
           <label>전용면적 <span style="font-size:11px;color:var(--gray-400);">평</span></label>
-          <input type="text" id="rmExclPyeong" placeholder="" oninput="updateAreaHint('rmExclPyeong','rmExclHint')">
+          <input type="text" id="rmExclPyeong" placeholder="" oninput="updateAreaHint('rmExclPyeong','rmExclHint')" style="text-align:right;">
           <div id="rmExclHint" style="font-size:11px;color:#9ca3af;margin-top:3px;min-height:15px;"></div>
         </div>
       </div>
@@ -1055,7 +1055,7 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
         <div class="form-group" style="margin:0;">
           <label>취득일자</label>
-          <input type="text" id="rmAcqDate" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
+          <input type="text" id="rmAcqDate" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)" style="text-align:center;">
         </div>
         <div class="form-group" style="margin:0;">
           <label>매입가</label>
@@ -1083,12 +1083,12 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
         </div>
         <div class="form-group" style="margin:0;">
           <label>기준일자</label>
-          <input type="text" id="rmCurPriceDate" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
+          <input type="text" id="rmCurPriceDate" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)" style="text-align:center;">
         </div>
       </div>
       <div class="form-group">
         <label>비고</label>
-        <input type="text" id="rmNote" placeholder="">
+        <input type="text" id="rmNote" placeholder="" style="text-align:center;">
       </div>
     </div>
     <div class="modal-footer" style="justify-content:flex-end;gap:8px;">
