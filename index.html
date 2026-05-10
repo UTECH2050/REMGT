@@ -1801,7 +1801,7 @@ function navigate(page) {
 // UTILITIES
 // ============================================================
 function fmtMoney(v) { return Number(v||0).toLocaleString() + '만원'; }
-function fmtRoom(r) { if (!r) return ''; const s = r.replace(/^\S*동/, '').replace(/호+$/, ''); return s + '호'; }
+function fmtRoom(r) { if (!r) return ''; return r.replace(/^\S*동/, '').replace(/호+$/, ''); }
 function getTenantDong(building, roomNo) {
   const prop = getData('properties').find(p => p.name === building);
   const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(roomNo));
@@ -2327,10 +2327,10 @@ function renderPropertiesPage() {
           <td style="padding:9px 14px;text-align:center;">${r.dong||'-'}</td>
           <td style="padding:9px 14px;text-align:center;font-weight:700;">${fmtRoom(r.roomNo)}</td>
           <td style="padding:9px 14px;text-align:center;font-size:13px;">
-            ${r.supplyPyeong ? `<div style="font-weight:600;">${r.supplyPyeong}평</div><div style="font-size:11px;color:var(--gray-400);">${r.supplyM2 || (r.supplyPyeong*3.3058).toFixed(1)}㎡</div>` : '<span style="color:var(--gray-400);">-</span>'}
+            ${r.supplyPyeong ? `<span style="font-weight:600;">${Math.round(r.supplyPyeong*10)/10}평</span><span style="font-size:11px;color:var(--gray-400);margin-left:4px;">${(+(r.supplyM2||(r.supplyPyeong*3.3058))).toFixed(1)}㎡</span>` : '<span style="color:var(--gray-400);">-</span>'}
           </td>
           <td style="padding:9px 14px;text-align:center;font-size:13px;">
-            ${r.exclPyeong ? `<div style="font-weight:600;">${r.exclPyeong}평</div><div style="font-size:11px;color:var(--gray-400);">${r.exclM2 || (r.exclPyeong*3.3058).toFixed(1)}㎡</div>` : '<span style="color:var(--gray-400);">-</span>'}
+            ${r.exclPyeong ? `<span style="font-weight:600;">${Math.round(r.exclPyeong*10)/10}평</span><span style="font-size:11px;color:var(--gray-400);margin-left:4px;">${(+(r.exclM2||(r.exclPyeong*3.3058))).toFixed(1)}㎡</span>` : '<span style="color:var(--gray-400);">-</span>'}
           </td>
           <td style="padding:9px 14px;text-align:center;">${r.acqDate || '-'}</td>
           <td style="padding:9px 14px;text-align:right;">${r.acqPrice ? Number(r.acqPrice).toLocaleString() : '-'}</td>
@@ -2340,9 +2340,9 @@ function renderPropertiesPage() {
           <td style="padding:9px 14px;text-align:right;">
             ${curPrice ? `<div style="font-weight:700;color:#059669;">${curPrice.toLocaleString()}</div>${curPriceDateStr}` : '<span style="color:var(--gray-400);">-</span>'}
           </td>
-          <td style="padding:9px 14px;text-align:right;font-weight:700;color:${profitColor};">
+          <td style="padding:9px 14px;text-align:right;font-weight:700;color:${profitColor};white-space:nowrap;">
             ${profit !== null ? profit.toLocaleString() : '<span style="color:var(--gray-400);">-</span>'}
-            ${profitRate !== null ? `<div style="font-size:11px;font-weight:400;color:${profitColor};margin-top:2px;">(${profitRate.toFixed(1)}%)</div>` : ''}
+            ${profitRate !== null ? `<span style="font-size:11px;font-weight:400;color:${profitColor};margin-left:5px;">(${Math.round(profitRate*10)/10}%)</span>` : ''}
           </td>
           <td style="padding:9px 14px;text-align:center;color:var(--gray-500);">${r.note || '-'}</td>
           <td style="padding:9px 14px;text-align:center;">
@@ -2387,7 +2387,7 @@ function renderPropertiesPage() {
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">수수료</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--primary);font-size:12px;text-align:right;white-space:nowrap;">총금액</th>
                 <th style="padding:9px 14px;font-weight:600;color:#059669;font-size:12px;text-align:right;white-space:nowrap;">현재 가치</th>
-                <th style="padding:9px 14px;font-weight:600;color:#6d28d9;font-size:12px;text-align:right;white-space:nowrap;">매매수익</th>
+                <th style="padding:9px 14px;font-weight:600;color:#6d28d9;font-size:12px;text-align:right;white-space:nowrap;">수익</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">비고</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">관리</th>
               </tr>
