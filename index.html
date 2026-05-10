@@ -2174,18 +2174,6 @@ function renderTenantFilterBar() {
     }
   }
 
-  // 호수: 건물이 선택된 경우에만 표시
-  let roomSel = '';
-  if (tenantFilter) {
-    const prop = properties.find(p => p.name === tenantFilter);
-    let rooms = (prop?.rooms||[]);
-    if (tenantDongFilter) rooms = rooms.filter(r => r.dong === tenantDongFilter);
-    rooms = rooms.slice().sort((a,b) => String(a.roomNo).localeCompare(String(b.roomNo),undefined,{numeric:true}));
-    const roomOptions = '<option value="">전체 호수</option>' +
-      rooms.map(r => `<option value="${r.roomNo}"${tenantRoomFilter===r.roomNo?' selected':''}>${fmtRoom(r.roomNo)}</option>`).join('');
-    roomSel = `<select onchange="filterTenantRoom(this.value)" style="${selStyle}">${roomOptions}</select>`;
-  }
-
   // 상태: 항상 표시
   const statusSel = `
     <select onchange="filterTenantStatus(this.value)" style="${selStyle}">
@@ -2198,7 +2186,6 @@ function renderTenantFilterBar() {
     <div style="display:flex;gap:8px;align-items:center;flex:1;flex-wrap:wrap;">
       <select onchange="filterTenantBuilding(this.value)" style="${selStyle}">${buildOptions}</select>
       ${dongSel}
-      ${roomSel}
       ${statusSel}
     </div>
     <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:8px;">(단위: 만원)</span>
