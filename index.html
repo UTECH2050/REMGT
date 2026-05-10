@@ -630,7 +630,7 @@
                     <th>건물명</th><th>동</th><th>호수</th><th>임차인</th><th>유형</th>
                     <th>보증금</th><th>월세</th><th>관리비</th>
                     <th>계약 시작</th><th>계약 종료</th>
-                    <th>연장횟수</th><th>퇴거일</th><th>상태</th><th>비고</th>
+                    <th>연장횟수</th><th>퇴거일</th><th>상태</th><th>비고</th><th>관리</th>
                   </tr>
                 </thead>
                 <tbody id="historyTbody"></tbody>
@@ -1250,6 +1250,68 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
 
 <!-- Confirm Modal -->
 <!-- 조기 퇴거 사유 입력 모달 -->
+<!-- ===== 계약 히스토리 편집 모달 ===== -->
+<div class="modal-overlay" id="historyEditModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title">📋 계약 히스토리 수정</span>
+      <button class="modal-close" onclick="closeModal('historyEditModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="histEditId">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>임차인</label>
+          <input type="text" id="histEditName">
+        </div>
+        <div class="form-group">
+          <label>유형</label>
+          <select id="histEditType">
+            <option value="월세">월세</option>
+            <option value="전세">전세</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>보증금 (만원)</label>
+          <input type="text" id="histEditDeposit" oninput="fmtComma(this)">
+        </div>
+        <div class="form-group">
+          <label>월세 (만원)</label>
+          <input type="text" id="histEditRent" oninput="fmtComma(this)">
+        </div>
+        <div class="form-group">
+          <label>관리비 (만원)</label>
+          <input type="text" id="histEditManagement" oninput="fmtComma(this)">
+        </div>
+        <div class="form-group">
+          <label>연장횟수</label>
+          <input type="number" id="histEditExtendCount" min="0" style="width:100%;">
+        </div>
+        <div class="form-group">
+          <label>계약 시작일</label>
+          <input type="text" id="histEditContractStart" placeholder="YYYY-MM-DD" oninput="fmtIsoDate(this)">
+        </div>
+        <div class="form-group">
+          <label>계약 종료일</label>
+          <input type="text" id="histEditContractEnd" placeholder="YYYY-MM-DD" oninput="fmtIsoDate(this)">
+        </div>
+        <div class="form-group">
+          <label>퇴거일</label>
+          <input type="text" id="histEditArchivedAt" placeholder="YYYY-MM-DD" oninput="fmtIsoDate(this)">
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:4px;">
+        <label>비고</label>
+        <textarea id="histEditNote" rows="3" style="resize:vertical;width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:8px;font-size:13px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end;gap:10px;">
+      <button class="btn btn-outline" onclick="closeModal('historyEditModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveHistoryEdit()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="evictReasonModal">
   <div class="modal" style="max-width:420px;">
     <div class="modal-header" style="background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:12px 12px 0 0;">
@@ -3959,7 +4021,7 @@ function renderContractHistory() {
   });
 
   if (allRecords.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state"><div class="empty-icon">📋</div>
+    tbody.innerHTML = `<tr><td colspan="15"><div class="empty-state"><div class="empty-icon">📋</div>
       <p>계약 히스토리가 없습니다.<br><small style="color:var(--gray-400);">퇴거 처리를 하면 이력이 여기에 쌓입니다.</small></p>
     </div></td></tr>`;
     return;
@@ -3971,6 +4033,11 @@ function renderContractHistory() {
       : `<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">퇴거</span>`;
     const evictDate = r._isCurrent ? '-' : (r.archivedAt || '-');
     const rowStyle = r._isCurrent ? 'background:#f0fdf4;' : '';
+    const manageBtns = r._isCurrent ? '' : `
+      <div style="display:flex;gap:4px;">
+        <button class="btn btn-outline btn-sm" onclick="openHistoryEdit('${r.id}')">수정</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;" onclick="deleteHistoryRecord('${r.id}')">삭제</button>
+      </div>`;
     return `<tr style="${rowStyle}">
       <td>${r.building||'-'}</td>
       <td>${r.dong||'-'}</td>
@@ -3986,8 +4053,68 @@ function renderContractHistory() {
       <td style="color:#dc2626;">${evictDate}</td>
       <td>${statusBadge}</td>
       <td style="font-size:12px;color:var(--gray-500);max-width:160px;white-space:normal;">${r.note||'-'}</td>
+      <td>${manageBtns}</td>
     </tr>`;
   }).join('');
+}
+
+// ============================================================
+// 계약 히스토리 수정 / 삭제
+// ============================================================
+function openHistoryEdit(id) {
+  const rec = (getData('contractHistory') || []).find(r => r.id === id);
+  if (!rec) return;
+  document.getElementById('histEditId').value           = id;
+  document.getElementById('histEditName').value         = rec.name || '';
+  document.getElementById('histEditType').value         = rec.type || '월세';
+  document.getElementById('histEditDeposit').value      = rec.deposit ? Number(rec.deposit).toLocaleString() : '';
+  document.getElementById('histEditRent').value         = rec.rent ? Number(rec.rent).toLocaleString() : '';
+  document.getElementById('histEditManagement').value   = rec.management ? Number(rec.management).toLocaleString() : '';
+  document.getElementById('histEditExtendCount').value  = rec.extendCount || 0;
+  document.getElementById('histEditContractStart').value = rec.contractStart || '';
+  document.getElementById('histEditContractEnd').value  = rec.contractEnd || '';
+  document.getElementById('histEditArchivedAt').value   = rec.archivedAt || '';
+  document.getElementById('histEditNote').value         = rec.note || '';
+  openModal('historyEditModal');
+}
+
+function saveHistoryEdit() {
+  const id = document.getElementById('histEditId').value;
+  const history = getData('contractHistory') || [];
+  const idx = history.findIndex(r => r.id === id);
+  if (idx < 0) return;
+  history[idx] = {
+    ...history[idx],
+    name:          document.getElementById('histEditName').value.trim(),
+    type:          document.getElementById('histEditType').value,
+    deposit:       Number((document.getElementById('histEditDeposit').value || '0').replace(/,/g, '')),
+    rent:          Number((document.getElementById('histEditRent').value || '0').replace(/,/g, '')),
+    management:    Number((document.getElementById('histEditManagement').value || '0').replace(/,/g, '')),
+    extendCount:   Number(document.getElementById('histEditExtendCount').value || 0),
+    contractStart: document.getElementById('histEditContractStart').value.trim(),
+    contractEnd:   document.getElementById('histEditContractEnd').value.trim(),
+    archivedAt:    document.getElementById('histEditArchivedAt').value.trim(),
+    note:          document.getElementById('histEditNote').value.trim()
+  };
+  setData('contractHistory', history);
+  closeModal('historyEditModal');
+  renderContractHistory();
+  showToast('히스토리가 수정됐습니다.');
+}
+
+function deleteHistoryRecord(id) {
+  const rec = (getData('contractHistory') || []).find(r => r.id === id);
+  if (!rec) return;
+  confirm(
+    `'${rec.name}' 의 계약 이력(${fmtDate(rec.contractStart)} ~ ${fmtDate(rec.contractEnd)})을 삭제하시겠습니까?`,
+    () => {
+      const history = (getData('contractHistory') || []).filter(r => r.id !== id);
+      setData('contractHistory', history);
+      renderContractHistory();
+      showToast('히스토리가 삭제됐습니다.');
+    },
+    '삭제', 'btn-danger'
+  );
 }
 
 // ============================================================
