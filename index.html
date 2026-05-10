@@ -1136,7 +1136,7 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
           <input type="text" id="regContractEnd" placeholder="0000-00-00" maxlength="10"
                  oninput="fmtIsoDate(this);updatePayDateDisplay()" style="width:100%;text-align:center;">
         </div>
-        <div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:flex-end;">
+        <div id="regExtendBtnWrap" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:flex-end;">
           <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;visibility:hidden;">연장</label>
           <button type="button" onclick="extendContract()"
                   style="height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--primary);color:var(--primary);background:#fff;font-size:13px;cursor:pointer;white-space:nowrap;font-weight:500;">
@@ -1149,21 +1149,29 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
                  oninput="fmtIsoDate(this)" style="width:100%;text-align:center;background:#f3f4f6;color:#6b7280;" readonly>
         </div>
       </div>
-      <!-- 단위 + 보증금/월세/관리비/선불후불 -->
-      <div style="display:grid;grid-template-columns:96px 72px 60px 76px;gap:8px;align-items:end;margin-bottom:10px;">
-        <div class="form-group" style="margin:0;">
+      <!-- 전세/월세 + 보증금/월세/관리비/선불후불 -->
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:nowrap;">
+        <div class="form-group" style="margin:0;flex:0 0 60px;">
+          <label>전세/월세</label>
+          <select id="regLeaseType" onchange="onLeaseTypeChange()"
+                  style="height:36px;border-radius:8px;border:1px solid var(--gray-200);padding:0 4px;font-size:13px;background:#fff;width:100%;">
+            <option value="월세">월세</option>
+            <option value="전세">전세</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;flex:0 0 96px;">
           <label>보증금</label>
           <input type="text" id="regDeposit" placeholder="" oninput="fmtComma(this)" style="text-align:right;width:100%;" maxlength="9">
         </div>
-        <div class="form-group" style="margin:0;">
+        <div id="regRentWrap" class="form-group" style="margin:0;flex:0 0 72px;">
           <label>월세</label>
           <input type="text" id="regRent" placeholder="" oninput="fmtComma(this)" style="text-align:right;width:100%;" maxlength="6">
         </div>
-        <div class="form-group" style="margin:0;">
+        <div id="regMgmtWrap" class="form-group" style="margin:0;flex:0 0 60px;">
           <label>관리비</label>
           <input type="text" id="regManagement" placeholder="" oninput="fmtComma(this)" style="text-align:right;width:100%;" maxlength="4">
         </div>
-        <div class="form-group" style="margin:0;">
+        <div class="form-group" style="margin:0;flex:0 0 76px;">
           <label>선불/후불</label>
           <select id="regPayType" onchange="updatePayDateDisplay()"
                   style="height:36px;border-radius:8px;border:1px solid var(--gray-200);padding:0 6px;font-size:13px;background:#fff;width:100%;">
@@ -2017,9 +2025,9 @@ function renderTenants(filter, statusFilter) {
         <td><span style="font-size:12px;">${fmtDate(t?.contractEnd)||'-'}</span></td>
         <td>${statusBadge}</td>
         <td>
-          <button class="btn btn-outline btn-sm"
+          <button class="btn ${t ? 'btn-outline' : 'btn-primary'} btn-sm"
             data-propid="${prop.id}" data-roomno="${room.roomNo}"
-            onclick="openRegisterForRoom(this)">수정</button>
+            onclick="openRegisterForRoom(this)">${t ? '수정' : '등록'}</button>
         </td>
       </tr>`);
     });
@@ -2056,6 +2064,9 @@ function openRegisterForRoom(btn) {
     // 타이틀: 임차인 등록: 건물명 호실
     const titleEl = document.getElementById('regCardTitle');
     if (titleEl) titleEl.textContent = `➕ 임차인 등록: ${prop.name} ${roomNo}`;
+    // 신규 등록: 계약연장 버튼 숨김
+    const extWrap = document.getElementById('regExtendBtnWrap');
+    if (extWrap) extWrap.style.display = 'none';
     openModal('registerModal');
     // 모달 렌더 후 건물·호실 선택
     setTimeout(() => {
@@ -2826,6 +2837,23 @@ function extendContract() {
   );
 }
 
+// 전세/월세 선택 변경 시 월세·관리비 표시 제어
+function onLeaseTypeChange() {
+  const leaseType = document.getElementById('regLeaseType')?.value || '월세';
+  const rentWrap  = document.getElementById('regRentWrap');
+  const mgmtWrap  = document.getElementById('regMgmtWrap');
+  const isJeonse  = leaseType === '전세';
+  if (rentWrap) rentWrap.style.display = isJeonse ? 'none' : 'block';
+  if (mgmtWrap) mgmtWrap.style.display = isJeonse ? 'none' : 'block';
+  // 전세 선택 시 월세·관리비 값 초기화
+  if (isJeonse) {
+    const rentEl = document.getElementById('regRent');
+    const mgmtEl = document.getElementById('regManagement');
+    if (rentEl) rentEl.value = '';
+    if (mgmtEl) mgmtEl.value = '';
+  }
+}
+
 // 입금일자 표시: 선불=계약시작일, 후불=계약종료일
 function updatePayDateDisplay() {
   const payType = document.getElementById('regPayType')?.value || '선불';
@@ -2847,6 +2875,16 @@ function clearRegisterForm() {
   });
   const payTypeEl = document.getElementById('regPayType');
   if (payTypeEl) payTypeEl.value = '선불';
+  // 전세/월세 리셋
+  const leaseTypeEl = document.getElementById('regLeaseType');
+  if (leaseTypeEl) leaseTypeEl.value = '월세';
+  const rentWrap = document.getElementById('regRentWrap');
+  if (rentWrap) rentWrap.style.display = 'block';
+  const mgmtWrap = document.getElementById('regMgmtWrap');
+  if (mgmtWrap) mgmtWrap.style.display = 'block';
+  // 계약연장 버튼 리셋 (기본 표시)
+  const extWrap2 = document.getElementById('regExtendBtnWrap');
+  if (extWrap2) extWrap2.style.display = 'flex';
   // 계약연장 리셋
   const extSel = document.getElementById('regExtendSelect');
   if (extSel) extSel.value = '';
@@ -2895,6 +2933,21 @@ function openRegisterEdit(id) {
   const cancelBtn = document.getElementById('regCancelBtn');
   if (resetBtn)  resetBtn.style.display  = 'none';
   if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+  // 계약 연장 버튼: 계약종료 3개월 이내 또는 경과한 경우만 활성화
+  const extWrap = document.getElementById('regExtendBtnWrap');
+  if (extWrap) {
+    let showExtend = false;
+    if (t?.contractEnd) {
+      const endStr = t.contractEnd.replace(/[^\d]/g,'');
+      if (endStr.length === 8) {
+        const endDate  = new Date(+endStr.slice(0,4), +endStr.slice(4,6)-1, +endStr.slice(6,8));
+        const today2   = new Date(); today2.setHours(0,0,0,0);
+        const diffDays = Math.ceil((endDate - today2) / 86400000);
+        showExtend = diffDays <= 90; // 3개월(90일) 이내 또는 경과(음수)
+      }
+    }
+    extWrap.style.display = showExtend ? 'flex' : 'none';
+  }
   openModal('registerModal');
   // 모달이 화면에 렌더된 뒤 특이사항 높이 재계산
   setTimeout(() => {
@@ -2947,6 +3000,13 @@ function prefillRegisterForm(id) {
   if (payDayEl) payDayEl.value = t.payDay || '';
   const payTypeEl = document.getElementById('regPayType');
   if (payTypeEl) payTypeEl.value = t.payType || '선불';
+
+  // 전세/월세 유형 (t.type: '전세' 또는 '월세')
+  const leaseTypeEl2 = document.getElementById('regLeaseType');
+  if (leaseTypeEl2) {
+    leaseTypeEl2.value = (t.type === '전세') ? '전세' : '월세';
+    onLeaseTypeChange();
+  }
 
   // 계약 시작일
   const startEl = document.getElementById('regContractStart');
@@ -3018,8 +3078,8 @@ function saveRegisterTenant() {
   if (!room) { showToast('호실을 선택해주세요.', 'error'); return; }
   const deposit = Number(document.getElementById('regDeposit').value.replace(/,/g,'')) || 0;
   const rent    = Number(document.getElementById('regRent').value.replace(/,/g,'')) || 0;
-  // 임대유형 자동 결정: 월세>0 → 월세, 보증금만 → 전세, 둘다0 → 공실
-  const type   = rent > 0 ? '월세' : deposit > 0 ? '전세' : '월세';
+  // 임대유형: regLeaseType 선택값 사용
+  const type   = document.getElementById('regLeaseType')?.value || (rent > 0 ? '월세' : deposit > 0 ? '전세' : '월세');
   // 상태 자동 결정: 임차인명 + 계약시작일 있으면 입주, 없으면 공실
   const contractStart = document.getElementById('regContractStart').value;
   const status = (name && contractStart) ? '입주' : '공실';
