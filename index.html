@@ -1189,21 +1189,19 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
           <label>관리비</label>
           <input type="text" id="regManagement" placeholder="" oninput="fmtComma(this)" style="text-align:right;width:100%;" maxlength="4">
         </div>
-        <div id="regPayTypeWrap" class="form-group" style="margin:0;flex:0 0 76px;">
+        <div id="regPayTypeWrap" class="form-group" style="margin:0;flex:0 0 auto;">
           <label>선불/후불</label>
-          <select id="regPayType" onchange="updatePayDateDisplay()"
-                  style="height:36px;border-radius:8px;border:1px solid var(--gray-200);padding:0 6px;font-size:13px;background:#fff;width:100%;">
-            <option value="선불">선불</option>
-            <option value="후불">후불</option>
-          </select>
-        </div>
-      </div>
-      <!-- 납부일 (월세 전용) -->
-      <div id="regPayWrap" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-        <label style="font-size:12px;color:var(--gray-500);white-space:nowrap;margin:0;">납부일</label>
-        <div id="regPayDateDisplay"
-             style="height:32px;border:1px solid var(--gray-200);border-radius:8px;padding:0 12px;background:#f8fafc;display:flex;align-items:center;font-size:13px;color:var(--gray-600);min-width:160px;">
-          -
+          <div style="display:flex;gap:6px;align-items:center;">
+            <select id="regPayType" onchange="updatePayDateDisplay()"
+                    style="height:36px;border-radius:8px;border:1px solid var(--gray-200);padding:0 6px;font-size:13px;background:#fff;width:76px;">
+              <option value="선불">선불</option>
+              <option value="후불">후불</option>
+            </select>
+            <div id="regPayDateDisplay"
+                 style="height:36px;border:1px solid var(--gray-200);border-radius:8px;padding:0 10px;background:#f8fafc;display:flex;align-items:center;font-size:13px;color:var(--gray-600);white-space:nowrap;">
+              -
+            </div>
+          </div>
         </div>
       </div>
       <div class="form-group">
@@ -2871,14 +2869,12 @@ function onLeaseTypeChange() {
   const rentWrap     = document.getElementById('regRentWrap');
   const mgmtWrap     = document.getElementById('regMgmtWrap');
   const payTypeWrap  = document.getElementById('regPayTypeWrap');
-  const payWrap      = document.getElementById('regPayWrap');
   const isJeonse     = leaseType === '전세';
   // 월세·관리비 표시 제어
   if (rentWrap)    rentWrap.style.display    = isJeonse ? 'none' : 'block';
   if (mgmtWrap)    mgmtWrap.style.display    = isJeonse ? 'none' : 'block';
   // 선불/후불·납부일 표시 제어
   if (payTypeWrap) payTypeWrap.style.display = isJeonse ? 'none' : 'block';
-  if (payWrap)     payWrap.style.display     = isJeonse ? 'none' : 'flex';
   // 전세 선택 시 월세·관리비 값 초기화
   if (isJeonse) {
     const rentEl = document.getElementById('regRent');
@@ -2889,22 +2885,18 @@ function onLeaseTypeChange() {
   updatePayDateDisplay();
 }
 
-// 납부일 표시: 선불=매월 N일(계약시작일의 일자), 후불=계약종료일
+// 납부일 표시: 선불=계약시작일의 일, 후불=계약종료일의 일 → "매월 N일"
 function updatePayDateDisplay() {
   const leaseType = document.getElementById('regLeaseType')?.value || '월세';
   const display   = document.getElementById('regPayDateDisplay');
   if (!display) return;
   if (leaseType === '전세') { display.textContent = '-'; return; }
   const payType = document.getElementById('regPayType')?.value || '선불';
-  if (payType === '선불') {
-    const startVal = document.getElementById('regContractStart')?.value || '';
-    // 계약시작일에서 일(day) 추출
-    const m = startVal.match(/(\d{4})-(\d{2})-(\d{2})/);
-    display.textContent = m ? `매월 ${parseInt(m[3],10)}일` : '-';
-  } else {
-    const endVal = document.getElementById('regContractEnd')?.value || '';
-    display.textContent = endVal || '-';
-  }
+  const dateVal = payType === '선불'
+    ? (document.getElementById('regContractStart')?.value || '')
+    : (document.getElementById('regContractEnd')?.value  || '');
+  const m = dateVal.match(/(\d{4})-(\d{2})-(\d{2})/);
+  display.textContent = m ? `매월 ${parseInt(m[3], 10)}일` : '-';
 }
 
 function clearRegisterForm() {
@@ -2926,8 +2918,6 @@ function clearRegisterForm() {
   if (mgmtWrap) mgmtWrap.style.display = 'block';
   const payTypeWrap = document.getElementById('regPayTypeWrap');
   if (payTypeWrap) payTypeWrap.style.display = 'block';
-  const payWrap = document.getElementById('regPayWrap');
-  if (payWrap) payWrap.style.display = 'flex';
   // 계약연장 버튼 리셋 (기본 표시)
   const extWrap2 = document.getElementById('regExtendBtnWrap');
   if (extWrap2) extWrap2.style.display = 'flex';
