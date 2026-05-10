@@ -4004,7 +4004,7 @@ function renderContractHistory() {
     const prop = getData('properties').find(p => p.name === t.building);
     const rm = (prop?.rooms || []).find(r => String(r.roomNo) === String(t.room));
     return {
-      _isCurrent: true,
+      _isCurrent: true, _tenantId: t.id,
       building: t.building, dong: rm?.dong || '', room: t.room,
       name: t.name, phone: t.phone,
       type: t.type || '월세',
@@ -4063,11 +4063,12 @@ function renderContractHistory() {
       rowStyle = '';
     }
     const evictDate = (r._isCurrent || isExtension(r)) ? '-' : (r.archivedAt || '-');
-    const manageBtns = r._isCurrent ? '' : `
-      <div style="display:flex;gap:4px;">
-        <button class="btn btn-outline btn-sm" onclick="openHistoryEdit('${r.id}')">수정</button>
-        <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;" onclick="deleteHistoryRecord('${r.id}')">삭제</button>
-      </div>`;
+    const manageBtns = r._isCurrent
+      ? `<button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${r._tenantId}')">수정</button>`
+      : `<div style="display:flex;gap:4px;">
+          <button class="btn btn-outline btn-sm" onclick="openHistoryEdit('${r.id}')">수정</button>
+          <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;" onclick="deleteHistoryRecord('${r.id}')">삭제</button>
+        </div>`;
     return `<tr style="${rowStyle}">
       <td>${r.building||'-'}</td>
       <td>${r.dong||'-'}</td>
