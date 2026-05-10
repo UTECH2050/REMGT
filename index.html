@@ -2471,25 +2471,26 @@ function setPropAddrDisplay(jibun, road) {
   span.style.color = 'var(--gray-700)';
 }
 
-// 정부 주소정보누리집(juso.go.kr) 콜백 함수 - 팝업에서 호출됨
-function jusoCallBack(roadFullAddr, roadAddrPart1, addrDetail, engAddr, jibunAddr, zipNo, admCd, rnMgtSn, bdMgtSn, detBdNmList, bdNm, bdKdcd, siNm, sggNm, emdNm, liNm, rn, udrtYn, buldMnnm, buldSlno, mtYn, lnbrMnnm, lnbrSlno, emdNo) {
-  const jibun = jibunAddr || '';
-  const road  = roadFullAddr || '';
-  document.getElementById('propAddress').value     = jibun;
-  document.getElementById('propRoadAddress').value = road;
-  setPropAddrDisplay(jibun, road);
-}
-
 function searchPropAddress() {
-  const width  = 570;
-  const height = 420;
-  const left   = Math.ceil((window.screen.width  - width)  / 2);
-  const top    = Math.ceil((window.screen.height - height) / 2);
-  window.open(
-    'https://www.juso.go.kr/addrlink/addrLinkUrl.hn?confmKey=devU01TX0FVVEgyMDIxMDYwMzE1NTkwMjExMTY3MDI=&resultType=4&callback=jusoCallBack',
-    'addrPopup',
-    `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
-  );
+  function openPopup() {
+    new daum.Postcode({
+      oncomplete: function(data) {
+        const jibun = data.jibunAddress || data.autoJibunAddress || data.address || '';
+        const road  = data.roadAddress  || data.autoRoadAddress  || '';
+        document.getElementById('propAddress').value     = jibun;
+        document.getElementById('propRoadAddress').value = road;
+        setPropAddrDisplay(jibun, road);
+      }
+    }).open();
+  }
+  if (window.daum && window.daum.Postcode) {
+    openPopup();
+  } else {
+    const s = document.createElement('script');
+    s.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+    s.onload = openPopup;
+    document.head.appendChild(s);
+  }
 }
 
 function openKBSearch() {
