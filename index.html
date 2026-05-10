@@ -984,7 +984,8 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
         <textarea id="propNote" placeholder="건물 관련 메모" style="min-height:60px;"></textarea>
       </div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer" style="justify-content:flex-end;gap:8px;">
+      <button id="propDeleteBtn" class="btn btn-danger" style="display:none;margin-right:auto;" onclick="deletePropertyFromModal()">🗑 삭제</button>
       <button class="btn btn-outline" onclick="closeModal('propertyModal')">취소</button>
       <button class="btn btn-primary" onclick="saveProperty()">저장</button>
     </div>
@@ -1068,7 +1069,8 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
         <input type="text" id="rmNote" placeholder="">
       </div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer" style="justify-content:flex-end;gap:8px;">
+      <button id="rmDeleteBtn" class="btn btn-danger" style="display:none;margin-right:auto;" onclick="deleteRoomFromModal()">🗑 삭제</button>
       <button class="btn btn-outline" onclick="closeModal('roomModal')">취소</button>
       <button class="btn btn-primary" onclick="saveRoom()">저장</button>
     </div>
@@ -2164,31 +2166,30 @@ function renderPropertiesPage() {
           const profitColor = profit === null ? 'var(--gray-400)' : (profit >= 0 ? '#059669' : '#dc2626');
           const curPriceDateStr = r.curPriceDate ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;">기준: ${r.curPriceDate}</div>` : '';
           return `<tr>
-          <td style="padding:9px 14px;">${r.roomNo}</td>
-          <td style="padding:9px 14px;text-align:right;font-size:13px;">
+          <td style="padding:9px 14px;text-align:center;">${r.roomNo}</td>
+          <td style="padding:9px 14px;text-align:center;font-size:13px;">
             ${r.supplyPyeong ? `<div style="font-weight:600;">${r.supplyPyeong}</div><div style="font-size:11px;color:var(--gray-400);">${(r.supplyPyeong*3.3058).toFixed(1)}㎡</div>` : '<span style="color:var(--gray-400);">-</span>'}
           </td>
-          <td style="padding:9px 14px;text-align:right;font-size:13px;">
+          <td style="padding:9px 14px;text-align:center;font-size:13px;">
             ${r.exclPyeong ? `<div style="font-weight:600;">${r.exclPyeong}</div><div style="font-size:11px;color:var(--gray-400);">${(r.exclPyeong*3.3058).toFixed(1)}㎡</div>` : '<span style="color:var(--gray-400);">-</span>'}
           </td>
-          <td style="padding:9px 14px;">${r.acqDate || '-'}</td>
-          <td style="padding:9px 14px;text-align:right;">${r.acqPrice ? Number(r.acqPrice).toLocaleString() : '-'}</td>
-          <td style="padding:9px 14px;text-align:right;">${r.acqTax   ? Number(r.acqTax).toLocaleString()   : '-'}</td>
-          <td style="padding:9px 14px;text-align:right;">${r.acqFee   ? Number(r.acqFee).toLocaleString()   : '-'}</td>
-          <td style="padding:9px 14px;text-align:right;font-weight:700;color:var(--primary);">${total ? total.toLocaleString() : '-'}</td>
-          <td style="padding:9px 14px;text-align:right;">
+          <td style="padding:9px 14px;text-align:center;">${r.acqDate || '-'}</td>
+          <td style="padding:9px 14px;text-align:center;">${r.acqPrice ? Number(r.acqPrice).toLocaleString() : '-'}</td>
+          <td style="padding:9px 14px;text-align:center;">${r.acqTax   ? Number(r.acqTax).toLocaleString()   : '-'}</td>
+          <td style="padding:9px 14px;text-align:center;">${r.acqFee   ? Number(r.acqFee).toLocaleString()   : '-'}</td>
+          <td style="padding:9px 14px;text-align:center;font-weight:700;color:var(--primary);">${total ? total.toLocaleString() : '-'}</td>
+          <td style="padding:9px 14px;text-align:center;">
             ${curPrice ? `<div style="font-weight:700;color:#059669;">${curPrice.toLocaleString()}</div>${curPriceDateStr}` : '<span style="color:var(--gray-400);">-</span>'}
           </td>
-          <td style="padding:9px 14px;text-align:right;font-weight:700;color:${profitColor};">
+          <td style="padding:9px 14px;text-align:center;font-weight:700;color:${profitColor};">
             ${profit !== null ? (profit >= 0 ? '+' : '') + profit.toLocaleString() : '<span style="color:var(--gray-400);">-</span>'}
           </td>
-          <td style="padding:9px 14px;text-align:right;font-weight:700;color:${profitColor};">
+          <td style="padding:9px 14px;text-align:center;font-weight:700;color:${profitColor};">
             ${profitRate !== null ? (profitRate >= 0 ? '+' : '') + profitRate.toFixed(1) + '%' : '<span style="color:var(--gray-400);">-</span>'}
           </td>
-          <td style="padding:9px 14px;color:var(--gray-500);">${r.note || '-'}</td>
-          <td style="padding:9px 14px;">
+          <td style="padding:9px 14px;text-align:center;color:var(--gray-500);">${r.note || '-'}</td>
+          <td style="padding:9px 14px;text-align:center;">
             <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}','${r.id}')">수정</button>
-            <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteRoom('${p.id}','${r.id}')">삭제</button>
           </td>
         </tr>`;}).join('')
       : `<tr><td colspan="13" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 동호수가 없습니다.</td></tr>`;
@@ -2210,7 +2211,6 @@ function renderPropertiesPage() {
         </div>
         <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
           <button class="btn btn-outline btn-sm" onclick="openPropertyModal('${p.id}')">수정</button>
-          <button class="btn btn-danger btn-sm" style="${deleteBtnStyle}" ${deleteBtnTitle} onclick="deleteProperty('${p.id}')">삭제</button>
         </div>
       </div>
       <div id="${bodyId}" style="display:none;">
@@ -2218,19 +2218,19 @@ function renderPropertiesPage() {
           <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
             <thead>
               <tr style="background:var(--gray-50);">
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">동호수</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">공급(평)</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">전용(평)</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">취득일자</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">매수금액</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">세금</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">수수료</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--primary);font-size:12px;text-align:right;white-space:nowrap;">총 매입금액</th>
-                <th style="padding:9px 14px;font-weight:600;color:#059669;font-size:12px;text-align:right;white-space:nowrap;">현재 가치</th>
-                <th style="padding:9px 14px;font-weight:600;color:#6d28d9;font-size:12px;text-align:right;white-space:nowrap;">수익</th>
-                <th style="padding:9px 14px;font-weight:600;color:#6d28d9;font-size:12px;text-align:right;white-space:nowrap;">수익률</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">비고</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">관리</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">동호수</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">공급(평)</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">전용(평)</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">취득일자</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">매수금액</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">세금</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">수수료</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--primary);font-size:12px;text-align:center;white-space:nowrap;">총 매입금액</th>
+                <th style="padding:9px 14px;font-weight:600;color:#059669;font-size:12px;text-align:center;white-space:nowrap;">현재 가치</th>
+                <th style="padding:9px 14px;font-weight:600;color:#6d28d9;font-size:12px;text-align:center;white-space:nowrap;">수익</th>
+                <th style="padding:9px 14px;font-weight:600;color:#6d28d9;font-size:12px;text-align:center;white-space:nowrap;">수익률</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">비고</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">관리</th>
               </tr>
             </thead>
             <tbody>${roomRows}</tbody>
@@ -2274,7 +2274,30 @@ function openPropertyModal(id) {
       document.getElementById('propType').value    = p.type  || '아파트';
     }
   }
+  // 삭제 버튼: 수정 시에만 표시 (동호수 없을 때만 활성화)
+  const propDelBtn = document.getElementById('propDeleteBtn');
+  if (propDelBtn) {
+    if (id) {
+      const prop = getData('properties').find(x => x.id === id);
+      const hasRooms = (prop?.rooms?.length || 0) > 0;
+      propDelBtn.style.display = 'inline-flex';
+      propDelBtn.disabled = hasRooms;
+      propDelBtn.title = hasRooms ? '동호수가 있으면 건물을 삭제할 수 없습니다' : '';
+      propDelBtn.style.opacity = hasRooms ? '0.4' : '1';
+    } else {
+      propDelBtn.style.display = 'none';
+    }
+  }
   openModal('propertyModal');
+}
+
+function deletePropertyFromModal() {
+  const id = document.getElementById('propId').value;
+  if (!id) return;
+  confirm('이 건물을 삭제하시겠습니까?', () => {
+    closeModal('propertyModal');
+    deleteProperty(id);
+  });
 }
 
 function saveProperty() {
@@ -2351,7 +2374,20 @@ function openRoomModal(propId, roomId) {
       document.getElementById('rmNote').value         = room.note || '';
     }
   }
+  // 삭제 버튼: 수정 시에만 표시
+  const rmDelBtn = document.getElementById('rmDeleteBtn');
+  if (rmDelBtn) rmDelBtn.style.display = roomId ? 'inline-flex' : 'none';
   openModal('roomModal');
+}
+
+function deleteRoomFromModal() {
+  const propId = document.getElementById('rmPropId').value;
+  const roomId = document.getElementById('rmRoomId').value;
+  if (!roomId) return;
+  confirm('이 동호수를 삭제하시겠습니까?', () => {
+    closeModal('roomModal');
+    deleteRoom(propId, roomId);
+  });
 }
 
 function openKBSearch() {
