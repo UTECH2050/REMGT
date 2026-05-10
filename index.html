@@ -1022,8 +1022,8 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
     <div class="modal-body" style="overflow-x:hidden;">
       <input type="hidden" id="rmPropId">
       <input type="hidden" id="rmRoomId">
-      <!-- 동 / 호수 / 공급(㎡·평) / 전용(㎡·평) -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 2fr 2fr;gap:10px;margin-bottom:14px;">
+      <!-- 동 / 호수 / 공급㎡ / 공급평 / 전용㎡ / 전용평 — 6컬럼 한 줄 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
         <div class="form-group" style="margin:0;">
           <label>동 <span style="font-size:11px;color:var(--gray-400);">(없으면 공란)</span></label>
           <input type="text" id="rmDong" placeholder="" style="text-align:center;">
@@ -1032,33 +1032,21 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
           <label>호수 <span class="required">*</span></label>
           <input type="text" id="rmHosu" placeholder="" style="text-align:center;">
         </div>
-        <!-- 공급면적 쌍 -->
-        <div style="margin:0;">
-          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;">공급면적</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-            <div>
-              <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-bottom:2px;">㎡</div>
-              <input type="text" id="rmSupplyM2" placeholder="" oninput="syncArea('supply','m2')" style="text-align:right;width:100%;">
-            </div>
-            <div>
-              <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-bottom:2px;">평</div>
-              <input type="text" id="rmSupplyPyeong" placeholder="" oninput="syncArea('supply','pyeong')" style="text-align:right;width:100%;">
-            </div>
-          </div>
+        <div class="form-group" style="margin:0;">
+          <label>공급<span style="font-size:11px;color:var(--gray-400);">(㎡)</span></label>
+          <input type="text" id="rmSupplyM2" placeholder="" oninput="syncArea('supply','m2')" style="text-align:right;width:100%;">
         </div>
-        <!-- 전용면적 쌍 -->
-        <div style="margin:0;">
-          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;">전용면적</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-            <div>
-              <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-bottom:2px;">㎡</div>
-              <input type="text" id="rmExclM2" placeholder="" oninput="syncArea('excl','m2')" style="text-align:right;width:100%;">
-            </div>
-            <div>
-              <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-bottom:2px;">평</div>
-              <input type="text" id="rmExclPyeong" placeholder="" oninput="syncArea('excl','pyeong')" style="text-align:right;width:100%;">
-            </div>
-          </div>
+        <div class="form-group" style="margin:0;">
+          <label>공급<span style="font-size:11px;color:var(--gray-400);">(평)</span></label>
+          <input type="text" id="rmSupplyPyeong" placeholder="" oninput="syncArea('supply','pyeong')" style="text-align:right;width:100%;">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>전용<span style="font-size:11px;color:var(--gray-400);">(㎡)</span></label>
+          <input type="text" id="rmExclM2" placeholder="" oninput="syncArea('excl','m2')" style="text-align:right;width:100%;">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>전용<span style="font-size:11px;color:var(--gray-400);">(평)</span></label>
+          <input type="text" id="rmExclPyeong" placeholder="" oninput="syncArea('excl','pyeong')" style="text-align:right;width:100%;">
         </div>
       </div>
       <!-- 취득일자 / 매입가 / 세금 / 수수료 — 4컬럼 한 줄 -->
