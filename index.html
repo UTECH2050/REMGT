@@ -1036,6 +1036,24 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
           <input type="text" id="rmAcqFee" placeholder="" oninput="fmtComma(this)">
         </div>
       </div>
+      <!-- 현재 가치 -->
+      <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:4px 0 10px;text-transform:uppercase;letter-spacing:0.04em;">💰 현재 가치</div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+          <div class="form-group" style="margin:0;">
+            <label>현재 시세 (만원)</label>
+            <input type="text" id="rmCurPrice" placeholder="" oninput="fmtComma(this)">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>기준일자</label>
+            <input type="text" id="rmCurPriceDate" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" class="btn btn-outline btn-sm" style="border-color:#16a34a;color:#16a34a;font-size:12px;" onclick="openKBSearch()">🔍 KB 부동산 시세 조회</button>
+          <span style="font-size:11px;color:#6b7280;">조회 후 시세를 직접 입력해주세요</span>
+        </div>
+      </div>
       <div class="form-group">
         <label>비고</label>
         <input type="text" id="rmNote" placeholder="">
@@ -2060,6 +2078,11 @@ function renderPropertiesPage() {
     const roomRows = roomCount > 0
       ? rooms.map(r => {
           const total = (Number(r.acqPrice)||0) + (Number(r.acqTax)||0) + (Number(r.acqFee)||0);
+          const curPrice = Number(r.curPrice) || 0;
+          const profit = curPrice ? curPrice - total : null;
+          const profitRate = (profit !== null && total > 0) ? (profit / total * 100) : null;
+          const profitColor = profit === null ? 'var(--gray-400)' : (profit >= 0 ? '#059669' : '#dc2626');
+          const curPriceDateStr = r.curPriceDate ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;">기준: ${r.curPriceDate}</div>` : '';
           return `<tr>
           <td style="padding:9px 14px;">${r.roomNo}</td>
           <td style="padding:9px 14px;">${r.area ? r.area + ' ㎡' : '-'}</td>
@@ -2068,13 +2091,22 @@ function renderPropertiesPage() {
           <td style="padding:9px 14px;text-align:right;">${r.acqTax   ? Number(r.acqTax).toLocaleString()+'만원'   : '-'}</td>
           <td style="padding:9px 14px;text-align:right;">${r.acqFee   ? Number(r.acqFee).toLocaleString()+'만원'   : '-'}</td>
           <td style="padding:9px 14px;text-align:right;font-weight:700;color:var(--primary);">${total ? total.toLocaleString()+'만원' : '-'}</td>
+          <td style="padding:9px 14px;text-align:right;">
+            ${curPrice ? `<div style="font-weight:700;color:#059669;">${curPrice.toLocaleString()}만원</div>${curPriceDateStr}` : '<span style="color:var(--gray-400);">-</span>'}
+          </td>
+          <td style="padding:9px 14px;text-align:right;font-weight:700;color:${profitColor};">
+            ${profit !== null ? (profit >= 0 ? '+' : '') + profit.toLocaleString() + '만원' : '<span style="color:var(--gray-400);">-</span>'}
+          </td>
+          <td style="padding:9px 14px;text-align:right;font-weight:700;color:${profitColor};">
+            ${profitRate !== null ? (profitRate >= 0 ? '+' : '') + profitRate.toFixed(1) + '%' : '<span style="color:var(--gray-400);">-</span>'}
+          </td>
           <td style="padding:9px 14px;color:var(--gray-500);">${r.note || '-'}</td>
           <td style="padding:9px 14px;">
             <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}','${r.id}')">수정</button>
             <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteRoom('${p.id}','${r.id}')">삭제</button>
           </td>
         </tr>`;}).join('')
-      : `<tr><td colspan="9" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 동호수가 없습니다.</td></tr>`;
+      : `<tr><td colspan="12" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 동호수가 없습니다.</td></tr>`;
     const bodyId = 'propRooms_' + p.id;
     const hasRooms = roomCount > 0;
     const deleteBtnStyle = hasRooms
@@ -2108,6 +2140,9 @@ function renderPropertiesPage() {
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">세금</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">수수료</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--primary);font-size:12px;text-align:right;white-space:nowrap;">총 매입금액</th>
+                <th style="padding:9px 14px;font-weight:600;color:#059669;font-size:12px;text-align:right;white-space:nowrap;">현재 가치</th>
+                <th style="padding:9px 14px;font-weight:600;color:#6d28d9;font-size:12px;text-align:right;white-space:nowrap;">수익</th>
+                <th style="padding:9px 14px;font-weight:600;color:#6d28d9;font-size:12px;text-align:right;white-space:nowrap;">수익률</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">비고</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">관리</th>
               </tr>
@@ -2115,7 +2150,7 @@ function renderPropertiesPage() {
             <tbody>${roomRows}</tbody>
             <tfoot>
               <tr style="background:#f0f9ff;border-top:1px dashed #bae6fd;">
-                <td colspan="9" style="padding:10px 14px;">
+                <td colspan="12" style="padding:10px 14px;">
                   <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}')">+ 동호수 추가</button>
                 </td>
               </tr>
@@ -2201,26 +2236,38 @@ function openRoomModal(propId, roomId) {
   document.getElementById('rmHosu').value     = '';
   document.getElementById('rmArea').value     = '';
   document.getElementById('rmAcqDate').value  = '';
-  document.getElementById('rmAcqPrice').value = '';
-  document.getElementById('rmAcqTax').value   = '';
-  document.getElementById('rmAcqFee').value   = '';
-  document.getElementById('rmNote').value     = '';
+  document.getElementById('rmAcqPrice').value   = '';
+  document.getElementById('rmAcqTax').value     = '';
+  document.getElementById('rmAcqFee').value     = '';
+  document.getElementById('rmCurPrice').value   = '';
+  document.getElementById('rmCurPriceDate').value = '';
+  document.getElementById('rmNote').value       = '';
   document.getElementById('roomModalTitle').textContent = roomId ? '동호수 수정' : '동호수 추가';
   if (roomId) {
     const prop = getData('properties').find(x => x.id === propId);
     const room = prop?.rooms?.find(r => r.id === roomId);
     if (room) {
-      document.getElementById('rmDong').value     = room.dong || '';
-      document.getElementById('rmHosu').value     = room.hosu || room.roomNo || '';
-      document.getElementById('rmArea').value     = room.area || '';
-      document.getElementById('rmAcqDate').value  = room.acqDate || '';
-      document.getElementById('rmAcqPrice').value = room.acqPrice ? Number(room.acqPrice).toLocaleString() : '';
-      document.getElementById('rmAcqTax').value   = room.acqTax   ? Number(room.acqTax).toLocaleString()   : '';
-      document.getElementById('rmAcqFee').value   = room.acqFee   ? Number(room.acqFee).toLocaleString()   : '';
-      document.getElementById('rmNote').value     = room.note || '';
+      document.getElementById('rmDong').value         = room.dong || '';
+      document.getElementById('rmHosu').value         = room.hosu || room.roomNo || '';
+      document.getElementById('rmArea').value         = room.area || '';
+      document.getElementById('rmAcqDate').value      = room.acqDate || '';
+      document.getElementById('rmAcqPrice').value     = room.acqPrice ? Number(room.acqPrice).toLocaleString() : '';
+      document.getElementById('rmAcqTax').value       = room.acqTax   ? Number(room.acqTax).toLocaleString()   : '';
+      document.getElementById('rmAcqFee').value       = room.acqFee   ? Number(room.acqFee).toLocaleString()   : '';
+      document.getElementById('rmCurPrice').value     = room.curPrice ? Number(room.curPrice).toLocaleString() : '';
+      document.getElementById('rmCurPriceDate').value = room.curPriceDate || '';
+      document.getElementById('rmNote').value         = room.note || '';
     }
   }
   openModal('roomModal');
+}
+
+function openKBSearch() {
+  const propId = document.getElementById('rmPropId').value;
+  const prop = getData('properties').find(x => x.id === propId);
+  const addr = prop?.address || '';
+  const query = encodeURIComponent(addr || '아파트 시세');
+  window.open(`https://kbland.kr/map?sel=price&q=${query}`, '_blank');
 }
 
 function updateRoomPreview() {
@@ -2259,10 +2306,12 @@ function saveRoom() {
     id: roomId || uid(), dong, hosu, roomNo,
     area:     document.getElementById('rmArea').value.trim(),
     acqDate:  document.getElementById('rmAcqDate').value.trim(),
-    acqPrice: Number(document.getElementById('rmAcqPrice').value.replace(/,/g,'')) || 0,
-    acqTax:   Number(document.getElementById('rmAcqTax').value.replace(/,/g,''))   || 0,
-    acqFee:   Number(document.getElementById('rmAcqFee').value.replace(/,/g,''))   || 0,
-    note:     document.getElementById('rmNote').value
+    acqPrice:     Number(document.getElementById('rmAcqPrice').value.replace(/,/g,''))   || 0,
+    acqTax:       Number(document.getElementById('rmAcqTax').value.replace(/,/g,''))     || 0,
+    acqFee:       Number(document.getElementById('rmAcqFee').value.replace(/,/g,''))     || 0,
+    curPrice:     Number(document.getElementById('rmCurPrice').value.replace(/,/g,''))   || 0,
+    curPriceDate: document.getElementById('rmCurPriceDate').value.trim(),
+    note:         document.getElementById('rmNote').value
   };
   if (roomId) {
     const idx = prop.rooms.findIndex(r => r.id === roomId);
