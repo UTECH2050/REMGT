@@ -1787,6 +1787,18 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => { if(n.getAttribute('onclick')?.includes(page)) n.classList.add('active'); });
+
+  // 페이지 이동 시 해당 페이지 필터 초기화
+  if (page === 'tenants') {
+    tenantFilter = ''; tenantDongFilter = ''; tenantRoomFilter = ''; tenantStatusFilter = '';
+  }
+  if (page === 'contracts') {
+    contractFilter = ''; contractDongFilter = ''; contractRoomFilter = ''; contractStatusFilter = '';
+  }
+  if (page === 'payments') {
+    paymentSortKey = 'room'; paymentSortDir = 'asc';
+  }
+
   // Render
   updateBadges();
   if (page === 'dashboard') renderDashboard();
