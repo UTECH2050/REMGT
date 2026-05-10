@@ -3765,31 +3765,22 @@ function renderContractFilterBar() {
   const buildOptions = '<option value="">전체 건물</option>' +
     properties.map(p => `<option value="${p.name.replace(/"/g,'&quot;')}"${contractFilter===p.name?' selected':''}>${p.name}</option>`).join('');
 
-  let dongOptions = '<option value="">전체 동</option>';
+  // 동: 건물이 선택된 경우에만 표시
+  let dongSel = '';
   if (contractFilter) {
     const prop = properties.find(p => p.name === contractFilter);
     const dongs = [...new Set((prop?.rooms||[]).map(r=>r.dong).filter(Boolean))].sort();
-    dongOptions += dongs.map(d => `<option value="${d}"${contractDongFilter===d?' selected':''}>${d}</option>`).join('');
-  }
-
-  let roomOptions = '<option value="">전체 호수</option>';
-  if (contractFilter) {
-    const prop = properties.find(p => p.name === contractFilter);
-    let rooms = (prop?.rooms||[]);
-    if (contractDongFilter) rooms = rooms.filter(r => r.dong === contractDongFilter);
-    rooms = rooms.slice().sort((a,b) => String(a.roomNo).localeCompare(String(b.roomNo),undefined,{numeric:true}));
-    roomOptions += rooms.map(r => `<option value="${r.roomNo}"${contractRoomFilter===r.roomNo?' selected':''}>${r.hosu||r.roomNo}</option>`).join('');
+    if (dongs.length > 0) {
+      const dongOptions = '<option value="">전체 동</option>' +
+        dongs.map(d => `<option value="${d}"${contractDongFilter===d?' selected':''}>${d}</option>`).join('');
+      dongSel = `<select onchange="filterContractDong(this.value)" style="${selStyle}">${dongOptions}</select>`;
+    }
   }
 
   bar.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center;flex:1;flex-wrap:wrap;">
       <select onchange="filterContracts(this.value)" style="${selStyle}">${buildOptions}</select>
-      <select onchange="filterContractDong(this.value)" style="${selStyle}"${!contractFilter?' disabled':''}>
-        ${dongOptions}
-      </select>
-      <select onchange="filterContractRoom(this.value)" style="${selStyle}"${!contractFilter?' disabled':''}>
-        ${roomOptions}
-      </select>
+      ${dongSel}
     </div>
     <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:8px;">(단위: 만원)</span>
   `;
