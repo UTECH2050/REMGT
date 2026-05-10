@@ -1023,7 +1023,7 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
       <span class="modal-title" id="roomModalTitle">동호수 추가</span>
       <button class="modal-close" onclick="closeModal('roomModal')">×</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="overflow-x:hidden;">
       <input type="hidden" id="rmPropId">
       <input type="hidden" id="rmRoomId">
       <!-- 동 / 호수 / 공급면적 / 전용면적 — 4컬럼 한 줄 -->
@@ -1071,21 +1071,19 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
         </div>
       </div>
       <!-- 현재 가치 -->
-      <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:4px 0 10px;text-transform:uppercase;letter-spacing:0.04em;">💰 현재 가치</div>
-      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:14px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
-          <div class="form-group" style="margin:0;">
-            <label>현재 시세 (만원)</label>
-            <input type="text" id="rmCurPrice" placeholder="" oninput="fmtComma(this)" style="text-align:right;">
-          </div>
-          <div class="form-group" style="margin:0;">
-            <label>기준일자</label>
-            <input type="text" id="rmCurPriceDate" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
-          </div>
+      <div style="display:flex;align-items:center;gap:12px;margin:4px 0 10px;">
+        <span style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;">💰 현재 가치</span>
+        <button type="button" class="btn btn-outline btn-sm" style="border-color:#16a34a;color:#16a34a;font-size:12px;white-space:nowrap;" onclick="openKBSearch()">🔍 KB 부동산 시세 조회</button>
+        <span style="font-size:11px;color:#9ca3af;">조회 후 시세를 직접 입력</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <div class="form-group" style="margin:0;">
+          <label>현재 시세 (만원)</label>
+          <input type="text" id="rmCurPrice" placeholder="" oninput="fmtComma(this)" style="text-align:right;">
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <button type="button" class="btn btn-outline btn-sm" style="border-color:#16a34a;color:#16a34a;font-size:12px;" onclick="openKBSearch()">🔍 KB 부동산 시세 조회</button>
-          <span style="font-size:11px;color:#6b7280;">조회 후 시세를 직접 입력해주세요</span>
+        <div class="form-group" style="margin:0;">
+          <label>기준일자</label>
+          <input type="text" id="rmCurPriceDate" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
         </div>
       </div>
       <div class="form-group">
