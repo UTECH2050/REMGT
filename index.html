@@ -608,9 +608,10 @@
 
       <!-- 탭2: 계약 히스토리 -->
       <div id="ctab-history" style="display:none;">
-        <div class="filter-bar" style="gap:8px;">
+        <div class="filter-bar" style="gap:8px;align-items:center;">
+          <span style="font-size:13px;font-weight:600;color:var(--gray-600);white-space:nowrap;">조회 계약 :</span>
           <select id="histBuildingSel" onchange="onHistBuildingChange()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;">
-            <option value="">건물</option>
+            <option value="">─ 선택 ─</option>
           </select>
           <select id="histDongSel" onchange="onHistDongChange()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;" disabled>
             <option value="">동</option>
@@ -3810,7 +3811,7 @@ function initHistoryFilters() {
   const buildSel = document.getElementById('histBuildingSel');
   if (!buildSel) return;
   const props = getData('properties');
-  buildSel.innerHTML = '<option value="">건물</option>' +
+  buildSel.innerHTML = '<option value="">─ 선택 ─</option>' +
     props.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
   const dongSel = document.getElementById('histDongSel');
   const roomSel = document.getElementById('histRoomSel');
