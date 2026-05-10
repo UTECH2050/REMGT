@@ -1133,15 +1133,12 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
           <input type="text" id="regContractEnd" placeholder="0000-00-00" maxlength="10"
                  oninput="fmtIsoDate(this);updatePayDateDisplay()" style="width:100%;text-align:center;">
         </div>
-        <div style="flex:0 0 auto;">
-          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">계약 연장</label>
-          <select id="regExtendSelect" onchange="onRegExtendSelectChange()"
-                  style="height:36px;border-radius:8px;border:1px solid var(--gray-200);padding:0 8px;font-size:13px;background:#fff;">
-            <option value="">없음</option>
-            <option value="1">1년</option>
-            <option value="2">2년</option>
-            <option value="기타">기타</option>
-          </select>
+        <div style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:flex-end;">
+          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;visibility:hidden;">연장</label>
+          <button type="button" onclick="extendContract()"
+                  style="height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--primary);color:var(--primary);background:#fff;font-size:13px;cursor:pointer;white-space:nowrap;font-weight:500;">
+            🔄 계약 연장
+          </button>
         </div>
         <div id="regOrigStartWrap" style="flex:1;min-width:0;display:none;">
           <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">최초 계약일</label>
@@ -1149,11 +1146,11 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
                  oninput="fmtIsoDate(this)" style="width:100%;text-align:center;background:#f3f4f6;color:#6b7280;" readonly>
         </div>
       </div>
-      <!-- 단위 + 보증금/월세/관리비 -->
+      <!-- 단위 + 보증금/월세/관리비/선불후불 -->
       <div style="display:flex;justify-content:flex-end;margin:4px 0 2px;">
         <span style="font-size:12px;color:var(--gray-400);">(단위: 만원)</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:10px;">
         <div class="form-group" style="margin:0;">
           <label>보증금</label>
           <input type="text" id="regDeposit" placeholder="" oninput="fmtComma(this)" style="text-align:right;">
@@ -1166,20 +1163,20 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
           <label>관리비</label>
           <input type="text" id="regManagement" placeholder="" oninput="fmtComma(this)" style="text-align:right;">
         </div>
+        <div class="form-group" style="margin:0;">
+          <label>선불/후불</label>
+          <select id="regPayType" onchange="updatePayDateDisplay()"
+                  style="height:36px;border-radius:8px;border:1px solid var(--gray-200);padding:0 6px;font-size:13px;background:#fff;width:76px;">
+            <option value="선불">선불</option>
+            <option value="후불">후불</option>
+          </select>
+        </div>
       </div>
-      <!-- 납부일 | 선불/후불 | 입금일자 -->
+      <!-- 납부일 | 입금일자 -->
       <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;">
         <div style="flex:0 0 70px;">
           <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">납부일(매월)</label>
           <input type="number" id="regPayDay" placeholder="" min="1" max="28" style="width:100%;text-align:center;">
-        </div>
-        <div style="flex:0 0 76px;">
-          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">선불/후불</label>
-          <select id="regPayType" onchange="updatePayDateDisplay()"
-                  style="width:100%;height:36px;border-radius:8px;border:1px solid var(--gray-200);padding:0 6px;font-size:13px;background:#fff;">
-            <option value="선불">선불</option>
-            <option value="후불">후불</option>
-          </select>
         </div>
         <div style="flex:1;">
           <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">입금일자</label>
@@ -2779,45 +2776,45 @@ function fmtDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// 계약 연장 select 변경 처리 (한줄 인라인 방식)
-function onRegExtendSelectChange() {
-  const val = document.getElementById('regExtendSelect').value;
-  const wrap = document.getElementById('regOrigStartWrap');
-  const origStartEl = document.getElementById('regOrigStart');
+// 계약 연장 버튼: 기존 계약 기간을 자동 감지하여 동일 기간 연장
+function extendContract() {
+  const startVal = document.getElementById('regContractStart').value;
+  const endVal   = document.getElementById('regContractEnd').value;
+  const startDig = startVal.replace(/[^\d]/g, '');
+  const endDig   = endVal.replace(/[^\d]/g, '');
 
-  if (!val) {
-    // 없음: 최초계약일 숨김
-    if (wrap) wrap.style.display = 'none';
+  if (startDig.length < 8 || endDig.length < 8) {
+    showToast('계약 시작일과 종료일을 먼저 입력해주세요.', 'error');
     return;
   }
 
-  // 연장 선택: 최초계약일 표시
-  if (wrap) wrap.style.display = 'block';
+  const startDate = new Date(+startDig.slice(0,4), +startDig.slice(4,6)-1, +startDig.slice(6,8));
+  const endDate   = new Date(+endDig.slice(0,4),   +endDig.slice(4,6)-1,   +endDig.slice(6,8));
+
+  // 기존 계약 기간(일수) 계산 후 연장 단위 결정
+  const durationDays = Math.round((endDate - startDate) / 86400000) + 1;
+  const extendYears  = durationDays <= 400 ? 1 : 2;
+
+  // 최초 계약일 저장 (처음 연장 시만 세팅)
+  const origStartEl  = document.getElementById('regOrigStart');
+  const origStartWrap = document.getElementById('regOrigStartWrap');
   if (origStartEl && !origStartEl.value) {
-    // 최초계약일 = 현재 계약시작일로 채움
-    origStartEl.value = document.getElementById('regContractStart').value || '';
+    origStartEl.value = startVal;
   }
+  if (origStartWrap) origStartWrap.style.display = 'block';
 
-  if (val === '기타') {
-    // 기타: 계약종료일 직접 입력 (변경 없음)
-    updatePayDateDisplay();
-    return;
-  }
+  // 새 계약시작일 = 기존 종료일 + 1일
+  const newStart = new Date(endDate);
+  newStart.setDate(newStart.getDate() + 1);
 
-  // 1년/2년: 계약 종료일 자동 계산 (현재 종료일 + N년)
-  const years = parseInt(val);
-  const endVal = document.getElementById('regContractEnd').value;
-  const digits = endVal.replace(/[^\d]/g, '');
-  if (digits.length === 8) {
-    const d = new Date(+digits.slice(0,4), +digits.slice(4,6)-1, +digits.slice(6,8));
-    d.setFullYear(d.getFullYear() + years);
-    document.getElementById('regContractEnd').value = fmtDateStr(d);
-    updatePayDateDisplay();
-  } else {
-    showToast('계약 종료일을 먼저 입력해주세요.', 'error');
-    document.getElementById('regExtendSelect').value = '';
-    if (wrap) wrap.style.display = 'none';
-  }
+  // 새 계약종료일 = 새 시작일 + N년 - 1일
+  const newEnd = new Date(newStart.getFullYear() + extendYears, newStart.getMonth(), newStart.getDate() - 1);
+
+  document.getElementById('regContractStart').value = fmtDateStr(newStart);
+  document.getElementById('regContractEnd').value   = fmtDateStr(newEnd);
+  updatePayDateDisplay();
+
+  showToast(`계약이 ${extendYears}년 연장되었습니다. (${fmtDateStr(newStart)} ~ ${fmtDateStr(newEnd)})`);
 }
 
 // 입금일자 표시: 선불=계약시작일, 후불=계약종료일
@@ -3041,9 +3038,9 @@ function saveRegisterTenant() {
   if (_editingTenantId) {
     const idx = tenants.findIndex(t => t.id === _editingTenantId);
     if (idx !== -1) {
-      // 계약 연장이 선택된 경우 extendCount 증가
-      const extSelEl = document.getElementById('regExtendSelect');
-      const wasExtended = extSelEl && extSelEl.value !== '';
+      // 계약 연장 버튼이 눌린 경우 (regOrigStart에 값이 있으면 연장된 것)
+      const origStartEl2 = document.getElementById('regOrigStart');
+      const wasExtended  = origStartEl2 && origStartEl2.value !== '' && origStartEl2.value !== fields.contractStart;
       const prevCount = tenants[idx].extendCount || 0;
       fields.extendCount = wasExtended ? prevCount + 1 : (tenants[idx].extendCount || 0);
       tenants[idx] = { ...tenants[idx], ...fields };
