@@ -576,18 +576,7 @@
 
       <!-- 탭1: 현재 계약 -->
       <div id="ctab-active">
-        <div class="filter-bar" style="gap:8px;">
-          <select id="contractBuildingSel" onchange="filterContracts(this.value)" style="height:34px;width:auto;max-width:160px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;">
-            <option value="">전체 건물</option>
-          </select>
-          <select onchange="filterContractStatus(this.value)" style="height:34px;width:auto;max-width:160px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;">
-            <option value="">전체 상태</option>
-            <option value="active">계약중</option>
-            <option value="expiring">만료 임박 (90일)</option>
-            <option value="expired">만료</option>
-          </select>
-          <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:auto;">(단위: 만원)</span>
-        </div>
+        <div id="contractFilterBar" class="filter-bar" style="gap:8px;"></div>
         <div class="card">
           <div class="card-body" style="padding:0">
             <div class="table-wrap">
@@ -1964,7 +1953,7 @@ function renderDashboard() {
 // ============================================================
 // TENANTS
 // ============================================================
-let tenantFilter = '', tenantStatusFilter = '';
+let tenantFilter = '', tenantDongFilter = '', tenantRoomFilter = '', tenantStatusFilter = '';
 let tenantSortKey = 'room', tenantSortDir = 'asc';
 let _editingTenantId = null;
 let _originalContractEnd = '';  // 계약 연장 시 원본 만기일 보존
@@ -2022,6 +2011,11 @@ function renderTenants(filter, statusFilter) {
       String(a.roomNo).localeCompare(String(b.roomNo), undefined, {numeric: true})
     );
     rooms.forEach(room => {
+      // 동 필터
+      if (tenantDongFilter && room.dong !== tenantDongFilter) return;
+      // 호수 필터
+      if (tenantRoomFilter && room.roomNo !== tenantRoomFilter) return;
+
       // 이 물건+호실에 연결된 임차인 찾기
       const t = tenants.find(x => x.building === prop.name && x.room === room.roomNo);
       const tStatus = t?.status || '공실';
@@ -2118,32 +2112,54 @@ function openRegisterForRoom(btn) {
   }
 }
 
-function filterTenantBuilding(v) { tenantFilter = v; renderTenantFilterBar(); renderTenants(); }
+function filterTenantBuilding(v) { tenantFilter = v; tenantDongFilter = ''; tenantRoomFilter = ''; renderTenantFilterBar(); renderTenants(); }
+function filterTenantDong(v)     { tenantDongFilter = v; tenantRoomFilter = ''; renderTenantFilterBar(); renderTenants(); }
+function filterTenantRoom(v)     { tenantRoomFilter = v; renderTenantFilterBar(); renderTenants(); }
 function filterTenantStatus(v)   { tenantStatusFilter = v; renderTenantFilterBar(); renderTenants(); }
-// 구 버전 호환
-function filterTenants(v) { filterTenantBuilding(v); }
+function filterTenants(v)        { filterTenantBuilding(v); }
 
 function renderTenantFilterBar() {
   const bar = document.getElementById('tenantFilterBar');
   if (!bar) return;
   const properties = getData('properties');
+  const selStyle = 'height:34px;width:auto;max-width:150px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;';
 
-  const buildOptions = ['<option value="">전체 건물</option>']
-    .concat(properties.map(p =>
-      `<option value="${p.name.replace(/"/g,'&quot;')}"${tenantFilter===p.name?' selected':''}>${p.name}</option>`
-    )).join('');
+  // 건물명
+  const buildOptions = '<option value="">전체 건물</option>' +
+    properties.map(p => `<option value="${p.name.replace(/"/g,'&quot;')}"${tenantFilter===p.name?' selected':''}>${p.name}</option>`).join('');
 
-  const sel = (id, onchange, options) =>
-    `<select id="${id}" onchange="${onchange}" style="height:34px;width:auto;max-width:160px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;">${options}</select>`;
+  // 동 (선택된 건물의 고유 동 목록)
+  let dongOptions = '<option value="">전체 동</option>';
+  if (tenantFilter) {
+    const prop = properties.find(p => p.name === tenantFilter);
+    const dongs = [...new Set((prop?.rooms||[]).map(r=>r.dong).filter(Boolean))].sort();
+    dongOptions += dongs.map(d => `<option value="${d}"${tenantDongFilter===d?' selected':''}>${d}</option>`).join('');
+  }
+
+  // 호수 (선택된 건물+동의 호수 목록)
+  let roomOptions = '<option value="">전체 호수</option>';
+  if (tenantFilter) {
+    const prop = properties.find(p => p.name === tenantFilter);
+    let rooms = (prop?.rooms||[]);
+    if (tenantDongFilter) rooms = rooms.filter(r => r.dong === tenantDongFilter);
+    rooms = rooms.slice().sort((a,b) => String(a.roomNo).localeCompare(String(b.roomNo),undefined,{numeric:true}));
+    roomOptions += rooms.map(r => `<option value="${r.roomNo}"${tenantRoomFilter===r.roomNo?' selected':''}>${r.hosu||r.roomNo}</option>`).join('');
+  }
 
   bar.innerHTML = `
-    <div style="display:flex;gap:8px;align-items:center;flex:1;">
-      ${sel('tenantBuildSel', 'filterTenantBuilding(this.value)', buildOptions)}
-      ${sel('tenantStatusSel', 'filterTenantStatus(this.value)',
-        `<option value=""${tenantStatusFilter===''?' selected':''}>전체 상태</option>
-         <option value="입주"${tenantStatusFilter==='입주'?' selected':''}>임대중</option>
-         <option value="공실"${tenantStatusFilter==='공실'?' selected':''}>공실</option>`
-      )}
+    <div style="display:flex;gap:8px;align-items:center;flex:1;flex-wrap:wrap;">
+      <select onchange="filterTenantBuilding(this.value)" style="${selStyle}">${buildOptions}</select>
+      <select onchange="filterTenantDong(this.value)" style="${selStyle}"${!tenantFilter?' disabled':''}>
+        ${dongOptions}
+      </select>
+      <select onchange="filterTenantRoom(this.value)" style="${selStyle}"${!tenantFilter?' disabled':''}>
+        ${roomOptions}
+      </select>
+      <select onchange="filterTenantStatus(this.value)" style="${selStyle}">
+        <option value=""${tenantStatusFilter===''?' selected':''}>전체</option>
+        <option value="입주"${tenantStatusFilter==='입주'?' selected':''}>임대중</option>
+        <option value="공실"${tenantStatusFilter==='공실'?' selected':''}>공실</option>
+      </select>
     </div>
     <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:8px;">(단위: 만원)</span>
   `;
@@ -3635,25 +3651,25 @@ function markAllPaid() {
 // ============================================================
 // CONTRACTS
 // ============================================================
-let contractFilter = '', contractStatusFilter = '';
+let contractFilter = '', contractDongFilter = '', contractRoomFilter = '', contractStatusFilter = '';
 function renderContracts(filter, statusFilter) {
   if (filter !== undefined) contractFilter = filter;
   if (statusFilter !== undefined) contractStatusFilter = statusFilter;
 
-  // 건물명 드롭다운 채우기
-  const buildSel = document.getElementById('contractBuildingSel');
-  if (buildSel) {
-    const props = getData('properties');
-    const cur = buildSel.value;
-    buildSel.innerHTML = '<option value="">전체 건물</option>' +
-      props.map(p => `<option value="${p.name}"${contractFilter===p.name?' selected':''}>${p.name}</option>`).join('');
-    if (contractFilter) buildSel.value = contractFilter;
-  }
+  // 필터바 렌더링
+  renderContractFilterBar();
 
+  const properties = getData('properties');
   let tenants = getData('tenants').filter(t => t.name && t.contractEnd);
-  // 건물명 정확 매칭 필터
-  if (contractFilter) {
-    tenants = tenants.filter(t => t.building === contractFilter);
+  if (contractFilter)     tenants = tenants.filter(t => t.building === contractFilter);
+  if (contractDongFilter || contractRoomFilter) {
+    tenants = tenants.filter(t => {
+      const prop = properties.find(p => p.name === t.building);
+      const room = prop?.rooms?.find(r => r.roomNo === t.room);
+      if (contractDongFilter && room?.dong !== contractDongFilter) return false;
+      if (contractRoomFilter && t.room !== contractRoomFilter) return false;
+      return true;
+    });
   }
   if (contractStatusFilter) {
     if (contractStatusFilter === 'active') tenants = tenants.filter(t => daysUntil(t.contractEnd) > 90);
@@ -3696,8 +3712,55 @@ function renderContracts(filter, statusFilter) {
     </tr>`;
   }).join('');
 }
-function filterContracts(v) { renderContracts(v, contractStatusFilter); }
-function filterContractStatus(v) { renderContracts(contractFilter, v); }
+function filterContracts(v)         { contractFilter = v; contractDongFilter = ''; contractRoomFilter = ''; renderContracts(); }
+function filterContractDong(v)      { contractDongFilter = v; contractRoomFilter = ''; renderContracts(); }
+function filterContractRoom(v)      { contractRoomFilter = v; renderContracts(); }
+function filterContractStatus(v)    { contractStatusFilter = v; renderContracts(); }
+
+function renderContractFilterBar() {
+  const bar = document.getElementById('contractFilterBar');
+  if (!bar) return;
+  const properties = getData('properties');
+  const selStyle = 'height:34px;width:auto;max-width:150px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;';
+
+  const buildOptions = '<option value="">전체 건물</option>' +
+    properties.map(p => `<option value="${p.name.replace(/"/g,'&quot;')}"${contractFilter===p.name?' selected':''}>${p.name}</option>`).join('');
+
+  let dongOptions = '<option value="">전체 동</option>';
+  if (contractFilter) {
+    const prop = properties.find(p => p.name === contractFilter);
+    const dongs = [...new Set((prop?.rooms||[]).map(r=>r.dong).filter(Boolean))].sort();
+    dongOptions += dongs.map(d => `<option value="${d}"${contractDongFilter===d?' selected':''}>${d}</option>`).join('');
+  }
+
+  let roomOptions = '<option value="">전체 호수</option>';
+  if (contractFilter) {
+    const prop = properties.find(p => p.name === contractFilter);
+    let rooms = (prop?.rooms||[]);
+    if (contractDongFilter) rooms = rooms.filter(r => r.dong === contractDongFilter);
+    rooms = rooms.slice().sort((a,b) => String(a.roomNo).localeCompare(String(b.roomNo),undefined,{numeric:true}));
+    roomOptions += rooms.map(r => `<option value="${r.roomNo}"${contractRoomFilter===r.roomNo?' selected':''}>${r.hosu||r.roomNo}</option>`).join('');
+  }
+
+  bar.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;flex:1;flex-wrap:wrap;">
+      <select onchange="filterContracts(this.value)" style="${selStyle}">${buildOptions}</select>
+      <select onchange="filterContractDong(this.value)" style="${selStyle}"${!contractFilter?' disabled':''}>
+        ${dongOptions}
+      </select>
+      <select onchange="filterContractRoom(this.value)" style="${selStyle}"${!contractFilter?' disabled':''}>
+        ${roomOptions}
+      </select>
+      <select onchange="filterContractStatus(this.value)" style="${selStyle}">
+        <option value=""${contractStatusFilter===''?' selected':''}>전체</option>
+        <option value="active"${contractStatusFilter==='active'?' selected':''}>계약중</option>
+        <option value="expiring"${contractStatusFilter==='expiring'?' selected':''}>만료 임박(90일)</option>
+        <option value="expired"${contractStatusFilter==='expired'?' selected':''}>만료</option>
+      </select>
+    </div>
+    <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:8px;">(단위: 만원)</span>
+  `;
+}
 
 // ============================================================
 // 계약 탭 전환
