@@ -2228,6 +2228,7 @@ function renderPropertiesPage() {
           </span>
         </div>
         <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
+          <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}')">+ 동호수</button>
           <button class="btn btn-outline btn-sm" onclick="openPropertyModal('${p.id}')">수정</button>
         </div>
       </div>
@@ -2252,13 +2253,6 @@ function renderPropertiesPage() {
               </tr>
             </thead>
             <tbody>${roomRows}</tbody>
-            <tfoot>
-              <tr style="background:#f0f9ff;border-top:1px dashed #bae6fd;">
-                <td colspan="13" style="padding:10px 14px;">
-                  <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}')">+ 동호수 추가</button>
-                </td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       </div>
