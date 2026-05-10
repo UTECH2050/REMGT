@@ -3660,8 +3660,9 @@ function renderContracts(filter, statusFilter) {
   renderContractFilterBar();
 
   const properties = getData('properties');
-  let tenants = getData('tenants').filter(t => t.name && t.contractEnd);
-  if (contractFilter)     tenants = tenants.filter(t => t.building === contractFilter);
+  // 현재 임대중인 계약만 표시 (status === '입주')
+  let tenants = getData('tenants').filter(t => t.name && t.status === '입주');
+  if (contractFilter) tenants = tenants.filter(t => t.building === contractFilter);
   if (contractDongFilter || contractRoomFilter) {
     tenants = tenants.filter(t => {
       const prop = properties.find(p => p.name === t.building);
@@ -3670,11 +3671,6 @@ function renderContracts(filter, statusFilter) {
       if (contractRoomFilter && t.room !== contractRoomFilter) return false;
       return true;
     });
-  }
-  if (contractStatusFilter) {
-    if (contractStatusFilter === 'active') tenants = tenants.filter(t => daysUntil(t.contractEnd) > 90);
-    if (contractStatusFilter === 'expiring') tenants = tenants.filter(t => daysUntil(t.contractEnd) <= 90 && daysUntil(t.contractEnd) >= 0);
-    if (contractStatusFilter === 'expired') tenants = tenants.filter(t => daysUntil(t.contractEnd) < 0);
   }
   tenants.sort((a,b) => {
     let va = a[contractSortKey] ?? '', vb = b[contractSortKey] ?? '';
@@ -3750,12 +3746,6 @@ function renderContractFilterBar() {
       </select>
       <select onchange="filterContractRoom(this.value)" style="${selStyle}"${!contractFilter?' disabled':''}>
         ${roomOptions}
-      </select>
-      <select onchange="filterContractStatus(this.value)" style="${selStyle}">
-        <option value=""${contractStatusFilter===''?' selected':''}>전체</option>
-        <option value="active"${contractStatusFilter==='active'?' selected':''}>계약중</option>
-        <option value="expiring"${contractStatusFilter==='expiring'?' selected':''}>만료 임박(90일)</option>
-        <option value="expired"${contractStatusFilter==='expired'?' selected':''}>만료</option>
       </select>
     </div>
     <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:8px;">(단위: 만원)</span>
