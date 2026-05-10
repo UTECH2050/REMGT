@@ -2411,7 +2411,16 @@ function saveProperty() {
 function deleteProperty(id) {
   const p = getData('properties').find(x => x.id === id);
   if (!p) return;
+  // 임차인이 등록된 호실이 있으면 삭제 불가
   if (p.rooms && p.rooms.length > 0) {
+    const tenants  = getData('tenants');
+    const occupied = p.rooms.filter(r =>
+      tenants.some(t => t.building === p.name && t.room === r.roomNo && t.name)
+    );
+    if (occupied.length > 0) {
+      showToast(`'${p.name}' 건물의 ${occupied.map(r=>r.roomNo).join(', ')} 호실에 임차인이 등록되어 있습니다. 임차인을 먼저 삭제한 후 건물을 삭제해주세요.`, 'error');
+      return;
+    }
     showToast(`'${p.name}' 건물에 등록된 동호수(${p.rooms.length}개)가 있습니다. 동호수를 모두 삭제한 후 건물을 삭제해주세요.`, 'error');
     return;
   }
@@ -2472,9 +2481,18 @@ function deleteRoomFromModal() {
   const roomId = document.getElementById('rmRoomId').value;
   if (!roomId) return;
 
-  // 입력된 데이터가 있는지 확인
+  // 임차인이 등록된 호실은 삭제 불가
   const prop = getData('properties').find(x => x.id === propId);
   const room = prop?.rooms?.find(r => r.id === roomId);
+  if (room) {
+    const tenant = getData('tenants').find(t => t.building === prop.name && t.room === room.roomNo && t.name);
+    if (tenant) {
+      showToast(`${room.roomNo} 호실에 임차인(${tenant.name})이 등록되어 있습니다. 임차인을 먼저 삭제한 후 동호수를 삭제해주세요.`, 'error');
+      return;
+    }
+  }
+
+  // 입력된 데이터가 있는지 확인
   const hasData = room && (
     room.acqPrice || room.acqTax || room.acqFee ||
     room.supplyPyeong || room.exclPyeong || room.curPrice ||
