@@ -2208,7 +2208,7 @@ function renderPropertiesPage() {
           <span style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}${roomCount > 0 ? `<span style="font-size:13px;font-weight:400;color:var(--gray-400);margin-left:5px;">(${roomCount})</span>` : ''}</span>
           <span style="display:flex;align-items:center;gap:6px;overflow:hidden;">
             <span class="badge badge-primary" style="white-space:nowrap;flex-shrink:0;">${p.type||'주거'}</span>
-            ${p.address ? `<span style="font-size:12px;color:var(--primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;text-decoration:underline;text-underline-offset:2px;" onclick="event.stopPropagation();openNaverLandSearchById('${p.id}')">📍 ${p.address}</span>` : ''}
+            ${p.address ? `<span style="font-size:12px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.address}</span>` : ''}
           </span>
         </div>
         <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
@@ -2493,44 +2493,6 @@ function updateKBPreview() {
     (high && low ? ` &nbsp;<span style="color:#6b7280;font-size:11px;">(${low.toLocaleString()} ~ ${high.toLocaleString()})</span>` : '');
 }
 
-// 주소에서 동/읍/면 추출 (지번 or 도로명 공통)
-function extractDongFromAddress(address) {
-  if (!address) return '';
-  const isRoadAddress = /[가-힣]+(로|길)\s*\d/.test(address);
-  if (isRoadAddress) {
-    // 도로명 주소: 시군구 단위까지 추출
-    // e.g. "경기도 성남시 분당구 불정로 6" → "분당구"
-    const guMatch = address.match(/[가-힣]+(시|군|구)(?=\s)/g);
-    if (guMatch && guMatch.length > 0) return guMatch[guMatch.length - 1];
-    const doMatch = address.match(/[가-힣]+(시|도)(?=\s)/g);
-    if (doMatch && doMatch.length > 0) return doMatch[doMatch.length - 1];
-    return '';
-  } else {
-    // 지번 주소: 동/읍/면/리 추출
-    // e.g. "경기도 성남시 분당구 정자동 200-1" → "정자동"
-    const dongMatches = address.match(/[가-힣]+(동|읍|면|리)(?=[\s\d]|$)/g);
-    if (dongMatches && dongMatches.length > 0) return dongMatches[dongMatches.length - 1];
-    // 그래도 없으면 시군구
-    const guMatch = address.match(/[가-힣]+(시|군|구)(?=\s)/g);
-    if (guMatch && guMatch.length > 0) return guMatch[guMatch.length - 1];
-    return '';
-  }
-}
-
-function openNaverLandSearch(address, buildingName) {
-  const dong = extractDongFromAddress(address);
-  const query = [dong, buildingName].filter(Boolean).join(' ').trim();
-  if (!query) return;
-  window.open('https://new.land.naver.com/search?query=' + encodeURIComponent(query), '_blank');
-}
-
-// 물건 ID로 주소·건물명을 getData()에서 직접 조회 → 한글 인코딩 문제 없음
-function openNaverLandSearchById(propId) {
-  const props = getData('properties');
-  const p = props.find(x => x.id === propId);
-  if (!p) return;
-  openNaverLandSearch(p.address || '', p.name || '');
-}
 
 function applyKBPrice() {
   const high = Number((document.getElementById('kbPriceHigh').value || '').replace(/,/g,'')) || 0;
