@@ -1001,8 +1001,8 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
     <div class="modal-body">
       <input type="hidden" id="rmPropId">
       <input type="hidden" id="rmRoomId">
-      <!-- 동 / 호수 / 전용면적 한 줄 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+      <!-- 동 / 호수 / 전용면적 / 평형 한 줄 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
         <div class="form-group" style="margin:0;">
           <label>동 <span style="font-size:11px;color:var(--gray-400);">(없으면 공란)</span></label>
           <input type="text" id="rmDong" placeholder="예: 101">
@@ -1013,7 +1013,11 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
         </div>
         <div class="form-group" style="margin:0;">
           <label>전용면적 (㎡)</label>
-          <input type="text" id="rmArea" placeholder="예: 33.5">
+          <input type="text" id="rmArea" placeholder="예: 84.9" oninput="syncPyeong(this)">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>평형 <span style="font-size:11px;color:var(--gray-400);">평</span></label>
+          <input type="text" id="rmPyeong" placeholder="예: 25.7" oninput="syncArea(this)">
         </div>
       </div>
       <!-- 취득 정보 -->
@@ -2156,7 +2160,10 @@ function renderPropertiesPage() {
           const curPriceDateStr = r.curPriceDate ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;">기준: ${r.curPriceDate}</div>` : '';
           return `<tr>
           <td style="padding:9px 14px;">${r.roomNo}</td>
-          <td style="padding:9px 14px;">${r.area ? r.area + ' ㎡' : '-'}</td>
+          <td style="padding:9px 14px;">
+            ${r.area ? r.area + ' ㎡' : '-'}
+            ${r.pyeong ? `<span style="font-size:11px;color:var(--gray-400);margin-left:4px;">(${r.pyeong}평)</span>` : ''}
+          </td>
           <td style="padding:9px 14px;">${r.acqDate || '-'}</td>
           <td style="padding:9px 14px;text-align:right;">${r.acqPrice ? Number(r.acqPrice).toLocaleString()+'만원' : '-'}</td>
           <td style="padding:9px 14px;text-align:right;">${r.acqTax   ? Number(r.acqTax).toLocaleString()+'만원'   : '-'}</td>
@@ -2205,7 +2212,7 @@ function renderPropertiesPage() {
             <thead>
               <tr style="background:var(--gray-50);">
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">동호수</th>
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">전용면적</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">전용면적 / 평형</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:left;">취득일자</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">매수금액</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:right;">세금</th>
@@ -2306,6 +2313,7 @@ function openRoomModal(propId, roomId) {
   document.getElementById('rmDong').value     = '';
   document.getElementById('rmHosu').value     = '';
   document.getElementById('rmArea').value     = '';
+  document.getElementById('rmPyeong').value   = '';
   document.getElementById('rmAcqDate').value  = '';
   document.getElementById('rmAcqPrice').value   = '';
   document.getElementById('rmAcqTax').value     = '';
@@ -2321,6 +2329,7 @@ function openRoomModal(propId, roomId) {
       document.getElementById('rmDong').value         = room.dong || '';
       document.getElementById('rmHosu').value         = room.hosu || room.roomNo || '';
       document.getElementById('rmArea').value         = room.area || '';
+      document.getElementById('rmPyeong').value       = room.pyeong || '';
       document.getElementById('rmAcqDate').value      = room.acqDate || '';
       document.getElementById('rmAcqPrice').value     = room.acqPrice ? Number(room.acqPrice).toLocaleString() : '';
       document.getElementById('rmAcqTax').value       = room.acqTax   ? Number(room.acqTax).toLocaleString()   : '';
@@ -2459,6 +2468,7 @@ function saveRoom() {
   const obj = {
     id: roomId || uid(), dong, hosu, roomNo,
     area:     document.getElementById('rmArea').value.trim(),
+    pyeong:   document.getElementById('rmPyeong').value.trim(),
     acqDate:  document.getElementById('rmAcqDate').value.trim(),
     acqPrice:     Number(document.getElementById('rmAcqPrice').value.replace(/,/g,''))   || 0,
     acqTax:       Number(document.getElementById('rmAcqTax').value.replace(/,/g,''))     || 0,
@@ -2516,6 +2526,21 @@ function fmtPhone(el) {
   if (v.length <= 3)       el.value = v;
   else if (v.length <= 7)  el.value = v.slice(0,3) + '-' + v.slice(3);
   else                     el.value = v.slice(0,3) + '-' + v.slice(3,7) + '-' + v.slice(7);
+}
+
+// ㎡ 입력 → 평형 자동 환산
+function syncPyeong(el) {
+  const sqm = parseFloat(el.value);
+  const pyeongEl = document.getElementById('rmPyeong');
+  if (!pyeongEl) return;
+  pyeongEl.value = sqm > 0 ? (sqm / 3.3058).toFixed(1) : '';
+}
+// 평형 입력 → ㎡ 자동 환산
+function syncArea(el) {
+  const pyeong = parseFloat(el.value);
+  const areaEl = document.getElementById('rmArea');
+  if (!areaEl) return;
+  areaEl.value = pyeong > 0 ? (pyeong * 3.3058).toFixed(2) : '';
 }
 
 function fmtComma(el) {
