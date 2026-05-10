@@ -1022,8 +1022,8 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
     <div class="modal-body" style="overflow-x:hidden;">
       <input type="hidden" id="rmPropId">
       <input type="hidden" id="rmRoomId">
-      <!-- 동 / 호수 / 공급면적 / 전용면적 — 4컬럼 한 줄 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+      <!-- 동 / 호수 / 공급(㎡·평) / 전용(㎡·평) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 2fr 2fr;gap:10px;margin-bottom:14px;">
         <div class="form-group" style="margin:0;">
           <label>동 <span style="font-size:11px;color:var(--gray-400);">(없으면 공란)</span></label>
           <input type="text" id="rmDong" placeholder="" style="text-align:center;">
@@ -1032,15 +1032,33 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
           <label>호수 <span class="required">*</span></label>
           <input type="text" id="rmHosu" placeholder="" style="text-align:center;">
         </div>
-        <div class="form-group" style="margin:0;">
-          <label>공급면적 <span style="font-size:11px;color:var(--gray-400);">평</span></label>
-          <input type="text" id="rmSupplyPyeong" placeholder="" oninput="updateAreaHint('rmSupplyPyeong','rmSupplyHint')" style="text-align:right;">
-          <div id="rmSupplyHint" style="font-size:11px;color:#9ca3af;margin-top:3px;min-height:15px;"></div>
+        <!-- 공급면적 쌍 -->
+        <div style="margin:0;">
+          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;">공급면적</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+            <div>
+              <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-bottom:2px;">㎡</div>
+              <input type="text" id="rmSupplyM2" placeholder="" oninput="syncArea('supply','m2')" style="text-align:right;width:100%;">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-bottom:2px;">평</div>
+              <input type="text" id="rmSupplyPyeong" placeholder="" oninput="syncArea('supply','pyeong')" style="text-align:right;width:100%;">
+            </div>
+          </div>
         </div>
-        <div class="form-group" style="margin:0;">
-          <label>전용면적 <span style="font-size:11px;color:var(--gray-400);">평</span></label>
-          <input type="text" id="rmExclPyeong" placeholder="" oninput="updateAreaHint('rmExclPyeong','rmExclHint')" style="text-align:right;">
-          <div id="rmExclHint" style="font-size:11px;color:#9ca3af;margin-top:3px;min-height:15px;"></div>
+        <!-- 전용면적 쌍 -->
+        <div style="margin:0;">
+          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;">전용면적</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+            <div>
+              <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-bottom:2px;">㎡</div>
+              <input type="text" id="rmExclM2" placeholder="" oninput="syncArea('excl','m2')" style="text-align:right;width:100%;">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-bottom:2px;">평</div>
+              <input type="text" id="rmExclPyeong" placeholder="" oninput="syncArea('excl','pyeong')" style="text-align:right;width:100%;">
+            </div>
+          </div>
         </div>
       </div>
       <!-- 취득일자 / 매입가 / 세금 / 수수료 — 4컬럼 한 줄 -->
@@ -2208,10 +2226,10 @@ function renderPropertiesPage() {
           return `<tr>
           <td style="padding:9px 14px;text-align:center;">${r.roomNo}</td>
           <td style="padding:9px 14px;text-align:center;font-size:13px;">
-            ${r.supplyPyeong ? `<div style="font-weight:600;">${r.supplyPyeong}</div><div style="font-size:11px;color:var(--gray-400);">${(r.supplyPyeong*3.3058).toFixed(1)}㎡</div>` : '<span style="color:var(--gray-400);">-</span>'}
+            ${r.supplyPyeong ? `<div style="font-weight:600;">${r.supplyPyeong}평</div><div style="font-size:11px;color:var(--gray-400);">${r.supplyM2 || (r.supplyPyeong*3.3058).toFixed(1)}㎡</div>` : '<span style="color:var(--gray-400);">-</span>'}
           </td>
           <td style="padding:9px 14px;text-align:center;font-size:13px;">
-            ${r.exclPyeong ? `<div style="font-weight:600;">${r.exclPyeong}</div><div style="font-size:11px;color:var(--gray-400);">${(r.exclPyeong*3.3058).toFixed(1)}㎡</div>` : '<span style="color:var(--gray-400);">-</span>'}
+            ${r.exclPyeong ? `<div style="font-weight:600;">${r.exclPyeong}평</div><div style="font-size:11px;color:var(--gray-400);">${r.exclM2 || (r.exclPyeong*3.3058).toFixed(1)}㎡</div>` : '<span style="color:var(--gray-400);">-</span>'}
           </td>
           <td style="padding:9px 14px;text-align:center;">${r.acqDate || '-'}</td>
           <td style="padding:9px 14px;text-align:right;">${r.acqPrice ? Number(r.acqPrice).toLocaleString() : '-'}</td>
@@ -2434,10 +2452,13 @@ function openRoomModal(propId, roomId) {
     if (room) {
       document.getElementById('rmDong').value             = room.dong || '';
       document.getElementById('rmHosu').value             = room.hosu || room.roomNo || '';
-      document.getElementById('rmSupplyPyeong').value     = room.supplyPyeong || '';
-      document.getElementById('rmExclPyeong').value       = room.exclPyeong || '';
-      updateAreaHint('rmSupplyPyeong','rmSupplyHint');
-      updateAreaHint('rmExclPyeong','rmExclHint');
+      document.getElementById('rmSupplyPyeong').value = room.supplyPyeong || '';
+      document.getElementById('rmExclPyeong').value   = room.exclPyeong   || '';
+      // ㎡ 필드: 저장된 값 우선, 없으면 평에서 환산
+      document.getElementById('rmSupplyM2').value = room.supplyM2 ||
+        (room.supplyPyeong ? (parseFloat(room.supplyPyeong) * 3.3058).toFixed(2) : '');
+      document.getElementById('rmExclM2').value   = room.exclM2   ||
+        (room.exclPyeong   ? (parseFloat(room.exclPyeong)   * 3.3058).toFixed(2) : '');
       document.getElementById('rmAcqDate').value      = room.acqDate || '';
       document.getElementById('rmAcqPrice').value     = room.acqPrice ? Number(room.acqPrice).toLocaleString() : '';
       document.getElementById('rmAcqTax').value       = room.acqTax   ? Number(room.acqTax).toLocaleString()   : '';
@@ -2656,9 +2677,12 @@ function saveRoom() {
   if (!prop.rooms) prop.rooms = [];
   const obj = {
     id: roomId || uid(), dong, hosu, roomNo,
+    supplyM2:     document.getElementById('rmSupplyM2').value.trim(),
     supplyPyeong: document.getElementById('rmSupplyPyeong').value.trim(),
+    exclM2:       document.getElementById('rmExclM2').value.trim(),
     exclPyeong:   document.getElementById('rmExclPyeong').value.trim(),
-    area: (() => { const v = parseFloat(document.getElementById('rmExclPyeong').value); return v > 0 ? (v * 3.3058).toFixed(2) : ''; })(),
+    area: document.getElementById('rmExclM2').value.trim() ||
+          (() => { const v = parseFloat(document.getElementById('rmExclPyeong').value); return v > 0 ? (v * 3.3058).toFixed(2) : ''; })(),
     acqDate:  document.getElementById('rmAcqDate').value.trim(),
     acqPrice:     Number(document.getElementById('rmAcqPrice').value.replace(/,/g,''))   || 0,
     acqTax:       Number(document.getElementById('rmAcqTax').value.replace(/,/g,''))     || 0,
@@ -2719,12 +2743,22 @@ function fmtPhone(el) {
 }
 
 // 평 입력 → ㎡ 환산 힌트 표시
-function updateAreaHint(inputId, hintId) {
-  const pyeong = parseFloat(document.getElementById(inputId)?.value);
-  const hint   = document.getElementById(hintId);
-  if (!hint) return;
-  hint.textContent = pyeong > 0 ? `≈ ${(pyeong * 3.3058).toFixed(2)} ㎡` : '';
+// 면적 자동 환산 (1평 = 3.3058㎡)
+function syncArea(type, from) {
+  const RATE   = 3.3058;
+  const m2El     = document.getElementById(type === 'supply' ? 'rmSupplyM2'     : 'rmExclM2');
+  const pyeongEl = document.getElementById(type === 'supply' ? 'rmSupplyPyeong' : 'rmExclPyeong');
+  if (!m2El || !pyeongEl) return;
+  if (from === 'm2') {
+    const v = parseFloat(m2El.value);
+    pyeongEl.value = v > 0 ? (v / RATE).toFixed(2) : '';
+  } else {
+    const v = parseFloat(pyeongEl.value);
+    m2El.value = v > 0 ? (v * RATE).toFixed(2) : '';
+  }
 }
+// 구 버전 호환 (호출부 잔재 대비)
+function updateAreaHint() {}
 
 function fmtComma(el) {
   const raw = el.value.replace(/[^\d]/g, '');
