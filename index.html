@@ -2181,7 +2181,7 @@ function renderPropertiesPage() {
           const profit = curPrice ? curPrice - total : null;
           const profitRate = (profit !== null && total > 0) ? (profit / total * 100) : null;
           const profitColor = profit === null ? 'var(--gray-400)' : (profit >= 0 ? '#059669' : '#dc2626');
-          const curPriceDateStr = r.curPriceDate ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;">기준: ${r.curPriceDate}</div>` : '';
+          const curPriceDateStr = r.curPriceDate ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;">${r.curPriceDate}</div>` : '';
           return `<tr>
           <td style="padding:9px 14px;text-align:center;">${r.roomNo}</td>
           <td style="padding:9px 14px;text-align:center;font-size:13px;">
