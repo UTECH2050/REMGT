@@ -404,7 +404,7 @@
       <span class="icon">🏠</span> 물건 등록
     </div>
     <div class="nav-item" onclick="navigate('tenants')">
-      <span class="icon">👤</span> 임대차 관리
+      <span class="icon">👤</span> 임대 등록
     </div>
     <div class="nav-item" onclick="navigate('contracts')">
       <span class="icon">📄</span> 계약 관리
@@ -459,20 +459,19 @@
       </div>
     </div>
 
-    <!-- ===== TENANTS ===== -->
+    <!-- ===== TENANTS (임대 등록) ===== -->
     <div id="page-tenants" class="page">
       <div class="filter-bar">
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
-          <input type="text" placeholder="이름, 호실, 연락처 검색..." oninput="filterTenants(this.value)" style="padding-left:36px">
+          <input type="text" placeholder="건물명, 호실, 임차인 검색..." oninput="filterTenants(this.value)" style="padding-left:36px">
         </div>
         <select onchange="filterTenantStatus(this.value)" style="width:auto;min-width:120px">
           <option value="">전체 상태</option>
           <option value="입주">입주중</option>
           <option value="공실">공실</option>
         </select>
-        <button class="btn btn-primary btn-sm" onclick="openRegisterModal()" style="white-space:nowrap;">➕ 임대차 등록</button>
-        <span style="font-size:12px;color:var(--gray-400);margin-left:6px;">(단위: 만원)</span>
+        <span style="font-size:12px;color:var(--gray-400);margin-left:auto;">(단위: 만원)</span>
       </div>
       <div class="card">
         <div class="card-body" style="padding:0">
@@ -480,16 +479,16 @@
             <table id="tenantTable">
               <thead id="tenantThead">
                 <tr>
-                  <th><button class="sort-btn" onclick="sortTenants('building')">건물명 <span class="sort-icon" id="si-building">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortTenants('room')">호실 <span class="sort-icon" id="si-room">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortTenants('name')">임차인명 <span class="sort-icon" id="si-name">⇅</span></button></th>
+                  <th>건물명</th>
+                  <th>동-호수</th>
+                  <th>임차인명</th>
                   <th>연락처</th>
-                  <th style="text-align:right;"><button class="sort-btn" onclick="sortTenants('deposit')">보증금 <span class="sort-icon" id="si-deposit">⇅</span></button></th>
-                  <th style="text-align:right;"><button class="sort-btn" onclick="sortTenants('rent')">월세 <span class="sort-icon" id="si-rent">⇅</span></button></th>
-                  <th style="text-align:right;"><button class="sort-btn" onclick="sortTenants('management')">관리비 <span class="sort-icon" id="si-management">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortTenants('contractStart')">계약 시작일 <span class="sort-icon" id="si-contractStart">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortTenants('contractEnd')">계약 종료일 <span class="sort-icon" id="si-contractEnd">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortTenants('status')">상태 <span class="sort-icon" id="si-status">⇅</span></button></th>
+                  <th style="text-align:right;">보증금</th>
+                  <th style="text-align:right;">월세</th>
+                  <th style="text-align:right;">관리비</th>
+                  <th>계약 시작일</th>
+                  <th>계약 종료일</th>
+                  <th>상태</th>
                   <th>관리</th>
                 </tr>
               </thead>
@@ -1726,7 +1725,7 @@ function seedDemoData() {
 // ============================================================
 // NAVIGATION
 // ============================================================
-const pageTitles = { dashboard:'대시보드', tenants:'임대차 관리', payments:'수납 관리', contracts:'계약 관리', analytics:'손익분석', settings:'설정' };
+const pageTitles = { dashboard:'대시보드', tenants:'임대 등록', payments:'수납 관리', contracts:'계약 관리', analytics:'손익분석', settings:'설정' };
 let currentPage = 'dashboard';
 let chartInstances = {};
 
@@ -1955,81 +1954,133 @@ function updateSortIcons() {
   });
 }
 
+// 동호수 기반 임대 등록 현황 렌더링
 function renderTenants(filter, statusFilter) {
   if (filter !== undefined) tenantFilter = filter;
   if (statusFilter !== undefined) tenantStatusFilter = statusFilter;
-  let tenants = getData('tenants');
-  if (tenantFilter) {
-    const q = tenantFilter.toLowerCase();
-    tenants = tenants.filter(t => t.name?.toLowerCase().includes(q) || t.room?.includes(q) || t.phone?.includes(q));
-  }
-  if (tenantStatusFilter) tenants = tenants.filter(t => t.status === tenantStatusFilter);
 
-  // 정렬
-  tenants.sort((a, b) => {
-    let va = a[tenantSortKey] ?? '', vb = b[tenantSortKey] ?? '';
-    const numKeys = ['deposit','rent','management'];
-    if (numKeys.includes(tenantSortKey)) {
-      va = Number(va); vb = Number(vb);
-      return tenantSortDir === 'asc' ? va - vb : vb - va;
-    }
-    const cmp = String(va).localeCompare(String(vb), undefined, {numeric: true});
-    return tenantSortDir === 'asc' ? cmp : -cmp;
-  });
-  updateSortIcons();
+  const properties = getData('properties');
+  const tenants    = getData('tenants');
+  const tbody      = document.getElementById('tenantTbody');
 
-  const tbody = document.getElementById('tenantTbody');
-  if (tenants.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">👤</div><p>임차인이 없습니다.</p></div></td></tr>';
+  // 등록된 물건이 없으면 안내
+  const hasAnyRoom = properties.some(p => (p.rooms||[]).length > 0);
+  if (properties.length === 0 || !hasAnyRoom) {
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state">
+      <div class="empty-icon">🏠</div>
+      <p>등록된 동호수가 없습니다.<br><small style="color:var(--gray-400)">물건 등록 메뉴에서 동호수를 먼저 등록해주세요.</small></p>
+    </div></td></tr>`;
     return;
   }
+
   const today = new Date(); today.setHours(0,0,0,0);
-  tbody.innerHTML = tenants.map(t => {
-    const endStr = (t.contractEnd||'').replace(/[^\d]/g,'');
-    let statusBadge;
-    if (endStr.length === 8 && t.status === '입주') {
-      const endDate = new Date(endStr.slice(0,4), endStr.slice(4,6)-1, endStr.slice(6,8));
-      const diffMs   = endDate - today;
-      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-      if (diffDays < 0) {
-        // 계약 만료
-        statusBadge = `<span class="badge badge-danger">계약경과</span>`;
-      } else if (diffDays <= 90) {
-        // 3개월(90일) 이하: 남은 일수 표시
-        statusBadge = `<span class="badge badge-warning" title="${t.contractEnd} 만기">D-${diffDays}</span>`;
-      } else if (diffDays <= 180) {
-        // 6개월(180일) 이하: 남은 개월수 표시
-        const diffMonths = Math.floor(diffDays / 30);
-        statusBadge = `<span class="badge badge-warning" title="${t.contractEnd} 만기">${diffMonths}개월 후 만기</span>`;
-      } else {
-        statusBadge = `<span class="badge badge-success">입주</span>`;
+  const q = tenantFilter?.toLowerCase() || '';
+  const rows = [];
+
+  properties.forEach(prop => {
+    const rooms = (prop.rooms || []).slice().sort((a, b) =>
+      String(a.roomNo).localeCompare(String(b.roomNo), undefined, {numeric: true})
+    );
+    rooms.forEach(room => {
+      // 이 물건+호실에 연결된 임차인 찾기
+      const t = tenants.find(x => x.building === prop.name && x.room === room.roomNo);
+      const tStatus = t?.status || '공실';
+
+      // 검색 필터
+      if (q) {
+        const matchBuild = prop.name?.toLowerCase().includes(q);
+        const matchRoom  = room.roomNo?.toLowerCase().includes(q);
+        const matchName  = t?.name?.toLowerCase().includes(q);
+        const matchPhone = t?.phone?.includes(q);
+        if (!matchBuild && !matchRoom && !matchName && !matchPhone) return;
       }
-    } else {
-      statusBadge = `<span class="badge ${t.status==='입주'?'badge-success':'badge-gray'}">${t.status}</span>`;
-    }
-    return `
-    <tr>
-      <td>${t.building || '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
-      <td><strong>${fmtRoom(t.room)}</strong></td>
-      <td>${t.name||'-'}</td>
-      <td>${t.phone||'-'}</td>
-      <td style="text-align:right;">${t.deposit ? Number(t.deposit).toLocaleString() : '-'}</td>
-      <td style="text-align:right;">${t.rent ? Number(t.rent).toLocaleString() : '0'}</td>
-      <td style="text-align:right;">${t.management ? Number(t.management).toLocaleString() : '0'}</td>
-      <td>
-        <span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractStart)||'-'}</span>
-        ${(t.extendCount > 0 && t.moveIn && t.moveIn !== t.contractStart) ? `<br><span style="font-size:11px;color:var(--gray-400);">최초 ${fmtDate(t.moveIn)}</span>` : ''}
-      </td>
-      <td><span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractEnd)||'-'}</span></td>
-      <td>${statusBadge}</td>
-      <td>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${t.id}')">수정</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+      // 상태 필터
+      if (tenantStatusFilter && tStatus !== tenantStatusFilter) return;
+
+      // 상태 뱃지 계산
+      let statusBadge;
+      if (t?.status === '입주' && t?.contractEnd) {
+        const endStr  = t.contractEnd.replace(/[^\d]/g,'');
+        if (endStr.length === 8) {
+          const endDate  = new Date(+endStr.slice(0,4), +endStr.slice(4,6)-1, +endStr.slice(6,8));
+          const diffDays = Math.ceil((endDate - today) / 86400000);
+          if (diffDays < 0)       statusBadge = `<span class="badge badge-danger">계약경과</span>`;
+          else if (diffDays <= 90) statusBadge = `<span class="badge badge-warning" title="${t.contractEnd} 만기">D-${diffDays}</span>`;
+          else if (diffDays <= 180) statusBadge = `<span class="badge badge-warning">${Math.floor(diffDays/30)}개월후</span>`;
+          else                    statusBadge = `<span class="badge badge-success">입주</span>`;
+        } else {
+          statusBadge = `<span class="badge badge-success">입주</span>`;
+        }
+      } else {
+        statusBadge = `<span class="badge ${tStatus==='입주'?'badge-success':'badge-gray'}">${tStatus}</span>`;
+      }
+
+      // data-* 속성으로 onclick 파라미터 전달 (한국어 문자열 오류 방지)
+      rows.push(`
+      <tr>
+        <td>${prop.name}</td>
+        <td><strong>${fmtRoom(room.roomNo)}</strong></td>
+        <td>${t?.name || '<span style="color:var(--gray-400);">-</span>'}</td>
+        <td style="font-size:12px;">${t?.phone || '-'}</td>
+        <td style="text-align:right;">${t?.deposit ? Number(t.deposit).toLocaleString() : '-'}</td>
+        <td style="text-align:right;">${t?.rent ? Number(t.rent).toLocaleString() : '-'}</td>
+        <td style="text-align:right;">${t?.management ? Number(t.management).toLocaleString() : '-'}</td>
+        <td><span style="font-size:12px;">${fmtDate(t?.contractStart)||'-'}</span></td>
+        <td><span style="font-size:12px;">${fmtDate(t?.contractEnd)||'-'}</span></td>
+        <td>${statusBadge}</td>
+        <td>
+          <button class="btn btn-outline btn-sm"
+            data-propid="${prop.id}" data-roomno="${room.roomNo}"
+            onclick="openRegisterForRoom(this)">수정</button>
+        </td>
+      </tr>`);
+    });
+  });
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과가 없습니다.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.join('');
 }
+
+// 물건+호실 기준으로 임차인 등록/수정 팝업 열기
+function openRegisterForRoom(btn) {
+  const propId = btn.dataset.propid;
+  const roomNo = btn.dataset.roomno;
+  const prop   = getData('properties').find(p => p.id === propId);
+  if (!prop) return;
+
+  const t = getData('tenants').find(x => x.building === prop.name && x.room === roomNo);
+  if (t) {
+    // 기존 임차인 수정
+    openRegisterEdit(t.id);
+  } else {
+    // 신규 등록 - 건물·호실 자동 선택
+    _editingTenantId = null;
+    clearRegisterForm();
+    const alertEl = document.getElementById('regNoPropAlert');
+    if (alertEl) alertEl.style.display = 'none';
+    const resetBtn  = document.getElementById('regResetBtn');
+    const cancelBtn = document.getElementById('regCancelBtn');
+    if (resetBtn)  resetBtn.style.display  = 'none';
+    if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+    openModal('registerModal');
+    // 모달 렌더 후 건물·호실 선택
+    setTimeout(() => {
+      const buildingSel = document.getElementById('regBuilding');
+      if (buildingSel) {
+        buildingSel.value = prop.name;
+        onRegBuildingChange();
+        setTimeout(() => {
+          const roomSel = document.getElementById('regRoom');
+          if (roomSel) roomSel.value = roomNo;
+        }, 60);
+      }
+    }, 60);
+  }
+}
+
 function filterTenants(v) { renderTenants(v, tenantStatusFilter); }
 function filterTenantStatus(v) { renderTenants(tenantFilter, v); }
 
