@@ -576,13 +576,12 @@
 
       <!-- 탭1: 현재 계약 -->
       <div id="ctab-active">
-        <div class="filter-bar">
-          <div class="search-wrap">
-            <span class="search-icon">🔍</span>
-            <input type="text" placeholder="임차인명, 호실 검색..." oninput="filterContracts(this.value)" style="padding-left:36px">
-          </div>
-          <select onchange="filterContractStatus(this.value)" style="width:auto;min-width:140px">
-            <option value="">전체</option>
+        <div class="filter-bar" style="gap:8px;">
+          <select id="contractBuildingSel" onchange="filterContracts(this.value)" style="height:34px;width:auto;max-width:160px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;">
+            <option value="">전체 건물</option>
+          </select>
+          <select onchange="filterContractStatus(this.value)" style="height:34px;width:auto;max-width:160px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;">
+            <option value="">전체 상태</option>
             <option value="active">계약중</option>
             <option value="expiring">만료 임박 (90일)</option>
             <option value="expired">만료</option>
@@ -3640,10 +3639,21 @@ let contractFilter = '', contractStatusFilter = '';
 function renderContracts(filter, statusFilter) {
   if (filter !== undefined) contractFilter = filter;
   if (statusFilter !== undefined) contractStatusFilter = statusFilter;
+
+  // 건물명 드롭다운 채우기
+  const buildSel = document.getElementById('contractBuildingSel');
+  if (buildSel) {
+    const props = getData('properties');
+    const cur = buildSel.value;
+    buildSel.innerHTML = '<option value="">전체 건물</option>' +
+      props.map(p => `<option value="${p.name}"${contractFilter===p.name?' selected':''}>${p.name}</option>`).join('');
+    if (contractFilter) buildSel.value = contractFilter;
+  }
+
   let tenants = getData('tenants').filter(t => t.name && t.contractEnd);
+  // 건물명 정확 매칭 필터
   if (contractFilter) {
-    const q = contractFilter.toLowerCase();
-    tenants = tenants.filter(t => t.name?.toLowerCase().includes(q) || t.room?.includes(q));
+    tenants = tenants.filter(t => t.building === contractFilter);
   }
   if (contractStatusFilter) {
     if (contractStatusFilter === 'active') tenants = tenants.filter(t => daysUntil(t.contractEnd) > 90);
