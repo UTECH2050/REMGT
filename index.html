@@ -461,18 +461,7 @@
 
     <!-- ===== TENANTS (임대 등록) ===== -->
     <div id="page-tenants" class="page">
-      <div class="filter-bar">
-        <div class="search-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" placeholder="건물명, 호실, 임차인 검색..." oninput="filterTenants(this.value)" style="padding-left:36px">
-        </div>
-        <select onchange="filterTenantStatus(this.value)" style="width:auto;min-width:120px">
-          <option value="">전체 상태</option>
-          <option value="입주">입주중</option>
-          <option value="공실">공실</option>
-        </select>
-        <span style="font-size:12px;color:var(--gray-400);margin-left:auto;">(단위: 만원)</span>
-      </div>
+      <div id="tenantFilterBar" class="filter-bar" style="flex-wrap:wrap;gap:6px;"></div>
       <div class="card">
         <div class="card-body" style="padding:0">
           <div class="table-wrap">
@@ -1967,6 +1956,9 @@ function renderTenants(filter, statusFilter) {
   const tenants    = getData('tenants');
   const tbody      = document.getElementById('tenantTbody');
 
+  // 필터바 갱신
+  renderTenantFilterBar();
+
   // 등록된 물건이 없으면 안내
   const hasAnyRoom = properties.some(p => (p.rooms||[]).length > 0);
   if (properties.length === 0 || !hasAnyRoom) {
@@ -1978,10 +1970,12 @@ function renderTenants(filter, statusFilter) {
   }
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const q = tenantFilter?.toLowerCase() || '';
   const rows = [];
 
   properties.forEach(prop => {
+    // 건물명 필터 (정확 매칭)
+    if (tenantFilter && prop.name !== tenantFilter) return;
+
     const rooms = (prop.rooms || []).slice().sort((a, b) =>
       String(a.roomNo).localeCompare(String(b.roomNo), undefined, {numeric: true})
     );
@@ -1990,14 +1984,6 @@ function renderTenants(filter, statusFilter) {
       const t = tenants.find(x => x.building === prop.name && x.room === room.roomNo);
       const tStatus = t?.status || '공실';
 
-      // 검색 필터
-      if (q) {
-        const matchBuild = prop.name?.toLowerCase().includes(q);
-        const matchRoom  = room.roomNo?.toLowerCase().includes(q);
-        const matchName  = t?.name?.toLowerCase().includes(q);
-        const matchPhone = t?.phone?.includes(q);
-        if (!matchBuild && !matchRoom && !matchName && !matchPhone) return;
-      }
       // 상태 필터
       if (tenantStatusFilter && tStatus !== tenantStatusFilter) return;
 
@@ -2091,8 +2077,40 @@ function openRegisterForRoom(btn) {
   }
 }
 
-function filterTenants(v) { renderTenants(v, tenantStatusFilter); }
-function filterTenantStatus(v) { renderTenants(tenantFilter, v); }
+function filterTenantBuilding(v) { tenantFilter = v; renderTenantFilterBar(); renderTenants(); }
+function filterTenantStatus(v)   { tenantStatusFilter = v; renderTenantFilterBar(); renderTenants(); }
+// 구 버전 호환
+function filterTenants(v) { filterTenantBuilding(v); }
+
+function renderTenantFilterBar() {
+  const bar = document.getElementById('tenantFilterBar');
+  if (!bar) return;
+  const properties = getData('properties');
+
+  // 버튼 스타일 헬퍼
+  const btn = (label, active, onclick) =>
+    `<button onclick="${onclick}" style="height:32px;padding:0 12px;border-radius:20px;border:1px solid ${active?'var(--primary)':'var(--gray-200)'};background:${active?'var(--primary)':'#fff'};color:${active?'#fff':'var(--gray-600)'};font-size:13px;cursor:pointer;white-space:nowrap;font-weight:${active?'600':'400'};">${label}</button>`;
+
+  // 건물 버튼
+  const buildBtns = [btn('전체', tenantFilter === '', "filterTenantBuilding('')")]
+    .concat(properties.map(p => btn(p.name, tenantFilter === p.name, `filterTenantBuilding('${p.name.replace(/'/g,"\\'")}')`))).join('');
+
+  // 구분선
+  const divider = `<span style="color:var(--gray-300);font-size:18px;line-height:32px;margin:0 2px;">|</span>`;
+
+  // 상태 버튼
+  const statusBtns = [
+    btn('임대중', tenantStatusFilter === '입주', "filterTenantStatus('입주')"),
+    btn('공실',   tenantStatusFilter === '공실', "filterTenantStatus('공실')"),
+  ].join('');
+
+  bar.innerHTML = `
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1;">
+      ${buildBtns}${divider}${statusBtns}
+    </div>
+    <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:8px;">(단위: 만원)</span>
+  `;
+}
 
 // 수납 관리 소팅
 let paymentSortKey = 'room', paymentSortDir = 'asc';
