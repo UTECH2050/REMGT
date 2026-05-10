@@ -472,6 +472,7 @@
           <option value="공실">공실</option>
         </select>
         <button class="btn btn-primary btn-sm" onclick="openRegisterModal()" style="white-space:nowrap;">➕ 임대차 등록</button>
+        <span style="font-size:12px;color:var(--gray-400);margin-left:6px;">(단위: 만원)</span>
       </div>
       <div class="card">
         <div class="card-body" style="padding:0">
@@ -583,6 +584,7 @@
           <span class="search-icon">🔍</span>
           <input type="text" placeholder="임차인명, 호실 검색..." oninput="filterContracts(this.value)" style="padding-left:36px">
         </div>
+        <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;">(단위: 만원)</span>
         <select onchange="filterContractStatus(this.value)" style="width:auto;min-width:140px">
           <option value="">전체</option>
           <option value="active">계약중</option>
@@ -2035,9 +2037,9 @@ function renderTenants(filter, statusFilter) {
       <td><strong>${fmtRoom(t.room)}</strong></td>
       <td>${t.name||'-'}</td>
       <td>${t.phone||'-'}</td>
-      <td style="text-align:right;">${t.deposit ? fmtMoney(t.deposit) : '-'}</td>
-      <td style="text-align:right;">${t.rent ? fmtMoney(t.rent) : '0'}</td>
-      <td style="text-align:right;">${t.management ? fmtMoney(t.management) : '0'}</td>
+      <td style="text-align:right;">${t.deposit ? Number(t.deposit).toLocaleString() : '-'}</td>
+      <td style="text-align:right;">${t.rent ? Number(t.rent).toLocaleString() : '0'}</td>
+      <td style="text-align:right;">${t.management ? Number(t.management).toLocaleString() : '0'}</td>
       <td>
         <span style="font-size:12px;color:var(--gray-600);">${fmtDate(t.contractStart)||'-'}</span>
         ${(t.extendCount > 0 && t.moveIn && t.moveIn !== t.contractStart) ? `<br><span style="font-size:11px;color:var(--gray-400);">최초 ${fmtDate(t.moveIn)}</span>` : ''}
@@ -3463,8 +3465,8 @@ function renderContracts(filter, statusFilter) {
       <td>${fmtDate(t.contractStart)}</td>
       <td>${fmtDate(t.contractEnd)}</td>
       <td><span class="badge badge-primary">${t.type||'월세'}</span></td>
-      <td>${fmtMoney(t.deposit)}</td>
-      <td>${t.rent ? fmtMoney(t.rent) : '-'}</td>
+      <td>${t.deposit ? Number(t.deposit).toLocaleString() : '-'}</td>
+      <td>${t.rent ? Number(t.rent).toLocaleString() : '-'}</td>
       <td><span class="badge ${badge} ${d<=30&&d>=0?'expiry-soon':''}">${dText}</span></td>
       <td><span class="badge ${d<0?'badge-danger':d<=90?'badge-warning':'badge-success'}">${d<0?'만료':d<=90?'만료임박':'계약중'}</span></td>
       <td><button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${t.id}')">수정</button></td>
