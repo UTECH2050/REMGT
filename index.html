@@ -469,7 +469,8 @@
               <thead id="tenantThead">
                 <tr>
                   <th>건물명</th>
-                  <th>동-호수</th>
+                  <th>동</th>
+                  <th>호수</th>
                   <th>임차인</th>
                   <th style="text-align:right;">보증금</th>
                   <th style="text-align:right;">월세</th>
@@ -547,7 +548,8 @@
               <thead>
                 <tr>
                   <th><button class="sort-btn" onclick="sortPayments('building')">건물명 <span class="sort-icon" id="psi-building">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortPayments('room')">호실 <span class="sort-icon" id="psi-room">⇅</span></button></th>
+                  <th>동</th>
+                  <th><button class="sort-btn" onclick="sortPayments('room')">호수 <span class="sort-icon" id="psi-room">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortPayments('name')">임차인명 <span class="sort-icon" id="psi-name">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortPayments('rent')">월세 <span class="sort-icon" id="psi-rent">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortPayments('management')">관리비 <span class="sort-icon" id="psi-management">⇅</span></button></th>
@@ -584,7 +586,8 @@
                 <thead>
                   <tr>
                     <th><button class="sort-btn" onclick="sortContracts('building')">건물명 <span class="sort-icon" id="csi-building">⇅</span></button></th>
-                    <th><button class="sort-btn" onclick="sortContracts('room')">호실 <span class="sort-icon" id="csi-room">⇅</span></button></th>
+                    <th>동</th>
+                    <th><button class="sort-btn" onclick="sortContracts('room')">호수 <span class="sort-icon" id="csi-room">⇅</span></button></th>
                     <th><button class="sort-btn" onclick="sortContracts('name')">임차인 <span class="sort-icon" id="csi-name">⇅</span></button></th>
                     <th><button class="sort-btn" onclick="sortContracts('contractStart')">계약 시작 <span class="sort-icon" id="csi-contractStart">⇅</span></button></th>
                     <th><button class="sort-btn" onclick="sortContracts('contractEnd')">계약 종료 <span class="sort-icon" id="csi-contractEnd">⇅</span></button></th>
@@ -1799,6 +1802,11 @@ function navigate(page) {
 // ============================================================
 function fmtMoney(v) { return Number(v||0).toLocaleString() + '만원'; }
 function fmtRoom(r) { if (!r) return ''; const s = r.replace(/호+$/, ''); return s + '호'; }
+function getTenantDong(building, roomNo) {
+  const prop = getData('properties').find(p => p.name === building);
+  const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(roomNo));
+  return rm?.dong || '-';
+}
 function fmtDate(d) { if(!d) return '-'; return d.replace(/-/g, '.'); }
 function today() { return new Date().toISOString().slice(0,10); }
 function getYM() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
@@ -2069,6 +2077,7 @@ function renderTenants(filter, statusFilter) {
       rows.push(`
       <tr>
         <td>${prop.name}</td>
+        <td>${room.dong||'-'}</td>
         <td><strong>${fmtRoom(room.roomNo)}</strong></td>
         <td>${t?.name || '<span style="color:var(--gray-400);">-</span>'}</td>
         <td style="text-align:right;">${t?.deposit ? Number(t.deposit).toLocaleString() : '-'}</td>
@@ -2087,7 +2096,7 @@ function renderTenants(filter, statusFilter) {
   });
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과가 없습니다.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">🔍</div><p>검색 결과가 없습니다.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = rows.join('');
@@ -2315,7 +2324,8 @@ function renderPropertiesPage() {
           const profitColor = profit === null ? 'var(--gray-400)' : (profit < 0 ? '#dc2626' : 'var(--gray-700)');
           const curPriceDateStr = r.curPriceDate ? `<div style="font-size:10px;color:#6b7280;margin-top:2px;">${r.curPriceDate}</div>` : '';
           return `<tr>
-          <td style="padding:9px 14px;text-align:center;">${r.roomNo}</td>
+          <td style="padding:9px 14px;text-align:center;">${r.dong||'-'}</td>
+          <td style="padding:9px 14px;text-align:center;font-weight:700;">${fmtRoom(r.roomNo)}</td>
           <td style="padding:9px 14px;text-align:center;font-size:13px;">
             ${r.supplyPyeong ? `<div style="font-weight:600;">${r.supplyPyeong}평</div><div style="font-size:11px;color:var(--gray-400);">${r.supplyM2 || (r.supplyPyeong*3.3058).toFixed(1)}㎡</div>` : '<span style="color:var(--gray-400);">-</span>'}
           </td>
@@ -2339,7 +2349,7 @@ function renderPropertiesPage() {
             <button class="btn btn-outline btn-sm" onclick="openRoomModal('${p.id}','${r.id}')">수정</button>
           </td>
         </tr>`;}).join('')
-      : `<tr><td colspan="12" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 동호수가 없습니다.</td></tr>`;
+      : `<tr><td colspan="13" style="padding:14px;text-align:center;color:var(--gray-400);font-size:13px;">등록된 동호수가 없습니다.</td></tr>`;
     const bodyId = 'propRooms_' + p.id;
     const hasRooms = roomCount > 0;
     const deleteBtnStyle = hasRooms
@@ -2367,7 +2377,8 @@ function renderPropertiesPage() {
           <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
             <thead>
               <tr style="background:var(--gray-50);">
-                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">동-호수</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">동</th>
+                <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">호수</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">공급(평)</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">전용(평)</th>
                 <th style="padding:9px 14px;font-weight:600;color:var(--gray-600);font-size:12px;text-align:center;">취득일자</th>
@@ -3597,6 +3608,7 @@ function renderPaymentTable() {
 
     return `<tr${unpaidMonths >= 2 ? ' style="background:#fff5f5;"' : ''}>
       <td>${t.building ? t.building : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
+      <td>${getTenantDong(t.building, t.room)}</td>
       <td><strong>${fmtRoom(t.room)}</strong></td>
       <td>${t.name}</td>
       <td>${fmtMoney(t.rent)}</td>
@@ -3620,7 +3632,7 @@ function renderPaymentTable() {
     </tr>`;
   }).join('');
 
-  document.getElementById('paymentTbody').innerHTML = rows || '<tr><td colspan="11"><div class="empty-state"><p>입주중인 임차인이 없습니다.</p></div></td></tr>';
+  document.getElementById('paymentTbody').innerHTML = rows || '<tr><td colspan="12"><div class="empty-state"><p>입주중인 임차인이 없습니다.</p></div></td></tr>';
   document.getElementById('paidCount').textContent = paidCount;
   document.getElementById('unpaidCount').textContent = unpaidCount;
   document.getElementById('paidAmount').textContent = paidAmt.toLocaleString() + '만원';
@@ -3707,7 +3719,7 @@ function renderContracts(filter, statusFilter) {
 
   const tbody = document.getElementById('contractTbody');
   if (tenants.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="empty-icon">📄</div><p>계약 정보가 없습니다.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">📄</div><p>계약 정보가 없습니다.</p></div></td></tr>';
     return;
   }
   tbody.innerHTML = tenants.map(t => {
@@ -3719,6 +3731,7 @@ function renderContracts(filter, statusFilter) {
     else { badge = 'badge-success'; dText = `${d}일 남음`; }
     return `<tr>
       <td>${t.building ? t.building : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
+      <td>${getTenantDong(t.building, t.room)}</td>
       <td><strong>${fmtRoom(t.room)}</strong></td>
       <td>${t.name}</td>
       <td>${fmtDate(t.contractStart)}</td>
