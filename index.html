@@ -2211,9 +2211,9 @@ function renderPropertiesPage() {
     return `
     <div class="card" style="margin-bottom:20px;">
       <div class="card-header" style="cursor:pointer;display:flex;align-items:center;gap:12px;" onclick="togglePropRooms('${p.id}')">
-        <div style="display:grid;grid-template-columns:18px 220px 1fr;align-items:center;gap:0 8px;flex:1;min-width:0;">
+        <div class="prop-header-grid" style="display:grid;grid-template-columns:18px auto 1fr;align-items:center;gap:0 8px;flex:1;min-width:0;">
           <span id="propArrow_${p.id}" style="font-size:12px;color:var(--gray-400);transition:transform 0.2s;">▶</span>
-          <span style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}${roomCount > 0 ? `<span style="font-size:13px;font-weight:400;color:var(--gray-400);margin-left:5px;">(${roomCount})</span>` : ''}</span>
+          <span class="prop-name-cell" style="font-size:15px;font-weight:700;white-space:nowrap;">${p.name}${roomCount > 0 ? `<span style="font-size:13px;font-weight:400;color:var(--gray-400);margin-left:5px;">(${roomCount})</span>` : ''}</span>
           <span style="display:flex;align-items:center;gap:6px;overflow:hidden;">
             <span class="badge badge-primary" style="white-space:nowrap;flex-shrink:0;">${p.type||'주거'}</span>
             ${p.address ? `<span style="font-size:12px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.address}${p.roadAddress ? ` <span style="color:var(--gray-300);">/</span> ${p.roadAddress}` : ''}</span>` : ''}
@@ -2256,6 +2256,18 @@ function renderPropertiesPage() {
       </div>
     </div>`;
   }).join('');
+  requestAnimationFrame(alignPropNameColumns);
+}
+
+function alignPropNameColumns() {
+  const cells = document.querySelectorAll('.prop-name-cell');
+  let maxW = 0;
+  cells.forEach(el => { maxW = Math.max(maxW, el.offsetWidth); });
+  if (maxW > 0) {
+    document.querySelectorAll('.prop-header-grid').forEach(el => {
+      el.style.gridTemplateColumns = `18px ${maxW}px 1fr`;
+    });
+  }
 }
 
 function togglePropRooms(propId) {
