@@ -809,38 +809,38 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
       <div class="form-row">
         <div class="form-group">
           <label>보증금</label>
-          <input type="number" id="tDeposit" placeholder="5000">
+          <input type="text" id="tDeposit" placeholder="" oninput="fmtComma(this)">
         </div>
         <div class="form-group">
           <label>월세</label>
-          <input type="number" id="tRent" placeholder="80">
+          <input type="text" id="tRent" placeholder="" oninput="fmtComma(this)">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>관리비</label>
-          <input type="number" id="tManagement" placeholder="10">
+          <input type="text" id="tManagement" placeholder="" oninput="fmtComma(this)">
         </div>
         <div class="form-group">
           <label>납부일 (매월)</label>
-          <input type="number" id="tPayDay" placeholder="5" min="1" max="28">
+          <input type="number" id="tPayDay" placeholder="" min="1" max="28">
         </div>
       </div>
       <div style="font-size:12px;font-weight:700;color:var(--gray-500);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.04em;">📋 계약 기간</div>
       <div class="form-row">
         <div class="form-group">
           <label>계약일 (시작) <span class="required">*</span></label>
-          <input type="date" id="tContractStart">
+          <input type="text" id="tContractStart" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
         </div>
         <div class="form-group">
           <label>계약 종료일 <span class="required">*</span></label>
-          <input type="date" id="tContractEnd">
+          <input type="text" id="tContractEnd" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>실제 입주일</label>
-          <input type="date" id="tMoveIn">
+          <input type="text" id="tMoveIn" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
         </div>
         <div class="form-group">
           <label>상태</label>
@@ -871,11 +871,11 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
       <div class="form-row">
         <div class="form-group">
           <label>날짜 <span class="required">*</span></label>
-          <input type="date" id="eDate">
+          <input type="text" id="eDate" placeholder="0000-00-00" maxlength="10" oninput="fmtIsoDate(this)">
         </div>
         <div class="form-group">
           <label>금액 (만원) <span class="required">*</span></label>
-          <input type="number" id="eAmount" placeholder="0">
+          <input type="text" id="eAmount" placeholder="" oninput="fmtComma(this)">
         </div>
       </div>
       <div class="form-row">
@@ -984,11 +984,11 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
       <div class="form-row">
         <div class="form-group">
           <label>세대수</label>
-          <input type="number" id="propUnits" placeholder="예: 300" min="0">
+          <input type="text" id="propUnits" placeholder="" oninput="fmtComma(this)">
         </div>
         <div class="form-group">
           <label>용적률 (%)</label>
-          <input type="number" id="propFar" placeholder="예: 250" min="0">
+          <input type="text" id="propFar" placeholder="">
         </div>
       </div>
       <div class="form-group">
@@ -1146,13 +1146,13 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
         </div>
         <div class="form-group">
           <label>월세</label>
-          <input type="number" id="regRent" placeholder="">
+          <input type="text" id="regRent" placeholder="" oninput="fmtComma(this)">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>관리비</label>
-          <input type="number" id="regManagement" placeholder="">
+          <input type="text" id="regManagement" placeholder="" oninput="fmtComma(this)">
         </div>
         <div class="form-group">
           <label>납부일 (매월)</label>
@@ -1267,12 +1267,12 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
           <div>
             <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">매매 시세 상한 (만원)</label>
-            <input type="text" id="kbPriceHigh" placeholder="예: 85,000" oninput="fmtComma(this)"
+            <input type="text" id="kbPriceHigh" placeholder="" oninput="fmtComma(this)"
               style="width:100%;padding:9px 12px;border:1.5px solid #6ee7b7;border-radius:8px;font-size:13px;box-sizing:border-box;">
           </div>
           <div>
             <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px;">매매 시세 하한 (만원)</label>
-            <input type="text" id="kbPriceLow" placeholder="예: 80,000" oninput="fmtComma(this)"
+            <input type="text" id="kbPriceLow" placeholder="" oninput="fmtComma(this)"
               style="width:100%;padding:9px 12px;border:1.5px solid #6ee7b7;border-radius:8px;font-size:13px;box-sizing:border-box;">
           </div>
         </div>
@@ -2114,9 +2114,9 @@ function openTenantModal(id) {
       document.getElementById('tRoom').value = t.room;
       document.getElementById('tName').value = t.name;
       document.getElementById('tPhone').value = t.phone;
-      document.getElementById('tDeposit').value = t.deposit;
-      document.getElementById('tRent').value = t.rent;
-      document.getElementById('tManagement').value = t.management;
+      document.getElementById('tDeposit').value = t.deposit ? Number(t.deposit).toLocaleString() : '';
+      document.getElementById('tRent').value = t.rent ? Number(t.rent).toLocaleString() : '';
+      document.getElementById('tManagement').value = t.management ? Number(t.management).toLocaleString() : '';
       document.getElementById('tPayDay').value = t.payDay;
       document.getElementById('tContractStart').value = t.contractStart;
       document.getElementById('tContractEnd').value = t.contractEnd;
@@ -2144,9 +2144,9 @@ function saveTenant() {
     id: id || uid(),
     building: document.getElementById('tBuilding').value.trim(),
     room, name, phone: document.getElementById('tPhone').value,
-    deposit: Number(document.getElementById('tDeposit').value)||0,
-    rent: Number(document.getElementById('tRent').value)||0,
-    management: Number(document.getElementById('tManagement').value)||0,
+    deposit: Number(document.getElementById('tDeposit').value.replace(/,/g,''))||0,
+    rent: Number(document.getElementById('tRent').value.replace(/,/g,''))||0,
+    management: Number(document.getElementById('tManagement').value.replace(/,/g,''))||0,
     payDay: Number(document.getElementById('tPayDay').value)||5,
     contractStart, contractEnd,
     moveIn: document.getElementById('tMoveIn').value,
@@ -2311,7 +2311,7 @@ function openPropertyModal(id) {
       document.getElementById('propName').value    = p.name;
       document.getElementById('propAddress').value = p.address || '';
       document.getElementById('propRoadAddress').value = p.roadAddress || '';
-      document.getElementById('propUnits').value   = p.units || '';
+      document.getElementById('propUnits').value   = p.units ? Number(p.units).toLocaleString() : '';
       document.getElementById('propFar').value     = p.far   || '';
       document.getElementById('propNote').value    = p.note  || '';
       document.getElementById('propType').value    = p.type  || '아파트';
@@ -2359,7 +2359,7 @@ function saveProperty() {
       props[idx].type        = document.getElementById('propType').value;
       props[idx].address     = document.getElementById('propAddress').value.trim();
       props[idx].roadAddress = document.getElementById('propRoadAddress').value.trim();
-      props[idx].units       = document.getElementById('propUnits').value.trim();
+      props[idx].units       = document.getElementById('propUnits').value.replace(/,/g,'').trim();
       props[idx].far         = document.getElementById('propFar').value.trim();
       props[idx].note        = document.getElementById('propNote').value;
       // 건물명이 바뀐 경우 임대차 데이터의 building 필드도 일괄 업데이트
@@ -2374,7 +2374,7 @@ function saveProperty() {
     props.push({ id: uid(), name, type: document.getElementById('propType').value,
       address: document.getElementById('propAddress').value.trim(),
       roadAddress: document.getElementById('propRoadAddress').value.trim(),
-      units: document.getElementById('propUnits').value.trim(),
+      units: document.getElementById('propUnits').value.replace(/,/g,'').trim(),
       far:   document.getElementById('propFar').value.trim(),
       note: document.getElementById('propNote').value, rooms: [] });
   }
@@ -2970,9 +2970,9 @@ function prefillRegisterForm(id) {
 
   // 월세 / 관리비
   const rentEl = document.getElementById('regRent');
-  if (rentEl) rentEl.value = t.rent != null && t.rent !== 0 ? t.rent : '';
+  if (rentEl) rentEl.value = t.rent ? Number(t.rent).toLocaleString() : '';
   const mgmtEl = document.getElementById('regManagement');
-  if (mgmtEl) mgmtEl.value = t.management != null && t.management !== 0 ? t.management : '';
+  if (mgmtEl) mgmtEl.value = t.management ? Number(t.management).toLocaleString() : '';
 
   // 납부일 / 선불후불
   const payDayEl = document.getElementById('regPayDay');
@@ -3054,7 +3054,7 @@ function saveRegisterTenant() {
   }
   if (!room) { showToast('호실을 선택해주세요.', 'error'); return; }
   const deposit = Number(document.getElementById('regDeposit').value.replace(/,/g,'')) || 0;
-  const rent    = Number(document.getElementById('regRent').value) || 0;
+  const rent    = Number(document.getElementById('regRent').value.replace(/,/g,'')) || 0;
   // 임대유형 자동 결정: 월세>0 → 월세, 보증금만 → 전세, 둘다0 → 공실
   const type   = rent > 0 ? '월세' : deposit > 0 ? '전세' : '월세';
   // 상태 자동 결정: 임차인명 + 계약시작일 있으면 입주, 없으면 공실
@@ -3065,7 +3065,7 @@ function saveRegisterTenant() {
     building, room, name,
     phone: document.getElementById('regPhone').value,
     deposit, rent,
-    management: Number(document.getElementById('regManagement').value) || 0,
+    management: Number(document.getElementById('regManagement').value.replace(/,/g,'')) || 0,
     payDay: Number(document.getElementById('regPayDay').value) || 5,
     payType: document.getElementById('regPayType')?.value || '선불',
     contractStart,
@@ -3617,7 +3617,7 @@ function destroyChart(id) {
 // Expenses
 function openExpenseModal(id) {
   document.getElementById('expenseId').value = '';
-  document.getElementById('eDate').value = today();
+  document.getElementById('eDate').value = today(); // YYYY-MM-DD format, compatible with fmtIsoDate
   document.getElementById('eAmount').value = '';
   document.getElementById('eCategory').value = '수선비';
   document.getElementById('eRoom').value = '';
@@ -3626,8 +3626,8 @@ function openExpenseModal(id) {
     const e = getData('expenses').find(x => x.id === id);
     if (e) {
       document.getElementById('expenseId').value = e.id;
-      document.getElementById('eDate').value = e.date;
-      document.getElementById('eAmount').value = e.amount;
+      document.getElementById('eDate').value = e.date || '';
+      document.getElementById('eAmount').value = e.amount ? Number(e.amount).toLocaleString() : '';
       document.getElementById('eCategory').value = e.category;
       document.getElementById('eRoom').value = e.room;
       document.getElementById('eMemo').value = e.memo;
@@ -3643,7 +3643,7 @@ function saveExpense() {
   const expenses = getData('expenses');
   const id = document.getElementById('expenseId').value;
   const obj = {
-    id: id || uid(), date, amount: Number(amount),
+    id: id || uid(), date, amount: Number(amount.replace(/,/g,'')),
     category: document.getElementById('eCategory').value,
     room: document.getElementById('eRoom').value,
     memo: document.getElementById('eMemo').value
