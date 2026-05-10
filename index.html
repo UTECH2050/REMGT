@@ -1862,6 +1862,8 @@ function navigate(page) {
   }
   if (page === 'contracts') {
     contractFilter = ''; contractDongFilter = ''; contractRoomFilter = ''; contractStatusFilter = '';
+    // 계약히스토리 탭에 있었던 경우 현재계약 탭으로 초기화
+    switchContractTab('active');
   }
   if (page === 'payments') {
     paymentSortKey = 'room'; paymentSortDir = 'asc';
