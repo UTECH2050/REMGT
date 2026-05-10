@@ -3054,7 +3054,8 @@ function extendContract() {
             contractStart: t.contractStart, contractEnd: t.contractEnd,
             moveIn: t.moveIn, extendCount: t.extendCount || 0,
             note: (t.note ? t.note + '\n' : '') + `[${extNo}차 연장 전 계약]`,
-            archivedAt: today()
+            archivedAt: today(),
+            reason: 'extension'
           });
           setData('contractHistory', history);
           // 연장 횟수 즉시 반영
@@ -4027,12 +4028,35 @@ function renderContractHistory() {
     return;
   }
 
+  // 동적 판별용: 같은 건물+호수+동일인(이름+전화)의 더 늦은 계약이 있으면 연장으로 간주
+  function isExtension(rec) {
+    if (rec._isCurrent) return false;
+    if (rec.reason === 'extension') return true;
+    if (rec.reason === 'eviction') return false;
+    // reason 없는 기존 데이터 동적 판별
+    return allRecords.some(r =>
+      r !== rec &&
+      r.building === rec.building &&
+      String(r.room) === String(rec.room) &&
+      r.name === rec.name &&
+      r.phone && rec.phone && r.phone === rec.phone &&
+      String(r.contractStart||'') > String(rec.contractStart||'')
+    );
+  }
+
   tbody.innerHTML = allRecords.map(r => {
-    const statusBadge = r._isCurrent
-      ? `<span class="badge badge-success" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;">임대중</span>`
-      : `<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">퇴거</span>`;
+    let statusBadge, rowStyle;
+    if (r._isCurrent) {
+      statusBadge = `<span class="badge badge-success" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;">임대중</span>`;
+      rowStyle = 'background:#f0fdf4;';
+    } else if (isExtension(r)) {
+      statusBadge = `<span class="badge" style="background:#eff6ff;color:#2563eb;border:1px solid #93c5fd;">계약연장</span>`;
+      rowStyle = '';
+    } else {
+      statusBadge = `<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">퇴거</span>`;
+      rowStyle = '';
+    }
     const evictDate = r._isCurrent ? '-' : (r.archivedAt || '-');
-    const rowStyle = r._isCurrent ? 'background:#f0fdf4;' : '';
     const manageBtns = r._isCurrent ? '' : `
       <div style="display:flex;gap:4px;">
         <button class="btn btn-outline btn-sm" onclick="openHistoryEdit('${r.id}')">수정</button>
@@ -4144,7 +4168,8 @@ function archiveTenant(tenantId, extraNote) {
     contractStart: t.contractStart, contractEnd: t.contractEnd,
     moveIn: t.moveIn, extendCount: t.extendCount || 0,
     note: combinedNote,
-    archivedAt: new Date().toISOString().slice(0, 10)
+    archivedAt: new Date().toISOString().slice(0, 10),
+    reason: 'eviction'
   });
   setData('contractHistory', history);
 
