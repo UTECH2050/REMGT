@@ -2128,25 +2128,31 @@ function renderTenants(filter, statusFilter) {
       const t = tenants.find(x => x.building === prop.name && x.room === room.roomNo);
       const tStatus = t?.status || '공실';
 
-      // 상태 필터
-      if (tenantStatusFilter && tStatus !== tenantStatusFilter) return;
+      // 상태 필터 ('임대중' 선택 시 내부 상태값 '입주'와 매칭)
+      if (tenantStatusFilter) {
+        const filterVal = tenantStatusFilter === '임대중' ? '입주' : tenantStatusFilter;
+        if (tStatus !== filterVal) return;
+      }
 
       // 상태 뱃지 계산
       let statusBadge;
-      if (t?.status === '입주' && t?.contractEnd) {
-        const endStr  = t.contractEnd.replace(/[^\d]/g,'');
-        if (endStr.length === 8) {
-          const endDate  = new Date(+endStr.slice(0,4), +endStr.slice(4,6)-1, +endStr.slice(6,8));
-          const diffDays = Math.ceil((endDate - today) / 86400000);
-          if (diffDays < 0)       statusBadge = `<span class="badge badge-danger">계약경과</span>`;
-          else if (diffDays <= 90) statusBadge = `<span class="badge badge-warning" title="${t.contractEnd} 만기">D-${diffDays}</span>`;
-          else if (diffDays <= 180) statusBadge = `<span class="badge badge-warning">${Math.floor(diffDays/30)}개월후</span>`;
-          else                    statusBadge = `<span class="badge badge-success">입주</span>`;
+      if (t?.status === '입주') {
+        if (t?.contractEnd) {
+          const endStr  = t.contractEnd.replace(/[^\d]/g,'');
+          if (endStr.length === 8) {
+            const endDate  = new Date(+endStr.slice(0,4), +endStr.slice(4,6)-1, +endStr.slice(6,8));
+            const diffDays = Math.ceil((endDate - today) / 86400000);
+            if (diffDays < 0)        statusBadge = `<span class="badge badge-danger">계약경과</span>`;
+            else if (diffDays <= 90) statusBadge = `<span class="badge badge-warning" title="${t.contractEnd} 만기">D-${diffDays}</span>`;
+            else                     statusBadge = `<span class="badge badge-success">임대중</span>`;
+          } else {
+            statusBadge = `<span class="badge badge-success">임대중</span>`;
+          }
         } else {
-          statusBadge = `<span class="badge badge-success">입주</span>`;
+          statusBadge = `<span class="badge badge-success">임대중</span>`;
         }
       } else {
-        statusBadge = `<span class="badge ${tStatus==='입주'?'badge-success':'badge-gray'}">${tStatus}</span>`;
+        statusBadge = `<span class="badge badge-gray">공실</span>`;
       }
 
       // data-* 속성으로 onclick 파라미터 전달 (한국어 문자열 오류 방지)
@@ -2253,7 +2259,7 @@ function renderTenantFilterBar() {
   const statusSel = `
     <select onchange="filterTenantStatus(this.value)" style="${selStyle}">
       <option value=""${tenantStatusFilter===''?' selected':''}>전체</option>
-      <option value="입주"${tenantStatusFilter==='입주'?' selected':''}>임대중</option>
+      <option value="임대중"${tenantStatusFilter==='임대중'?' selected':''}>임대중</option>
       <option value="공실"${tenantStatusFilter==='공실'?' selected':''}>공실</option>
     </select>`;
 
