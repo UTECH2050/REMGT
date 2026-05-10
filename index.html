@@ -1781,25 +1781,7 @@ function daysUntil(dateStr) {
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 
-// ESC 키로 열린 팝업 닫기 (저장하지 않고 취소)
-document.addEventListener('keydown', function(e) {
-  if (e.key !== 'Escape') return;
-  // confirmModal이 열려 있으면 취소 처리 (콜백 없이 닫기)
-  const confirm = document.getElementById('confirmModal');
-  if (confirm && confirm.classList.contains('open')) {
-    confirm.classList.remove('open');
-    return;
-  }
-  // 그 외 열린 모달 닫기 (registerModal, roomModal 등)
-  const opened = document.querySelector('.modal-overlay.open');
-  if (!opened) return;
-  // registerModal은 수정 상태 초기화 없이 닫기만 함
-  if (opened.id === 'registerModal') {
-    _editingTenantId = null;
-    _originalContractEnd = '';
-  }
-  opened.classList.remove('open');
-});
+// ESC 키 및 외부 클릭으로 팝업 닫기 기능 비활성화 (사용자 요청)
 
 // Confirm helper
 let _confirmCb = null;
@@ -3682,10 +3664,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('loginOverlay').classList.remove('hidden');
 });
 
-// Click outside modal to close
-document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
-});
+// 외부 클릭으로 팝업 닫기 비활성화 (사용자 요청)
 </script>
 </body>
 </html>
