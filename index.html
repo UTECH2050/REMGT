@@ -2065,6 +2065,9 @@ function openRegisterForRoom(btn) {
     const cancelBtn = document.getElementById('regCancelBtn');
     if (resetBtn)  resetBtn.style.display  = 'none';
     if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+    // 타이틀: 임차인 등록: 건물명 호실
+    const titleEl = document.getElementById('regCardTitle');
+    if (titleEl) titleEl.textContent = `➕ 임차인 등록: ${prop.name} ${roomNo}`;
     openModal('registerModal');
     // 모달 렌더 후 건물·호실 선택
     setTimeout(() => {
@@ -2915,7 +2918,7 @@ function prefillRegisterForm(id) {
 
   // 카드 타이틀·버튼 변경
   const titleEl = document.getElementById('regCardTitle');
-  if (titleEl) titleEl.textContent = '✏️ 임대차 수정';
+  if (titleEl) titleEl.textContent = `✏️ 임차인 수정: ${t.building || ''} ${t.room || ''}`.trimEnd();
   const saveBtn = document.getElementById('regSaveBtn');
   if (saveBtn) saveBtn.textContent = '💾 수정 저장';
 
