@@ -2880,14 +2880,8 @@ function openRegisterEdit(id) {
   // 원본 만기일 저장 (연장 계산 기준)
   const t = getData('tenants').find(x => x.id === id);
   _originalContractEnd = t?.contractEnd || '';
-  // 계약연장 select 초기화 (없음)
-  const extSel = document.getElementById('regExtendSelect');
-  if (extSel) extSel.value = '';
-  const origWrap = document.getElementById('regOrigStartWrap');
-  if (origWrap) origWrap.style.display = 'none';
-  const origStartEl = document.getElementById('regOrigStart');
-  if (origStartEl) origStartEl.value = t?.moveIn || t?.contractStart || '';
   // 수정 모드: 초기화 숨김, 취소 표시
+  // (최초계약일 표시 여부는 prefillRegisterForm에서 extendCount 기준으로 처리)
   const resetBtn  = document.getElementById('regResetBtn');
   const cancelBtn = document.getElementById('regCancelBtn');
   if (resetBtn)  resetBtn.style.display  = 'none';
@@ -2953,15 +2947,12 @@ function prefillRegisterForm(id) {
   const endEl = document.getElementById('regContractEnd');
   if (endEl) endEl.value = t.contractEnd || '';
 
-  // 최초 계약일 (regOrigStart에 저장 — 연장 선택 시 표시됨)
+  // 최초 계약일: 계약이 연장된 경우(extendCount>0)에만 표시
   const origStartEl = document.getElementById('regOrigStart');
+  const origWrap2   = document.getElementById('regOrigStartWrap');
+  const isExtended  = (t.extendCount || 0) > 0 && t.moveIn && t.moveIn !== t.contractStart;
   if (origStartEl) origStartEl.value = t.moveIn || t.contractStart || '';
-
-  // 계약연장 리셋 (없음)
-  const extSel2 = document.getElementById('regExtendSelect');
-  if (extSel2) extSel2.value = '';
-  const origWrap2 = document.getElementById('regOrigStartWrap');
-  if (origWrap2) origWrap2.style.display = 'none';
+  if (origWrap2) origWrap2.style.display = isExtended ? 'block' : 'none';
 
   // 입금일자 표시 업데이트
   updatePayDateDisplay();
