@@ -608,8 +608,11 @@
           <select id="histBuildingSel" onchange="onHistBuildingChange()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;">
             <option value="">전체 건물</option>
           </select>
+          <select id="histDongSel" onchange="onHistDongChange()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;">
+            <option value="">전체 동</option>
+          </select>
           <select id="histRoomSel" onchange="renderContractHistory()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;">
-            <option value="">전체 호실</option>
+            <option value="">전체 호수</option>
           </select>
           <span style="font-size:12px;color:var(--gray-400);margin-left:auto;">(단위: 만원)</span>
         </div>
@@ -619,10 +622,10 @@
               <table>
                 <thead>
                   <tr>
-                    <th>건물명</th><th>호실</th><th>임차인</th><th>유형</th>
+                    <th>건물명</th><th>동</th><th>호수</th><th>임차인</th><th>유형</th>
                     <th>보증금</th><th>월세</th><th>관리비</th>
                     <th>계약 시작</th><th>계약 종료</th>
-                    <th>연장횟수</th><th>퇴거일</th><th>비고</th>
+                    <th>연장횟수</th><th>퇴거일</th><th>상태</th><th>비고</th>
                   </tr>
                 </thead>
                 <tbody id="historyTbody"></tbody>
@@ -3799,62 +3802,127 @@ function initHistoryFilters() {
   const props = getData('properties');
   buildSel.innerHTML = '<option value="">전체 건물</option>' +
     props.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-  document.getElementById('histRoomSel').innerHTML = '<option value="">전체 호실</option>';
+  document.getElementById('histDongSel').innerHTML = '<option value="">전체 동</option>';
+  document.getElementById('histRoomSel').innerHTML = '<option value="">전체 호수</option>';
 }
 
 function onHistBuildingChange() {
   const buildName = document.getElementById('histBuildingSel').value;
+  const dongSel   = document.getElementById('histDongSel');
   const roomSel   = document.getElementById('histRoomSel');
-  roomSel.innerHTML = '<option value="">전체 호실</option>';
+  dongSel.innerHTML = '<option value="">전체 동</option>';
+  roomSel.innerHTML = '<option value="">전체 호수</option>';
   if (buildName) {
     const prop  = getData('properties').find(p => p.name === buildName);
-    const rooms = (prop?.rooms || []).slice().sort((a, b) =>
+    const dongs = [...new Set((prop?.rooms || []).map(r => r.dong).filter(Boolean))].sort();
+    if (dongs.length > 0) {
+      dongSel.innerHTML += dongs.map(d => `<option value="${d}">${d}</option>`).join('');
+    }
+  }
+  renderContractHistory();
+}
+
+function onHistDongChange() {
+  const buildName = document.getElementById('histBuildingSel').value;
+  const dongVal   = document.getElementById('histDongSel').value;
+  const roomSel   = document.getElementById('histRoomSel');
+  roomSel.innerHTML = '<option value="">전체 호수</option>';
+  if (buildName) {
+    const prop  = getData('properties').find(p => p.name === buildName);
+    let rooms = (prop?.rooms || []);
+    if (dongVal) rooms = rooms.filter(r => r.dong === dongVal);
+    rooms = rooms.slice().sort((a, b) =>
       String(a.roomNo).localeCompare(String(b.roomNo), undefined, {numeric: true}));
-    roomSel.innerHTML += rooms.map(r => `<option value="${r.roomNo}">${r.roomNo}</option>`).join('');
+    roomSel.innerHTML += rooms.map(r => `<option value="${r.roomNo}">${r.dong ? r.dong + ' ' : ''}${r.roomNo}</option>`).join('');
   }
   renderContractHistory();
 }
 
 function renderContractHistory() {
-  const tbody    = document.getElementById('historyTbody');
+  const tbody = document.getElementById('historyTbody');
   if (!tbody) return;
   const buildFilter = document.getElementById('histBuildingSel')?.value || '';
+  const dongFilter  = document.getElementById('histDongSel')?.value    || '';
   const roomFilter  = document.getElementById('histRoomSel')?.value    || '';
 
-  let records = getData('contractHistory') || [];
+  // 과거 계약 이력 (contractHistory)
+  let records = (getData('contractHistory') || []).map(r => ({...r, _isCurrent: false}));
   if (buildFilter) records = records.filter(r => r.building === buildFilter);
-  if (roomFilter)  records = records.filter(r => r.room === roomFilter);
+  if (dongFilter)  records = records.filter(r => r.dong === dongFilter);
+  if (roomFilter)  records = records.filter(r => String(r.room) === String(roomFilter));
 
-  // 정렬: 건물→호실→퇴거일 내림차순
-  records.sort((a, b) => {
-    const bc = String(a.building||'').localeCompare(String(b.building||''));
-    if (bc !== 0) return bc;
-    const rc = String(a.room||'').localeCompare(String(b.room||''), undefined, {numeric:true});
-    if (rc !== 0) return rc;
-    return String(b.archivedAt||'').localeCompare(String(a.archivedAt||''));
+  // 현재 계약 중인 임차인도 포함 (특정 호수 선택 시 또는 필터 없을 때)
+  const activeTenants = (getData('tenants') || []).filter(t => t.name && t.status === '입주');
+  let activeFiltered = activeTenants;
+  if (buildFilter) activeFiltered = activeFiltered.filter(t => t.building === buildFilter);
+  if (dongFilter)  activeFiltered = activeFiltered.filter(t => {
+    // 동 정보를 props에서 찾아서 비교
+    const prop = getData('properties').find(p => p.name === t.building);
+    const rm = (prop?.rooms || []).find(r => String(r.roomNo) === String(t.room));
+    return rm?.dong === dongFilter;
+  });
+  if (roomFilter)  activeFiltered = activeFiltered.filter(t => String(t.room) === String(roomFilter));
+
+  // 현재 계약을 동일한 포맷으로 변환
+  const activeRecords = activeFiltered.map(t => {
+    const prop = getData('properties').find(p => p.name === t.building);
+    const rm = (prop?.rooms || []).find(r => String(r.roomNo) === String(t.room));
+    return {
+      _isCurrent: true,
+      building: t.building, dong: rm?.dong || '', room: t.room,
+      name: t.name, phone: t.phone,
+      type: t.type || '월세',
+      deposit: t.deposit, rent: t.rent, management: t.management,
+      payDay: t.payDay, payType: t.payType,
+      contractStart: t.contractStart, contractEnd: t.contractEnd,
+      moveIn: t.moveIn, extendCount: t.extendCount || 0,
+      note: t.note || '',
+      archivedAt: ''
+    };
   });
 
-  if (records.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">📋</div>
+  // 합산 후 정렬: 건물→동→호수→계약시작일 오름차순
+  const allRecords = [...records, ...activeRecords];
+  allRecords.sort((a, b) => {
+    const bc = String(a.building||'').localeCompare(String(b.building||''));
+    if (bc !== 0) return bc;
+    const dc = String(a.dong||'').localeCompare(String(b.dong||''));
+    if (dc !== 0) return dc;
+    const rc = String(a.room||'').localeCompare(String(b.room||''), undefined, {numeric:true});
+    if (rc !== 0) return rc;
+    return String(a.contractStart||'').localeCompare(String(b.contractStart||''));
+  });
+
+  if (allRecords.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state"><div class="empty-icon">📋</div>
       <p>계약 히스토리가 없습니다.<br><small style="color:var(--gray-400);">퇴거 처리를 하면 이력이 여기에 쌓입니다.</small></p>
     </div></td></tr>`;
     return;
   }
 
-  tbody.innerHTML = records.map(r => `<tr>
-    <td>${r.building||'-'}</td>
-    <td><strong>${fmtRoom(r.room)}</strong></td>
-    <td>${r.name||'-'}</td>
-    <td><span class="badge badge-primary">${r.type||'월세'}</span></td>
-    <td style="text-align:right;">${r.deposit ? Number(r.deposit).toLocaleString() : '-'}</td>
-    <td style="text-align:right;">${r.rent    ? Number(r.rent).toLocaleString()    : '-'}</td>
-    <td style="text-align:right;">${r.management ? Number(r.management).toLocaleString() : '-'}</td>
-    <td>${fmtDate(r.contractStart)||'-'}</td>
-    <td>${fmtDate(r.contractEnd)||'-'}</td>
-    <td style="text-align:center;">${r.extendCount || 0}회</td>
-    <td style="color:#dc2626;">${r.archivedAt||'-'}</td>
-    <td style="font-size:12px;color:var(--gray-500);">${r.note||'-'}</td>
-  </tr>`).join('');
+  tbody.innerHTML = allRecords.map(r => {
+    const statusBadge = r._isCurrent
+      ? `<span class="badge badge-success" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;">임대중</span>`
+      : `<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">퇴거</span>`;
+    const evictDate = r._isCurrent ? '-' : (r.archivedAt || '-');
+    const rowStyle = r._isCurrent ? 'background:#f0fdf4;' : '';
+    return `<tr style="${rowStyle}">
+      <td>${r.building||'-'}</td>
+      <td>${r.dong||'-'}</td>
+      <td><strong>${fmtRoom(r.room)}</strong></td>
+      <td>${r.name||'-'}</td>
+      <td><span class="badge badge-primary">${r.type||'월세'}</span></td>
+      <td style="text-align:right;">${r.deposit ? Number(r.deposit).toLocaleString() : '-'}</td>
+      <td style="text-align:right;">${r.rent    ? Number(r.rent).toLocaleString()    : '-'}</td>
+      <td style="text-align:right;">${r.management ? Number(r.management).toLocaleString() : '-'}</td>
+      <td>${fmtDate(r.contractStart)||'-'}</td>
+      <td>${fmtDate(r.contractEnd)||'-'}</td>
+      <td style="text-align:center;">${r.extendCount || 0}회</td>
+      <td style="color:#dc2626;">${evictDate}</td>
+      <td>${statusBadge}</td>
+      <td style="font-size:12px;color:var(--gray-500);max-width:160px;white-space:normal;">${r.note||'-'}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ============================================================
@@ -3868,10 +3936,15 @@ function archiveTenant(tenantId, extraNote) {
   // 비고: 기존 note + 조기퇴거 사유 합산
   const combinedNote = [t.note, extraNote].filter(Boolean).join('\n');
 
+  // 동 정보 조회
+  const prop = getData('properties').find(p => p.name === t.building);
+  const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(t.room));
+  const dong = rm?.dong || '';
+
   const history = getData('contractHistory') || [];
   history.push({
     id: uid(), originalId: t.id,
-    building: t.building, room: t.room,
+    building: t.building, dong: dong, room: t.room,
     name: t.name, phone: t.phone,
     type: t.type || '월세',
     deposit: t.deposit, rent: t.rent, management: t.management,
