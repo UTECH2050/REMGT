@@ -2385,10 +2385,37 @@ function deleteRoomFromModal() {
   const propId = document.getElementById('rmPropId').value;
   const roomId = document.getElementById('rmRoomId').value;
   if (!roomId) return;
-  confirm('이 동호수를 삭제하시겠습니까?', () => {
-    closeModal('roomModal');
-    deleteRoom(propId, roomId);
-  });
+
+  // 입력된 데이터가 있는지 확인
+  const prop = getData('properties').find(x => x.id === propId);
+  const room = prop?.rooms?.find(r => r.id === roomId);
+  const hasData = room && (
+    room.acqPrice || room.acqTax || room.acqFee ||
+    room.supplyPyeong || room.exclPyeong || room.curPrice ||
+    room.acqDate || room.note
+  );
+
+  if (hasData) {
+    // 1차 확인
+    confirm('이 동호수를 삭제하시겠습니까?', () => {
+      // 2차 확인 (데이터 있을 때 추가)
+      confirm(
+        '⚠️ 입력된 정보가 있습니다.\n정말로 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.',
+        () => {
+          closeModal('roomModal');
+          deleteRoom(propId, roomId);
+        },
+        '정말 삭제',
+        'btn-danger'
+      );
+    }, '삭제', 'btn-danger');
+  } else {
+    // 데이터 없으면 1차 확인만
+    confirm('이 동호수를 삭제하시겠습니까?', () => {
+      closeModal('roomModal');
+      deleteRoom(propId, roomId);
+    });
+  }
 }
 
 function openKBSearch() {
