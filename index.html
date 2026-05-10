@@ -2346,11 +2346,19 @@ function saveProperty() {
   if (id) {
     const idx = props.findIndex(x => x.id === id);
     if (idx >= 0) {
+      const oldName = props[idx].name;
       props[idx].name        = name;
       props[idx].type        = document.getElementById('propType').value;
       props[idx].address     = document.getElementById('propAddress').value.trim();
       props[idx].roadAddress = document.getElementById('propRoadAddress').value.trim();
       props[idx].note        = document.getElementById('propNote').value;
+      // 건물명이 바뀐 경우 임대차 데이터의 building 필드도 일괄 업데이트
+      if (oldName !== name) {
+        const tenants = getData('tenants');
+        let changed = false;
+        tenants.forEach(t => { if (t.building === oldName) { t.building = name; changed = true; } });
+        if (changed) setData('tenants', tenants);
+      }
     }
   } else {
     props.push({ id: uid(), name, type: document.getElementById('propType').value,
