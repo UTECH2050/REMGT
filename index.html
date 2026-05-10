@@ -1801,7 +1801,7 @@ function navigate(page) {
 // UTILITIES
 // ============================================================
 function fmtMoney(v) { return Number(v||0).toLocaleString() + '만원'; }
-function fmtRoom(r) { if (!r) return ''; const s = r.replace(/호+$/, ''); return s + '호'; }
+function fmtRoom(r) { if (!r) return ''; const s = r.replace(/^\S*동/, '').replace(/호+$/, ''); return s + '호'; }
 function getTenantDong(building, roomNo) {
   const prop = getData('properties').find(p => p.name === building);
   const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(roomNo));
