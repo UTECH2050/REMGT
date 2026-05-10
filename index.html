@@ -2795,11 +2795,15 @@ function extendContract() {
   const durationDays = Math.round((endDate - startDate) / 86400000) + 1;
   const extendYears  = durationDays <= 400 ? 1 : 2;
 
-  // 최초 계약일 저장 (처음 연장 시만 세팅)
-  const origStartEl  = document.getElementById('regOrigStart');
+  // 최초 계약일 고정
+  // - wrap이 숨겨져 있으면 → 첫 연장: 현재 계약시작일을 최초 계약일로 확정
+  // - wrap이 이미 표시 중이면 → 재연장: 기존 최초 계약일 유지
+  const origStartEl   = document.getElementById('regOrigStart');
   const origStartWrap = document.getElementById('regOrigStartWrap');
-  if (origStartEl && !origStartEl.value) {
-    origStartEl.value = startVal;
+  const wrapVisible   = origStartWrap && origStartWrap.style.display !== 'none';
+  if (!wrapVisible) {
+    // 첫 연장: 연장 전 계약시작일을 최초 계약일로 덮어씀
+    if (origStartEl) origStartEl.value = startVal;
   }
   if (origStartWrap) origStartWrap.style.display = 'block';
 
@@ -2947,11 +2951,13 @@ function prefillRegisterForm(id) {
   const endEl = document.getElementById('regContractEnd');
   if (endEl) endEl.value = t.contractEnd || '';
 
-  // 최초 계약일: 계약이 연장된 경우(extendCount>0)에만 표시
+  // 최초 계약일: 연장 횟수가 있고 moveIn이 현재 contractStart와 다를 때만 표시
   const origStartEl = document.getElementById('regOrigStart');
   const origWrap2   = document.getElementById('regOrigStartWrap');
-  const isExtended  = (t.extendCount || 0) > 0 && t.moveIn && t.moveIn !== t.contractStart;
-  if (origStartEl) origStartEl.value = t.moveIn || t.contractStart || '';
+  const extCount    = t.extendCount || 0;
+  const origDate    = (t.moveIn && t.moveIn !== t.contractStart) ? t.moveIn : '';
+  const isExtended  = extCount > 0 && !!origDate;
+  if (origStartEl) origStartEl.value = origDate || t.contractStart || '';
   if (origWrap2) origWrap2.style.display = isExtended ? 'block' : 'none';
 
   // 입금일자 표시 업데이트
