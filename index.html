@@ -584,13 +584,13 @@
           <span class="search-icon">🔍</span>
           <input type="text" placeholder="임차인명, 호실 검색..." oninput="filterContracts(this.value)" style="padding-left:36px">
         </div>
-        <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;">(단위: 만원)</span>
         <select onchange="filterContractStatus(this.value)" style="width:auto;min-width:140px">
           <option value="">전체</option>
           <option value="active">계약중</option>
           <option value="expiring">만료 임박 (90일)</option>
           <option value="expired">만료</option>
         </select>
+        <span style="font-size:12px;color:var(--gray-400);white-space:nowrap;margin-left:auto;">(단위: 만원)</span>
       </div>
       <div class="card">
         <div class="card-body" style="padding:0">
