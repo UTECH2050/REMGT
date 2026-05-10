@@ -2093,7 +2093,7 @@ function renderTenantFilterBar() {
     )).join('');
 
   const sel = (id, onchange, options) =>
-    `<select id="${id}" onchange="${onchange}" style="height:34px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;">${options}</select>`;
+    `<select id="${id}" onchange="${onchange}" style="height:34px;width:auto;max-width:160px;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;color:var(--gray-700);cursor:pointer;">${options}</select>`;
 
   bar.innerHTML = `
     <div style="display:flex;gap:8px;align-items:center;flex:1;">
