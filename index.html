@@ -233,14 +233,18 @@
     z-index: 200; align-items: center; justify-content: center;
   }
   .modal-overlay.open { display: flex; }
+  .modal-overlay.dragging { align-items: flex-start; justify-content: flex-start; }
   .modal {
     background: white; border-radius: 14px; width: 90%; max-width: 560px;
     box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto;
   }
+  .modal.is-dragging { user-select: none; }
   .modal-header {
     padding: 20px 24px; border-bottom: 1px solid var(--gray-100);
     display: flex; align-items: center; justify-content: space-between;
+    cursor: grab;
   }
+  .modal-header:active { cursor: grabbing; }
   .modal-title { font-size: 16px; font-weight: 700; }
   .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--gray-400); padding: 0 4px; }
   .modal-body { padding: 24px; }
@@ -1900,8 +1904,81 @@ function daysUntil(dateStr) {
   const diff = new Date(dateStr) - new Date(today());
   return Math.ceil(diff / 86400000);
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  const overlay = document.getElementById(id);
+  if (!overlay) return;
+  overlay.classList.remove('open', 'dragging');
+  const modal = overlay.querySelector('.modal');
+  if (modal) {
+    modal.style.position = '';
+    modal.style.left = '';
+    modal.style.top  = '';
+    modal.style.margin = '';
+    modal.classList.remove('is-dragging');
+  }
+}
+function openModal(id) {
+  const overlay = document.getElementById(id);
+  if (!overlay) return;
+  overlay.classList.add('open');
+  // 드래그 초기화
+  const modal = overlay.querySelector('.modal');
+  if (modal) {
+    modal.style.position = '';
+    modal.style.left = '';
+    modal.style.top  = '';
+    modal.style.margin = '';
+    overlay.classList.remove('dragging');
+    initModalDrag(overlay, modal);
+  }
+}
+
+// 드래그 기능 초기화 (중복 등록 방지)
+function initModalDrag(overlay, modal) {
+  const header = modal.querySelector('.modal-header');
+  if (!header || header._dragInit) return;
+  header._dragInit = true;
+  let startX, startY, startL, startT, dragging = false;
+
+  header.addEventListener('mousedown', e => {
+    // 닫기 버튼 클릭 시 드래그 제외
+    if (e.target.closest('.modal-close')) return;
+    dragging = true;
+    // 아직 위치가 없으면 현재 화면 중앙 위치로 픽스
+    if (!modal.style.left) {
+      const rect = modal.getBoundingClientRect();
+      modal.style.position = 'fixed';
+      modal.style.left  = rect.left + 'px';
+      modal.style.top   = rect.top  + 'px';
+      modal.style.margin = '0';
+      overlay.classList.add('dragging');
+    }
+    startX = e.clientX;
+    startY = e.clientY;
+    startL = parseInt(modal.style.left) || 0;
+    startT = parseInt(modal.style.top)  || 0;
+    modal.classList.add('is-dragging');
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    // 화면 밖으로 나가지 않도록 제한
+    const maxL = window.innerWidth  - modal.offsetWidth;
+    const maxT = window.innerHeight - 60;
+    modal.style.left = Math.max(0, Math.min(maxL, startL + dx)) + 'px';
+    modal.style.top  = Math.max(0, Math.min(maxT, startT + dy)) + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (dragging) {
+      dragging = false;
+      modal.classList.remove('is-dragging');
+    }
+  });
+}
 
 // ESC 키 및 외부 클릭으로 팝업 닫기 기능 비활성화 (사용자 요청)
 
