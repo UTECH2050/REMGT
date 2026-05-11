@@ -667,7 +667,7 @@
                     <th>건물명</th><th>동</th><th>호수</th><th>임차인</th><th>유형</th>
                     <th>보증금</th><th>월세</th><th>관리비</th>
                     <th>계약 시작</th><th>계약 종료</th>
-                    <th>연장계약</th><th>퇴거일</th><th>상태</th><th>비고</th><th>관리</th>
+                    <th>연장여부</th><th>퇴거일</th><th>상태</th><th>비고</th><th>관리</th>
                   </tr>
                 </thead>
                 <tbody id="historyTbody"></tbody>
@@ -4211,18 +4211,22 @@ function renderContractHistory() {
   }
 
   tbody.innerHTML = allRecords.map(r => {
+    const ext = isExtension(r);
     let statusBadge, rowStyle;
     if (r._isCurrent) {
       statusBadge = `<span class="badge badge-success" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;">임대중</span>`;
       rowStyle = 'background:#f0fdf4;';
-    } else if (isExtension(r)) {
-      statusBadge = `<span class="badge" style="background:#eff6ff;color:#2563eb;border:1px solid #93c5fd;">계약연장</span>`;
+    } else if (ext) {
+      statusBadge = `-`;   // 연장여부 O → 상태 없음
       rowStyle = '';
     } else {
       statusBadge = `<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">퇴거</span>`;
       rowStyle = '';
     }
-    const evictDate = (r._isCurrent || isExtension(r)) ? '-' : (r.archivedAt || '-');
+    const extYN    = ext
+      ? `<span style="color:#2563eb;font-weight:700;">O</span>`
+      : `<span style="color:#9ca3af;">X</span>`;
+    const evictDate = (r._isCurrent || ext) ? '-' : (r.archivedAt || '-');
     const recKey = r.id || r._tenantId;
     const isOverlap = overlapIds.has(recKey);
     const noteDisplay = [
@@ -4246,7 +4250,7 @@ function renderContractHistory() {
       <td style="text-align:right;">${r.management ? Number(r.management).toLocaleString() : '-'}</td>
       <td>${fmtDate(r.contractStart)||'-'}</td>
       <td>${fmtDate(r.contractEnd)||'-'}</td>
-      <td style="text-align:center;">${r.extendCount || 0}</td>
+      <td style="text-align:center;">${extYN}</td>
       <td style="color:#dc2626;">${evictDate}</td>
       <td>${statusBadge}</td>
       <td style="font-size:12px;color:var(--gray-500);max-width:160px;white-space:normal;">${noteDisplay || '-'}</td>
