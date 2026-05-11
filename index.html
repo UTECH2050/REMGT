@@ -2452,7 +2452,7 @@ function updatePaymentSortIcons() {
 }
 
 // 계약 관리 소팅
-let contractSortKey = 'building', contractSortDir = 'asc';
+let contractSortKey = 'contractEnd', contractSortDir = 'asc';
 function sortContracts(key) {
   if (contractSortKey === key) contractSortDir = contractSortDir === 'asc' ? 'desc' : 'asc';
   else { contractSortKey = key; contractSortDir = 'asc'; }
@@ -4052,25 +4052,25 @@ function renderContracts(filter, statusFilter) {
     return rm?.dong || '';
   }
 
-  // 정렬: 항상 1차 건물명→2차 동→3차 호수(오름차순) 고정
-  // 소팅 버튼(name/deposit/rent/dates)은 동일 건물+동+호수 내 추가 정렬
+  // 정렬: 소팅 버튼 기준 → 동일 값이면 건물명→동→호수 순으로 캐스케이드
   tenants.sort((a, b) => {
-    // 1차: 건물명 (버튼 방향 적용)
-    const bc = String(a.building||'').localeCompare(String(b.building||''), 'ko');
-    if (bc !== 0) return contractSortKey === 'building' ? (contractSortDir === 'asc' ? bc : -bc) : bc;
-    // 2차: 동 (항상 오름차순)
-    const dc = String(getTenantDongForSort(a)).localeCompare(String(getTenantDongForSort(b)), 'ko', {numeric: true});
-    if (dc !== 0) return dc;
-    // 3차: 호수 (버튼 방향 적용)
-    const rc = String(a.room||'').localeCompare(String(b.room||''), undefined, {numeric: true});
-    if (rc !== 0) return contractSortKey === 'room' ? (contractSortDir === 'asc' ? rc : -rc) : rc;
-    // 4차: 기타 소팅 버튼 (name, deposit, rent, contractStart, contractEnd)
-    if (['building','room'].includes(contractSortKey)) return 0;
+    // 1차: 선택된 소팅 키
     let va = a[contractSortKey] ?? '', vb = b[contractSortKey] ?? '';
     const numKeys = ['deposit','rent'];
-    if (numKeys.includes(contractSortKey)) { va = Number(va); vb = Number(vb); return contractSortDir==='asc' ? va-vb : vb-va; }
-    const cmp = String(va).localeCompare(String(vb), undefined, {numeric:true});
-    return contractSortDir==='asc' ? cmp : -cmp;
+    let primary;
+    if (numKeys.includes(contractSortKey)) {
+      primary = contractSortDir==='asc' ? Number(va)-Number(vb) : Number(vb)-Number(va);
+    } else {
+      const cmp = String(va).localeCompare(String(vb), undefined, {numeric:true});
+      primary = contractSortDir==='asc' ? cmp : -cmp;
+    }
+    if (primary !== 0) return primary;
+    // 동일 값이면 2차: 건물명 → 동 → 호수
+    const bc = String(a.building||'').localeCompare(String(b.building||''), 'ko');
+    if (bc !== 0) return bc;
+    const dc = String(getTenantDongForSort(a)).localeCompare(String(getTenantDongForSort(b)), 'ko', {numeric: true});
+    if (dc !== 0) return dc;
+    return String(a.room||'').localeCompare(String(b.room||''), undefined, {numeric: true});
   });
   updateContractSortIcons();
 
