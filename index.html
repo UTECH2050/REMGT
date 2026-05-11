@@ -723,54 +723,48 @@
         <div class="card-header">
           <span class="card-title">👥 계정 관리</span>
         </div>
-        <div class="card-body" style="padding:0">
-          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <div class="card-body" style="padding:0;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:700px;">
             <thead>
               <tr style="background:var(--gray-50);border-bottom:1px solid var(--gray-200);">
-                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">아이디</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);width:100px;">아이디</th>
                 <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">이름</th>
-                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">역할</th>
-                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">등록일</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);width:90px;">역할</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);width:90px;">등록일</th>
                 <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">이메일</th>
-                <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--gray-600);">관리</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);width:120px;">비밀번호</th>
+                <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--gray-600);width:90px;">관리</th>
               </tr>
             </thead>
             <tbody id="settingsUserTbody"></tbody>
+            <!-- 새 계정 추가 행 -->
+            <tfoot>
+              <tr style="background:var(--gray-50);border-top:2px solid var(--gray-200);">
+                <td style="padding:8px 8px 8px 14px;">
+                  <input type="text" id="newUserId" placeholder="아이디*" style="width:100%;padding:5px 8px;font-size:13px;border:1px solid var(--gray-300);border-radius:6px;box-sizing:border-box;">
+                </td>
+                <td style="padding:8px;">
+                  <input type="text" id="newUserName" placeholder="이름*" style="width:100%;padding:5px 8px;font-size:13px;border:1px solid var(--gray-300);border-radius:6px;box-sizing:border-box;">
+                </td>
+                <td style="padding:8px;">
+                  <select id="newUserRole" style="width:100%;padding:5px 6px;font-size:13px;border:1px solid var(--gray-300);border-radius:6px;box-sizing:border-box;">
+                    <option value="user">일반</option>
+                    <option value="admin">관리자</option>
+                  </select>
+                </td>
+                <td style="padding:8px;font-size:12px;color:var(--gray-400);text-align:center;">자동</td>
+                <td style="padding:8px;">
+                  <input type="email" id="newUserEmail" placeholder="이메일" style="width:100%;padding:5px 8px;font-size:13px;border:1px solid var(--gray-300);border-radius:6px;box-sizing:border-box;">
+                </td>
+                <td style="padding:8px;">
+                  <input type="password" id="newUserPw" placeholder="임시 비밀번호*" style="width:100%;padding:5px 8px;font-size:13px;border:1px solid var(--gray-300);border-radius:6px;box-sizing:border-box;" onkeydown="if(event.key==='Enter') addUser()">
+                </td>
+                <td style="padding:8px;text-align:center;">
+                  <button class="btn btn-primary btn-sm" onclick="addUser()">➕ 추가</button>
+                </td>
+              </tr>
+            </tfoot>
           </table>
-        </div>
-        <!-- 새 계정 추가 폼 -->
-        <div style="border-top:1px solid var(--gray-200);padding:16px 20px;">
-          <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:12px;">➕ 새 계정 추가</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>아이디 <span class="required">*</span></label>
-              <input type="text" id="newUserId" placeholder="영문+숫자">
-            </div>
-            <div class="form-group">
-              <label>이름 <span class="required">*</span></label>
-              <input type="text" id="newUserName" placeholder="표시 이름">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>역할</label>
-              <select id="newUserRole">
-                <option value="user">일반</option>
-                <option value="admin">관리자</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>이메일</label>
-              <input type="email" id="newUserEmail" placeholder="example@email.com">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>임시 비밀번호 <span class="required">*</span></label>
-              <input type="password" id="newUserPw" placeholder="8자 이상" onkeydown="if(event.key==='Enter') addUser()">
-            </div>
-          </div>
-          <button class="btn btn-primary" onclick="addUser()" style="margin-top:4px;">➕ 계정 추가</button>
         </div>
       </div>
 
@@ -965,26 +959,6 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
   </div>
 </div>
 
-<!-- 이메일 수정 모달 -->
-<div class="modal-overlay" id="emailEditModal">
-  <div class="modal" style="max-width:380px;">
-    <div class="modal-header">
-      <span class="modal-title">✉ 이메일 수정</span>
-      <button class="modal-close" onclick="closeModal('emailEditModal')">×</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="emailEditTargetId">
-      <div class="form-group">
-        <label>이메일 주소</label>
-        <input type="email" id="emailEditInput" placeholder="example@email.com" onkeydown="if(event.key==='Enter') saveEmailEdit()">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('emailEditModal')">취소</button>
-      <button class="btn btn-primary" onclick="saveEmailEdit()">저장</button>
-    </div>
-  </div>
-</div>
 
 <!-- Reset Password Modal (관리자가 타 계정 비밀번호 재설정) -->
 <div class="modal-overlay" id="resetPwModal">
@@ -1662,29 +1636,6 @@ async function doEmailReset() {
 }
 
 // 이메일 수정 모달 (설정 페이지)
-function openEmailEdit(userId) {
-  const users = getUsers();
-  const user  = users.find(u => u.id === userId);
-  if (!user) return;
-  const cur = user.email || '';
-  // 간단한 prompt 대신 커스텀 모달 사용
-  document.getElementById('emailEditTargetId').value = userId;
-  document.getElementById('emailEditInput').value = cur;
-  openModal('emailEditModal');
-}
-
-function saveEmailEdit() {
-  const userId = document.getElementById('emailEditTargetId').value;
-  const email  = (document.getElementById('emailEditInput').value || '').trim();
-  const users  = getUsers();
-  const user   = users.find(u => u.id === userId);
-  if (!user) return;
-  user.email = email;
-  saveUsers(users);
-  closeModal('emailEditModal');
-  showToast('이메일이 저장되었습니다.');
-  renderSettings();
-}
 
 function completeLogin(user) {
   _currentSession = { userId: user.id, name: user.name, role: user.role };
@@ -3664,28 +3615,64 @@ function renderSettings() {
   if (!tbody) return;
   const users = getUsers();
   tbody.innerHTML = users.map(u => {
-    const roleName = u.role === 'admin' ? '관리자' : '일반';
-    const isSelf = u.id === _currentSession?.userId;
-    const emailDisplay = u.email
-      ? `<span style="font-size:12px;color:var(--gray-700);">${u.email}</span>`
-      : `<span style="font-size:12px;color:var(--gray-400);">-</span>`;
-    const btns = isSelf
-      ? `<button class="btn btn-outline btn-sm" onclick="openSelfPasswordChange()">🔑 비밀번호</button>
-         <button class="btn btn-outline btn-sm" style="margin-left:4px;" onclick="openEmailEdit('${u.id}')">✉ 이메일</button>`
-      : `<button class="btn btn-outline btn-sm" onclick="openResetPwModal('${u.id}','${u.name}')">🔑 재설정</button>
-         <button class="btn btn-outline btn-sm" style="margin-left:4px;" onclick="openEmailEdit('${u.id}')">✉ 이메일</button>
-         <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteUser('${u.id}')">삭제</button>`;
+    const isSelf   = u.id === _currentSession?.userId;
+    const uid_safe = u.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const nameVal  = (u.name  || '').replace(/"/g,'&quot;');
+    const emailVal = (u.email || '').replace(/"/g,'&quot;');
+    const roleAdm  = u.role === 'admin' ? 'selected' : '';
+    const roleUsr  = u.role !== 'admin' ? 'selected' : '';
+    const pwBtn    = isSelf
+      ? `<button class="btn btn-outline btn-sm" onclick="openSelfPasswordChange()" title="비밀번호 변경">🔑</button>`
+      : `<button class="btn btn-outline btn-sm" onclick="openResetPwModal('${uid_safe}','${nameVal}')" title="비밀번호 재설정">🔑</button>`;
+    const delBtn   = isSelf ? '' : `<button class="btn btn-danger btn-sm" onclick="deleteUser('${uid_safe}')" title="계정 삭제">삭제</button>`;
     return `<tr style="border-bottom:1px solid var(--gray-100);">
-      <td style="padding:11px 14px;font-size:13px;"><code>${u.id}</code>${isSelf ? ' <span style="font-size:11px;color:var(--primary);">(나)</span>' : ''}</td>
-      <td style="padding:11px 14px;font-size:13px;">${u.name}</td>
-      <td style="padding:11px 14px;font-size:13px;">${roleName}</td>
-      <td style="padding:11px 14px;font-size:12px;color:var(--gray-500);">${u.createdAt || '-'}</td>
-      <td style="padding:11px 14px;">${emailDisplay}</td>
-      <td style="padding:11px 14px;text-align:center;white-space:nowrap;">${btns}</td>
+      <td style="padding:8px 8px 8px 14px;font-size:13px;white-space:nowrap;">
+        <code>${u.id}</code>${isSelf ? ' <span style="font-size:11px;color:var(--primary);">(나)</span>' : ''}
+      </td>
+      <td style="padding:6px 8px;">
+        <input type="text" id="uName_${u.id}" value="${nameVal}" style="width:100%;padding:5px 8px;font-size:13px;border:1px solid var(--gray-200);border-radius:6px;box-sizing:border-box;">
+      </td>
+      <td style="padding:6px 8px;">
+        <select id="uRole_${u.id}" style="width:100%;padding:5px 6px;font-size:13px;border:1px solid var(--gray-200);border-radius:6px;box-sizing:border-box;">
+          <option value="admin" ${roleAdm}>관리자</option>
+          <option value="user"  ${roleUsr}>일반</option>
+        </select>
+      </td>
+      <td style="padding:8px 14px;font-size:12px;color:var(--gray-500);white-space:nowrap;">${u.createdAt || '-'}</td>
+      <td style="padding:6px 8px;">
+        <input type="email" id="uEmail_${u.id}" value="${emailVal}" style="width:100%;padding:5px 8px;font-size:13px;border:1px solid var(--gray-200);border-radius:6px;box-sizing:border-box;">
+      </td>
+      <td style="padding:6px 8px;text-align:center;">${pwBtn}</td>
+      <td style="padding:6px 8px;text-align:center;white-space:nowrap;">
+        <button class="btn btn-primary btn-sm" onclick="saveUserInlineEdit('${uid_safe}')">저장</button>
+        ${delBtn ? `<span style="margin-left:4px;">${delBtn}</span>` : ''}
+      </td>
     </tr>`;
   }).join('');
   // 동기화 설정 상태 표시
   renderSyncConfigStatus();
+}
+
+function saveUserInlineEdit(userId) {
+  const name  = (document.getElementById(`uName_${userId}`)?.value  || '').trim();
+  const role  =  document.getElementById(`uRole_${userId}`)?.value  || 'user';
+  const email = (document.getElementById(`uEmail_${userId}`)?.value || '').trim();
+  if (!name) { showToast('이름을 입력해주세요.', 'error'); return; }
+  const users = getUsers();
+  const user  = users.find(u => u.id === userId);
+  if (!user) return;
+  user.name  = name;
+  user.role  = role;
+  user.email = email;
+  saveUsers(users);
+  // 본인 정보 변경 시 세션에도 반영
+  if (_currentSession?.userId === userId) {
+    _currentSession.name = name;
+    _currentSession.role = role;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession));
+  }
+  showToast('저장되었습니다.');
+  renderSettings();
 }
 
 async function addUser() {
