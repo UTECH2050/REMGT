@@ -1326,8 +1326,11 @@
           <input type="text" id="histEditManagement" oninput="fmtComma(this)">
         </div>
         <div class="form-group">
-          <label>연장계약</label>
-          <input type="number" id="histEditExtendCount" min="0" style="width:100%;">
+          <label>연장여부</label>
+          <select id="histEditIsExtension" style="width:100%;">
+            <option value="X">X (해당 없음)</option>
+            <option value="O">O (연장 계약)</option>
+          </select>
         </div>
         <div class="form-group">
           <label>계약 시작일</label>
@@ -4271,7 +4274,7 @@ function openHistoryEdit(id) {
   document.getElementById('histEditDeposit').value      = rec.deposit ? Number(rec.deposit).toLocaleString() : '';
   document.getElementById('histEditRent').value         = rec.rent ? Number(rec.rent).toLocaleString() : '';
   document.getElementById('histEditManagement').value   = rec.management ? Number(rec.management).toLocaleString() : '';
-  document.getElementById('histEditExtendCount').value  = rec.extendCount || 0;
+  document.getElementById('histEditIsExtension').value  = rec.reason === 'extension' ? 'O' : 'X';
   document.getElementById('histEditContractStart').value = rec.contractStart || '';
   document.getElementById('histEditContractEnd').value  = rec.contractEnd || '';
   document.getElementById('histEditArchivedAt').value   = rec.archivedAt || '';
@@ -4284,6 +4287,7 @@ function saveHistoryEdit() {
   const history = getData('contractHistory') || [];
   const idx = history.findIndex(r => r.id === id);
   if (idx < 0) return;
+  const isExt = document.getElementById('histEditIsExtension').value === 'O';
   history[idx] = {
     ...history[idx],
     name:          document.getElementById('histEditName').value.trim(),
@@ -4291,7 +4295,7 @@ function saveHistoryEdit() {
     deposit:       Number((document.getElementById('histEditDeposit').value || '0').replace(/,/g, '')),
     rent:          Number((document.getElementById('histEditRent').value || '0').replace(/,/g, '')),
     management:    Number((document.getElementById('histEditManagement').value || '0').replace(/,/g, '')),
-    extendCount:   Number(document.getElementById('histEditExtendCount').value || 0),
+    reason:        isExt ? 'extension' : 'eviction',
     contractStart: document.getElementById('histEditContractStart').value.trim(),
     contractEnd:   document.getElementById('histEditContractEnd').value.trim(),
     archivedAt:    document.getElementById('histEditArchivedAt').value.trim(),
