@@ -2274,9 +2274,11 @@ function renderTenants(filter, statusFilter) {
     // 건물명 필터 (정확 매칭)
     if (tenantFilter && prop.name !== tenantFilter) return;
 
-    const rooms = (prop.rooms || []).slice().sort((a, b) =>
-      String(a.roomNo).localeCompare(String(b.roomNo), undefined, {numeric: true})
-    );
+    const rooms = (prop.rooms || []).slice().sort((a, b) => {
+      const dc = String(a.dong||'').localeCompare(String(b.dong||''), 'ko', {numeric: true});
+      if (dc !== 0) return dc;
+      return String(a.roomNo||'').localeCompare(String(b.roomNo||''), undefined, {numeric: true});
+    });
     rooms.forEach(room => {
       // 동 필터
       if (tenantDongFilter && room.dong !== tenantDongFilter) return;
@@ -4042,13 +4044,27 @@ function renderContracts(filter, statusFilter) {
       return true;
     });
   }
-  // 건물명 가나다 순 우선 정렬 후 사용자 정렬 키 적용
-  tenants.sort((a,b) => {
-    const buildingCmp = String(a.building||'').localeCompare(String(b.building||''), 'ko');
-    if (contractSortKey === 'building') {
-      return contractSortDir === 'asc' ? buildingCmp : -buildingCmp;
-    }
-    // 기본: 건물명 가나다 우선, 같으면 사용자 정렬 키
+  // 건물명 → 동 → 호수 오름차순 기본 정렬 후 사용자 정렬 키 적용
+  const props = getData('properties');
+  function getTenantDongForSort(t) {
+    const prop = props.find(p => p.name === t.building);
+    const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(t.room));
+    return rm?.dong || '';
+  }
+  tenants.sort((a, b) => {
+    // 건물명
+    const bc = String(a.building||'').localeCompare(String(b.building||''), 'ko');
+    if (contractSortKey === 'building') return contractSortDir === 'asc' ? bc : -bc;
+    if (bc !== 0) return bc;
+    // 동
+    const dc = String(getTenantDongForSort(a)).localeCompare(String(getTenantDongForSort(b)), 'ko', {numeric: true});
+    if (contractSortKey === 'dong') return contractSortDir === 'asc' ? dc : -dc;
+    if (dc !== 0) return dc;
+    // 호수
+    const rc = String(a.room||'').localeCompare(String(b.room||''), undefined, {numeric: true});
+    if (contractSortKey === 'room') return contractSortDir === 'asc' ? rc : -rc;
+    if (rc !== 0) return rc;
+    // 사용자 정렬 키
     let va = a[contractSortKey] ?? '', vb = b[contractSortKey] ?? '';
     const numKeys = ['deposit','rent'];
     if (numKeys.includes(contractSortKey)) { va = Number(va); vb = Number(vb); return contractSortDir==='asc' ? va-vb : vb-va; }
