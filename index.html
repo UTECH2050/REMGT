@@ -1793,6 +1793,53 @@ function setData(key, val) {
 }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
+// ============================================================
+// CONTRACT HISTORY — 물건명/동/호수별 구조화 저장
+// ============================================================
+function _histKey(building, dong, room) {
+  return `${building||''}||${dong||''}||${room||''}`;
+}
+
+// 전체 히스토리를 flat 배열로 반환 (기존 flat 배열도 자동 마이그레이션)
+function loadAllHistory() {
+  const raw = getData('contractHistory');
+  if (!raw || (Array.isArray(raw) && raw.length === 0)) return [];
+  if (Array.isArray(raw)) {
+    // 구버전 flat 배열 → 구조화로 마이그레이션
+    const structured = {};
+    raw.forEach(rec => {
+      const k = _histKey(rec.building, rec.dong, rec.room);
+      if (!structured[k]) structured[k] = [];
+      structured[k].push(rec);
+    });
+    setData('contractHistory', structured);
+    return raw;
+  }
+  // 신버전 구조화 객체 → flat 배열로 변환
+  return Object.values(raw).flat();
+}
+
+// flat 배열을 물건명/동/호수별로 구조화하여 저장
+function saveHistory(flatArray) {
+  const structured = {};
+  flatArray.forEach(rec => {
+    const k = _histKey(rec.building, rec.dong, rec.room);
+    if (!structured[k]) structured[k] = [];
+    structured[k].push(rec);
+  });
+  setData('contractHistory', structured);
+}
+
+// 특정 방의 히스토리만 로드
+function loadRoomHistory(building, dong, room) {
+  const raw = getData('contractHistory');
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(r =>
+    r.building === building && String(r.dong||'') === String(dong||'') && String(r.room) === String(room)
+  );
+  return raw[_histKey(building, dong, room)] || [];
+}
+
 // Seed demo data if empty
 function seedDemoData() {
   if (getData('tenants').length > 0) return;
@@ -3152,7 +3199,7 @@ function extendContract() {
           const prop = getData('properties').find(p => p.name === t.building);
           const rm   = (prop?.rooms||[]).find(r => String(r.roomNo) === String(t.room));
           const extNo = (t.extendCount || 0) + 1;
-          const history = getData('contractHistory') || [];
+          const history = loadAllHistory();
           history.push({
             id: uid(), originalId: t.id,
             building: t.building, dong: rm?.dong || '', room: t.room,
@@ -3166,7 +3213,7 @@ function extendContract() {
             archivedAt: today(),
             reason: 'extension'
           });
-          setData('contractHistory', history);
+          saveHistory(history);
           // 연장 횟수 즉시 반영
           const idx = tenants.findIndex(x => x.id === tid);
           tenants[idx] = { ...tenants[idx], extendCount: extNo };
@@ -4148,8 +4195,8 @@ function renderContractHistory() {
   // 건물이 선택되지 않으면 표시 안 함
   if (!buildFilter) { tbody.innerHTML = ''; return; }
 
-  // 과거 계약 이력 (contractHistory)
-  let records = (getData('contractHistory') || []).map(r => ({...r, _isCurrent: false}));
+  // 과거 계약 이력 (contractHistory) — 구조화 저장에서 flat 로드
+  let records = loadAllHistory().map(r => ({...r, _isCurrent: false}));
   if (buildFilter) records = records.filter(r => r.building === buildFilter);
   if (dongFilter)  records = records.filter(r => r.dong === dongFilter);
   if (roomFilter)  records = records.filter(r => String(r.room) === String(roomFilter));
@@ -4283,7 +4330,7 @@ function renderContractHistory() {
 // 계약 히스토리 수정 / 삭제
 // ============================================================
 function openHistoryEdit(id) {
-  const rec = (getData('contractHistory') || []).find(r => r.id === id);
+  const rec = loadAllHistory().find(r => r.id === id);
   if (!rec) return;
   document.getElementById('histEditId').value           = id;
   document.getElementById('histEditName').value         = rec.name || '';
@@ -4301,7 +4348,7 @@ function openHistoryEdit(id) {
 
 function saveHistoryEdit() {
   const id = document.getElementById('histEditId').value;
-  const history = getData('contractHistory') || [];
+  const history = loadAllHistory();
   const idx = history.findIndex(r => r.id === id);
   if (idx < 0) return;
   const isExt = document.getElementById('histEditIsExtension').value === 'O';
@@ -4318,7 +4365,7 @@ function saveHistoryEdit() {
     archivedAt:    document.getElementById('histEditArchivedAt').value.trim(),
     note:          document.getElementById('histEditNote').value.trim()
   };
-  setData('contractHistory', history);
+  saveHistory(history);
   closeModal('historyEditModal');
   renderContractHistory();
   showToast('히스토리가 수정됐습니다.');
@@ -4430,9 +4477,9 @@ function saveHistoryAdd() {
     reason:        'manual'
   };
 
-  const history = getData('contractHistory') || [];
+  const history = loadAllHistory();
   history.push(newRec);
-  setData('contractHistory', history);
+  saveHistory(history);
   closeModal('historyAddModal');
   showToast('히스토리가 추가됐습니다.');
   renderContractHistory();
@@ -4445,13 +4492,13 @@ function deleteHistoryFromModal() {
 }
 
 function deleteHistoryRecord(id) {
-  const rec = (getData('contractHistory') || []).find(r => r.id === id);
+  const rec = loadAllHistory().find(r => r.id === id);
   if (!rec) return;
   confirm(
     `'${rec.name}' 의 계약 이력(${fmtDate(rec.contractStart)} ~ ${fmtDate(rec.contractEnd)})을 삭제하시겠습니까?`,
     () => {
-      const history = (getData('contractHistory') || []).filter(r => r.id !== id);
-      setData('contractHistory', history);
+      const history = loadAllHistory().filter(r => r.id !== id);
+      saveHistory(history);
       renderContractHistory();
       showToast('히스토리가 삭제됐습니다.');
     },
@@ -4475,7 +4522,7 @@ function archiveTenant(tenantId, extraNote) {
   const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(t.room));
   const dong = rm?.dong || '';
 
-  const history = getData('contractHistory') || [];
+  const history = loadAllHistory();
   history.push({
     id: uid(), originalId: t.id,
     building: t.building, dong: dong, room: t.room,
@@ -4489,7 +4536,7 @@ function archiveTenant(tenantId, extraNote) {
     archivedAt: new Date().toISOString().slice(0, 10),
     reason: 'eviction'
   });
-  setData('contractHistory', history);
+  saveHistory(history);
 
   // 해당 임차인을 공실 상태로 초기화
   const idx = tenants.findIndex(x => x.id === tenantId);
