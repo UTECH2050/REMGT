@@ -2452,7 +2452,7 @@ function updatePaymentSortIcons() {
 }
 
 // 계약 관리 소팅
-let contractSortKey = 'contractEnd', contractSortDir = 'asc';
+let contractSortKey = 'building', contractSortDir = 'asc';
 function sortContracts(key) {
   if (contractSortKey === key) contractSortDir = contractSortDir === 'asc' ? 'desc' : 'asc';
   else { contractSortKey = key; contractSortDir = 'asc'; }
@@ -4044,27 +4044,28 @@ function renderContracts(filter, statusFilter) {
       return true;
     });
   }
-  // 건물명 → 동 → 호수 오름차순 기본 정렬 후 사용자 정렬 키 적용
-  const props = getData('properties');
+  // 동 조회 헬퍼
+  const _sortProps = getData('properties');
   function getTenantDongForSort(t) {
-    const prop = props.find(p => p.name === t.building);
+    const prop = _sortProps.find(p => p.name === t.building);
     const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(t.room));
     return rm?.dong || '';
   }
+
+  // 정렬: 항상 1차 건물명→2차 동→3차 호수(오름차순) 고정
+  // 소팅 버튼(name/deposit/rent/dates)은 동일 건물+동+호수 내 추가 정렬
   tenants.sort((a, b) => {
-    // 건물명
+    // 1차: 건물명 (버튼 방향 적용)
     const bc = String(a.building||'').localeCompare(String(b.building||''), 'ko');
-    if (contractSortKey === 'building') return contractSortDir === 'asc' ? bc : -bc;
-    if (bc !== 0) return bc;
-    // 동
+    if (bc !== 0) return contractSortKey === 'building' ? (contractSortDir === 'asc' ? bc : -bc) : bc;
+    // 2차: 동 (항상 오름차순)
     const dc = String(getTenantDongForSort(a)).localeCompare(String(getTenantDongForSort(b)), 'ko', {numeric: true});
-    if (contractSortKey === 'dong') return contractSortDir === 'asc' ? dc : -dc;
     if (dc !== 0) return dc;
-    // 호수
+    // 3차: 호수 (버튼 방향 적용)
     const rc = String(a.room||'').localeCompare(String(b.room||''), undefined, {numeric: true});
-    if (contractSortKey === 'room') return contractSortDir === 'asc' ? rc : -rc;
-    if (rc !== 0) return rc;
-    // 사용자 정렬 키
+    if (rc !== 0) return contractSortKey === 'room' ? (contractSortDir === 'asc' ? rc : -rc) : rc;
+    // 4차: 기타 소팅 버튼 (name, deposit, rent, contractStart, contractEnd)
+    if (['building','room'].includes(contractSortKey)) return 0;
     let va = a[contractSortKey] ?? '', vb = b[contractSortKey] ?? '';
     const numKeys = ['deposit','rent'];
     if (numKeys.includes(contractSortKey)) { va = Number(va); vb = Number(vb); return contractSortDir==='asc' ? va-vb : vb-va; }
