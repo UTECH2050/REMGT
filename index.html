@@ -2096,9 +2096,10 @@ function updateBadges() {
 function renderDashboard() {
   const tenants = getData('tenants');
   const active = tenants.filter(t => t.status === '입주' && t.name);
-  const vacant = tenants.filter(t => t.status === '공실');
-  const total = tenants.length;
-  const occRate = total > 0 ? Math.round((active.length / (total - vacant.length + active.length)) * 100) : 0;
+  // 전체 호실 수 = 물건 등록 기준 (임차인 레코드 없는 빈 방 포함)
+  const totalRooms = (getData('properties') || []).reduce((s, p) => s + (p.rooms || []).length, 0);
+  const vacantCount = Math.max(0, totalRooms - active.length);
+  const total = totalRooms;
 
   // This month payments
   const ym = getYM();
@@ -2119,15 +2120,15 @@ function renderDashboard() {
       <div>
         <div class="stat-label">총 호실</div>
         <div class="stat-value">${total}개</div>
-        <div class="stat-sub">입주 ${active.length} / 공실 ${vacant.length}</div>
+        <div class="stat-sub">입주 ${active.length} / 공실 ${vacantCount}</div>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon green">📈</div>
       <div>
         <div class="stat-label">입주율</div>
-        <div class="stat-value">${active.length > 0 ? Math.round(active.length/(active.length+vacant.length)*100) : 0}%</div>
-        <div class="stat-sub">공실 ${vacant.length}개</div>
+        <div class="stat-value">${total > 0 ? Math.round(active.length / total * 100) : 0}%</div>
+        <div class="stat-sub">공실 ${vacantCount}개</div>
       </div>
     </div>
     <div class="stat-card">
