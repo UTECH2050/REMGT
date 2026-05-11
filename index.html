@@ -2028,12 +2028,15 @@ function updateBadges() {
   b2.classList.toggle('orange', expired === 0 && expiring > 0); // 임박만 있으면 주황
   // expired > 0 이면 기본 빨강(.nav-badge) 유지
 
-  const vacant = getData('tenants').filter(t => t.status === '공실').length;
+  // 공실 = 전체 등록 호수 - 현재 임대중 호수
+  const totalRooms   = (getData('properties') || []).reduce((s, p) => s + (p.rooms || []).length, 0);
+  const activeRooms  = getData('tenants').filter(t => t.status === '입주' && t.name).length;
+  const vacant = Math.max(0, totalRooms - activeRooms);
   const b3 = document.getElementById('vacantBadge');
   if (b3) {
     b3.style.display = vacant > 0 ? '' : 'none';
     b3.textContent = vacant;
-    b3.classList.add('orange'); // 공실 뱃지 항상 주황
+    b3.classList.add('orange');
   }
 }
 
