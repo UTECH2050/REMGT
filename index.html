@@ -442,6 +442,7 @@
     </div>
     <div class="nav-item" onclick="navigate('tenants')">
       <span class="icon">👤</span> 임대 등록
+      <span class="nav-badge" id="vacantBadge" style="display:none">0</span>
     </div>
     <div class="nav-item" onclick="navigate('contracts')">
       <span class="icon">📄</span> 계약 관리
@@ -2020,6 +2021,10 @@ function updateBadges() {
   const b2 = document.getElementById('expiryBadge');
   b2.style.display = expiring > 0 ? '' : 'none';
   b2.textContent = expiring;
+
+  const vacant = getData('tenants').filter(t => t.status === '공실').length;
+  const b3 = document.getElementById('vacantBadge');
+  if (b3) { b3.style.display = vacant > 0 ? '' : 'none'; b3.textContent = vacant; }
 }
 
 // ============================================================
