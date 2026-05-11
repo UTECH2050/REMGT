@@ -1350,9 +1350,12 @@
         <textarea id="histEditNote" rows="3" style="resize:vertical;width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:8px;font-size:13px;"></textarea>
       </div>
     </div>
-    <div class="modal-footer" style="justify-content:flex-end;gap:10px;">
-      <button class="btn btn-outline" onclick="closeModal('historyEditModal')">취소</button>
-      <button class="btn btn-primary" onclick="saveHistoryEdit()">💾 저장</button>
+    <div class="modal-footer" style="justify-content:space-between;gap:10px;">
+      <button class="btn btn-danger btn-sm" onclick="deleteHistoryFromModal()">🗑 삭제</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="closeModal('historyEditModal')">취소</button>
+        <button class="btn btn-primary" onclick="saveHistoryEdit()">💾 저장</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4238,10 +4241,7 @@ function renderContractHistory() {
     ].filter(Boolean).join(' ');
     const manageBtns = r._isCurrent
       ? `<button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${r._tenantId}')">수정</button>`
-      : `<div style="display:flex;gap:4px;">
-          <button class="btn btn-outline btn-sm" onclick="openHistoryEdit('${r.id}')">수정</button>
-          <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;" onclick="deleteHistoryRecord('${r.id}')">삭제</button>
-        </div>`;
+      : `<button class="btn btn-outline btn-sm" onclick="openHistoryEdit('${r.id}')">수정</button>`;
     return `<tr style="${rowStyle}">
       <td>${r.building||'-'}</td>
       <td>${r.dong||'-'}</td>
@@ -4418,6 +4418,12 @@ function saveHistoryAdd() {
   closeModal('historyAddModal');
   showToast('히스토리가 추가됐습니다.');
   renderContractHistory();
+}
+
+function deleteHistoryFromModal() {
+  const id = document.getElementById('histEditId').value;
+  closeModal('historyEditModal');
+  deleteHistoryRecord(id);
 }
 
 function deleteHistoryRecord(id) {
