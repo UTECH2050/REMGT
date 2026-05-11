@@ -361,25 +361,36 @@
     </div>
     <button class="auth-btn" onclick="doLogin()">🔐 로그인</button>
     <div style="text-align:center;margin-top:14px;">
-      <a href="#" style="font-size:12px;color:#6b7280;text-decoration:underline;" onclick="toggleResetPanel(event)">비밀번호를 잊으셨나요?</a>
+      <a href="#" style="font-size:12px;color:#6b7280;text-decoration:underline;" onclick="toggleEmailReset(event)">비밀번호를 잊으셨나요?</a>
     </div>
-    <!-- 비밀번호 재설정 패널 -->
-    <div id="resetPanel" style="display:none;margin-top:16px;padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+    <!-- 이메일 인증 비밀번호 재설정 패널 -->
+    <div id="emailResetPanel" style="display:none;margin-top:16px;padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
       <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;">🔑 비밀번호 재설정</div>
-      <div class="auth-error" id="resetError" style="display:none;margin-bottom:8px;"></div>
-      <div class="auth-field" style="margin-bottom:8px;">
-        <label style="font-size:12px;">아이디</label>
-        <input type="text" id="resetId" placeholder="아이디 입력" style="padding:8px 12px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;width:100%;box-sizing:border-box;">
+      <div id="emailResetMsg" style="display:none;font-size:12px;padding:7px 10px;border-radius:6px;margin-bottom:10px;"></div>
+      <!-- 1단계: ID + 이메일 확인 -->
+      <div id="emailResetStep1">
+        <div class="auth-field" style="margin-bottom:8px;">
+          <label style="font-size:12px;">아이디</label>
+          <input type="text" id="erId" placeholder="아이디 입력" style="padding:8px 12px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;width:100%;box-sizing:border-box;">
+        </div>
+        <div class="auth-field" style="margin-bottom:12px;">
+          <label style="font-size:12px;">등록된 이메일</label>
+          <input type="email" id="erEmail" placeholder="계정에 등록된 이메일" style="padding:8px 12px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;width:100%;box-sizing:border-box;" onkeydown="if(event.key==='Enter') verifyEmailForReset()">
+        </div>
+        <button onclick="verifyEmailForReset()" style="width:100%;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">이메일 확인</button>
       </div>
-      <div class="auth-field" style="margin-bottom:8px;">
-        <label style="font-size:12px;">새 비밀번호</label>
-        <input type="password" id="resetNewPw" placeholder="새 비밀번호 (8자 이상)" style="padding:8px 12px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;width:100%;box-sizing:border-box;">
+      <!-- 2단계: 새 비밀번호 설정 -->
+      <div id="emailResetStep2" style="display:none;">
+        <div class="auth-field" style="margin-bottom:8px;">
+          <label style="font-size:12px;">새 비밀번호</label>
+          <input type="password" id="erNewPw" placeholder="새 비밀번호 (8자 이상)" style="padding:8px 12px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;width:100%;box-sizing:border-box;">
+        </div>
+        <div class="auth-field" style="margin-bottom:12px;">
+          <label style="font-size:12px;">새 비밀번호 확인</label>
+          <input type="password" id="erConfirmPw" placeholder="비밀번호 재입력" style="padding:8px 12px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;width:100%;box-sizing:border-box;" onkeydown="if(event.key==='Enter') doEmailReset()">
+        </div>
+        <button onclick="doEmailReset()" style="width:100%;padding:10px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">✅ 비밀번호 재설정</button>
       </div>
-      <div class="auth-field" style="margin-bottom:12px;">
-        <label style="font-size:12px;">새 비밀번호 확인</label>
-        <input type="password" id="resetConfirmPw" placeholder="비밀번호 재입력" style="padding:8px 12px;font-size:13px;border:1px solid #d1d5db;border-radius:8px;width:100%;box-sizing:border-box;" onkeydown="if(event.key==='Enter') doDirectReset()">
-      </div>
-      <button onclick="doDirectReset()" style="width:100%;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">✅ 비밀번호 재설정</button>
     </div>
   </div>
 </div>
@@ -720,7 +731,7 @@
                 <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">이름</th>
                 <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">역할</th>
                 <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">등록일</th>
-                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">비밀번호</th>
+                <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray-600);">이메일</th>
                 <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--gray-600);">관리</th>
               </tr>
             </thead>
@@ -748,6 +759,12 @@
                 <option value="admin">관리자</option>
               </select>
             </div>
+            <div class="form-group">
+              <label>이메일</label>
+              <input type="email" id="newUserEmail" placeholder="example@email.com">
+            </div>
+          </div>
+          <div class="form-row">
             <div class="form-group">
               <label>임시 비밀번호 <span class="required">*</span></label>
               <input type="password" id="newUserPw" placeholder="8자 이상" onkeydown="if(event.key==='Enter') addUser()">
@@ -944,6 +961,27 @@ CREATE POLICY "allow_all" ON app_data FOR ALL USING (true) WITH CHECK (true);</p
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('expenseModal')">취소</button>
       <button class="btn btn-primary" onclick="saveExpense()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이메일 수정 모달 -->
+<div class="modal-overlay" id="emailEditModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <span class="modal-title">✉ 이메일 수정</span>
+      <button class="modal-close" onclick="closeModal('emailEditModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="emailEditTargetId">
+      <div class="form-group">
+        <label>이메일 주소</label>
+        <input type="email" id="emailEditInput" placeholder="example@email.com" onkeydown="if(event.key==='Enter') saveEmailEdit()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('emailEditModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveEmailEdit()">저장</button>
     </div>
   </div>
 </div>
@@ -1551,57 +1589,101 @@ async function doChangePassword() {
   completeLogin(user);
 }
 
-function toggleResetPanel(e) {
+// ── 이메일 인증 비밀번호 재설정 ──
+let _erVerifiedUserId = null;
+
+function toggleEmailReset(e) {
   if (e) e.preventDefault();
-  const panel = document.getElementById('resetPanel');
+  const panel = document.getElementById('emailResetPanel');
   if (!panel) return;
   const isHidden = panel.style.display === 'none';
   panel.style.display = isHidden ? 'block' : 'none';
   if (isHidden) {
-    document.getElementById('resetId').value = '';
-    document.getElementById('resetNewPw').value = '';
-    document.getElementById('resetConfirmPw').value = '';
-    const msg = document.getElementById('resetMsg');
-    if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
+    _erVerifiedUserId = null;
+    document.getElementById('erId').value = '';
+    document.getElementById('erEmail').value = '';
+    document.getElementById('erNewPw').value = '';
+    document.getElementById('erConfirmPw').value = '';
+    document.getElementById('emailResetStep1').style.display = 'block';
+    document.getElementById('emailResetStep2').style.display = 'none';
+    const msg = document.getElementById('emailResetMsg');
+    msg.style.display = 'none'; msg.textContent = '';
   }
 }
 
-async function doDirectReset() {
-  const id      = (document.getElementById('resetId')?.value || '').trim();
-  const newPw   = document.getElementById('resetNewPw')?.value || '';
-  const confirm = document.getElementById('resetConfirmPw')?.value || '';
-  let msgEl = document.getElementById('resetMsg');
-  if (!msgEl) {
-    msgEl = document.createElement('div');
-    msgEl.id = 'resetMsg';
-    msgEl.style.cssText = 'font-size:12px;margin-top:8px;padding:6px 10px;border-radius:6px;display:none;';
-    document.getElementById('resetPanel').appendChild(msgEl);
-  }
-  const showMsg = (txt, ok) => {
-    msgEl.textContent = txt;
-    msgEl.style.background = ok ? '#dcfce7' : '#fee2e2';
-    msgEl.style.color = ok ? '#166534' : '#991b1b';
-    msgEl.style.display = 'block';
-  };
-  if (!id)            return showMsg('아이디를 입력해주세요.', false);
-  if (newPw.length < 8) return showMsg('새 비밀번호는 8자 이상이어야 합니다.', false);
-  if (newPw !== confirm)  return showMsg('새 비밀번호가 일치하지 않습니다.', false);
+function showErMsg(txt, ok) {
+  const msg = document.getElementById('emailResetMsg');
+  msg.textContent = txt;
+  msg.style.background = ok ? '#dcfce7' : '#fee2e2';
+  msg.style.color = ok ? '#166534' : '#991b1b';
+  msg.style.display = 'block';
+}
+
+function verifyEmailForReset() {
+  const id    = (document.getElementById('erId').value || '').trim();
+  const email = (document.getElementById('erEmail').value || '').trim().toLowerCase();
+  if (!id || !email) { showErMsg('아이디와 이메일을 모두 입력해주세요.', false); return; }
   const users = getUsers();
   const user  = users.find(u => u.id === id);
-  if (!user) return showMsg('존재하지 않는 아이디입니다.', false);
+  if (!user || (user.email || '').toLowerCase() !== email) {
+    showErMsg('아이디 또는 이메일이 일치하지 않습니다.', false); return;
+  }
+  _erVerifiedUserId = id;
+  showErMsg('이메일이 확인되었습니다. 새 비밀번호를 입력하세요.', true);
+  document.getElementById('emailResetStep1').style.display = 'none';
+  document.getElementById('emailResetStep2').style.display = 'block';
+  setTimeout(() => {
+    const msg = document.getElementById('emailResetMsg');
+    msg.style.display = 'none';
+  }, 2000);
+}
+
+async function doEmailReset() {
+  if (!_erVerifiedUserId) return;
+  const newPw  = document.getElementById('erNewPw').value;
+  const confPw = document.getElementById('erConfirmPw').value;
+  if (newPw.length < 8) { showErMsg('새 비밀번호는 8자 이상이어야 합니다.', false); return; }
+  if (newPw !== confPw)  { showErMsg('새 비밀번호가 일치하지 않습니다.', false); return; }
+  const users = getUsers();
+  const user  = users.find(u => u.id === _erVerifiedUserId);
+  if (!user) { showErMsg('오류가 발생했습니다.', false); return; }
   const newSalt = makeSalt();
   const newHash = await sha256(newSalt + ':' + newPw);
-  user.salt = newSalt;
-  user.hash = newHash;
-  user.mustChangePassword = false;
+  user.salt = newSalt; user.hash = newHash; user.mustChangePassword = false;
   saveUsers(users);
-  showMsg('비밀번호가 재설정되었습니다. 새 비밀번호로 로그인하세요.', true);
+  showErMsg('비밀번호가 재설정되었습니다. 새 비밀번호로 로그인하세요.', true);
+  _erVerifiedUserId = null;
   setTimeout(() => {
-    document.getElementById('resetPanel').style.display = 'none';
-    document.getElementById('loginId').value = id;
+    document.getElementById('emailResetPanel').style.display = 'none';
+    document.getElementById('loginId').value = user.id;
     document.getElementById('loginPw').value = '';
     document.getElementById('loginPw').focus();
   }, 2000);
+}
+
+// 이메일 수정 모달 (설정 페이지)
+function openEmailEdit(userId) {
+  const users = getUsers();
+  const user  = users.find(u => u.id === userId);
+  if (!user) return;
+  const cur = user.email || '';
+  // 간단한 prompt 대신 커스텀 모달 사용
+  document.getElementById('emailEditTargetId').value = userId;
+  document.getElementById('emailEditInput').value = cur;
+  openModal('emailEditModal');
+}
+
+function saveEmailEdit() {
+  const userId = document.getElementById('emailEditTargetId').value;
+  const email  = (document.getElementById('emailEditInput').value || '').trim();
+  const users  = getUsers();
+  const user   = users.find(u => u.id === userId);
+  if (!user) return;
+  user.email = email;
+  saveUsers(users);
+  closeModal('emailEditModal');
+  showToast('이메일이 저장되었습니다.');
+  renderSettings();
 }
 
 function completeLogin(user) {
@@ -3584,19 +3666,21 @@ function renderSettings() {
   tbody.innerHTML = users.map(u => {
     const roleName = u.role === 'admin' ? '관리자' : '일반';
     const isSelf = u.id === _currentSession?.userId;
-    const pwStatus = u.mustChangePassword
-      ? '<span style="color:#dc2626;font-size:12px;">⚠️ 변경 필요</span>'
-      : '<span style="color:#16a34a;font-size:12px;">✅ 정상</span>';
+    const emailDisplay = u.email
+      ? `<span style="font-size:12px;color:var(--gray-700);">${u.email}</span>`
+      : `<span style="font-size:12px;color:var(--gray-400);">-</span>`;
     const btns = isSelf
-      ? `<button class="btn btn-outline btn-sm" onclick="openSelfPasswordChange()">🔑 내 비밀번호</button>`
+      ? `<button class="btn btn-outline btn-sm" onclick="openSelfPasswordChange()">🔑 비밀번호</button>
+         <button class="btn btn-outline btn-sm" style="margin-left:4px;" onclick="openEmailEdit('${u.id}')">✉ 이메일</button>`
       : `<button class="btn btn-outline btn-sm" onclick="openResetPwModal('${u.id}','${u.name}')">🔑 재설정</button>
-         <button class="btn btn-danger btn-sm" style="margin-left:6px;" onclick="deleteUser('${u.id}')">삭제</button>`;
+         <button class="btn btn-outline btn-sm" style="margin-left:4px;" onclick="openEmailEdit('${u.id}')">✉ 이메일</button>
+         <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteUser('${u.id}')">삭제</button>`;
     return `<tr style="border-bottom:1px solid var(--gray-100);">
       <td style="padding:11px 14px;font-size:13px;"><code>${u.id}</code>${isSelf ? ' <span style="font-size:11px;color:var(--primary);">(나)</span>' : ''}</td>
       <td style="padding:11px 14px;font-size:13px;">${u.name}</td>
       <td style="padding:11px 14px;font-size:13px;">${roleName}</td>
       <td style="padding:11px 14px;font-size:12px;color:var(--gray-500);">${u.createdAt || '-'}</td>
-      <td style="padding:11px 14px;">${pwStatus}</td>
+      <td style="padding:11px 14px;">${emailDisplay}</td>
       <td style="padding:11px 14px;text-align:center;white-space:nowrap;">${btns}</td>
     </tr>`;
   }).join('');
@@ -3615,10 +3699,12 @@ async function addUser() {
   if (users.find(u => u.id === id)) { showToast('이미 존재하는 아이디입니다.', 'error'); return; }
   const salt = makeSalt();
   const hash = await sha256(salt + ':' + pw);
-  users.push({ id, name, role, salt, hash, mustChangePassword: true, createdAt: new Date().toISOString().slice(0,10) });
+  const email = (document.getElementById('newUserEmail')?.value || '').trim();
+  users.push({ id, name, role, email, salt, hash, mustChangePassword: true, createdAt: new Date().toISOString().slice(0,10) });
   saveUsers(users);
   document.getElementById('newUserId').value = '';
   document.getElementById('newUserName').value = '';
+  document.getElementById('newUserEmail').value = '';
   document.getElementById('newUserPw').value = '';
   showToast(`'${name}' 계정이 추가되었습니다.`);
   renderSettings();
