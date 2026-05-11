@@ -651,7 +651,8 @@
           <select id="histRoomSel" onchange="renderContractHistory()" style="height:34px;width:auto;border-radius:8px;border:1px solid var(--gray-200);padding:0 10px;font-size:13px;background:#fff;" disabled>
             <option value="">호수</option>
           </select>
-          <span style="font-size:12px;color:var(--gray-400);margin-left:auto;">(단위: 만원)</span>
+          <button class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="openHistoryAddModal()">➕ 히스토리 추가</button>
+          <span style="font-size:12px;color:var(--gray-400);">(단위: 만원)</span>
         </div>
         <div class="card">
           <div class="card-body" style="padding:0">
@@ -662,7 +663,7 @@
                     <th>건물명</th><th>동</th><th>호수</th><th>임차인</th><th>유형</th>
                     <th>보증금</th><th>월세</th><th>관리비</th>
                     <th>계약 시작</th><th>계약 종료</th>
-                    <th>연장횟수</th><th>퇴거일</th><th>상태</th><th>비고</th><th>관리</th>
+                    <th>연장계약</th><th>퇴거일</th><th>상태</th><th>비고</th><th>관리</th>
                   </tr>
                 </thead>
                 <tbody id="historyTbody"></tbody>
@@ -1222,7 +1223,7 @@
                  oninput="fmtIsoDate(this)" style="width:100%;text-align:center;background:#f3f4f6;color:#6b7280;" readonly>
         </div>
         <div id="regExtendCountWrap" style="flex:0 0 auto;display:none;">
-          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">연장횟수</label>
+          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">연장계약</label>
           <input type="number" id="regExtendCount" min="0" max="99"
                  style="width:72px;height:36px;text-align:center;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;">
         </div>
@@ -1321,7 +1322,7 @@
           <input type="text" id="histEditManagement" oninput="fmtComma(this)">
         </div>
         <div class="form-group">
-          <label>연장횟수</label>
+          <label>연장계약</label>
           <input type="number" id="histEditExtendCount" min="0" style="width:100%;">
         </div>
         <div class="form-group">
@@ -1345,6 +1346,100 @@
     <div class="modal-footer" style="justify-content:flex-end;gap:10px;">
       <button class="btn btn-outline" onclick="closeModal('historyEditModal')">취소</button>
       <button class="btn btn-primary" onclick="saveHistoryEdit()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 계약 히스토리 추가 모달 -->
+<div class="modal-overlay" id="historyAddModal">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-header">
+      <span class="modal-title">➕ 계약 히스토리 추가</span>
+      <button class="modal-close" onclick="closeModal('historyAddModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:4px;">
+        <div class="form-group" style="margin:0;">
+          <label>건물 <span class="required">*</span></label>
+          <select id="haBuilding" onchange="onHaBuildingChange()" style="width:100%;">
+            <option value="">선택</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>동</label>
+          <select id="haDong" onchange="onHaDongChange()" style="width:100%;" disabled>
+            <option value="">선택</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>호수 <span class="required">*</span></label>
+          <select id="haRoom" style="width:100%;" disabled>
+            <option value="">선택</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label>임차인명 <span class="required">*</span></label>
+          <input type="text" id="haName" placeholder="이름">
+        </div>
+        <div class="form-group">
+          <label>전화번호</label>
+          <input type="text" id="haPhone" placeholder="010-0000-0000">
+        </div>
+        <div class="form-group">
+          <label>유형</label>
+          <select id="haType">
+            <option value="월세">월세</option>
+            <option value="전세">전세</option>
+            <option value="상가">상가</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>연장계약</label>
+          <input type="number" id="haExtendCount" min="0" value="0" style="width:100%;">
+        </div>
+        <div class="form-group">
+          <label>보증금 (만원)</label>
+          <input type="text" id="haDeposit" oninput="fmtComma(this)" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>월세 (만원)</label>
+          <input type="text" id="haRent" oninput="fmtComma(this)" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>관리비 (만원)</label>
+          <input type="text" id="haManagement" oninput="fmtComma(this)" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>납입일</label>
+          <input type="number" id="haPayDay" min="1" max="31" placeholder="5" style="width:100%;">
+        </div>
+        <div class="form-group">
+          <label>계약 시작일 <span class="required">*</span></label>
+          <input type="text" id="haContractStart" placeholder="YYYY-MM-DD" oninput="fmtIsoDate(this)">
+        </div>
+        <div class="form-group">
+          <label>계약 종료일</label>
+          <input type="text" id="haContractEnd" placeholder="YYYY-MM-DD" oninput="fmtIsoDate(this)">
+        </div>
+        <div class="form-group">
+          <label>입주일</label>
+          <input type="text" id="haMoveIn" placeholder="YYYY-MM-DD" oninput="fmtIsoDate(this)">
+        </div>
+        <div class="form-group">
+          <label>퇴거일</label>
+          <input type="text" id="haArchivedAt" placeholder="YYYY-MM-DD" oninput="fmtIsoDate(this)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>비고</label>
+        <textarea id="haNote" rows="2" style="resize:vertical;width:100%;border:1px solid var(--gray-200);border-radius:8px;padding:8px;font-size:13px;box-sizing:border-box;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end;gap:10px;">
+      <button class="btn btn-outline" onclick="closeModal('historyAddModal')">취소</button>
+      <button class="btn btn-primary" onclick="saveHistoryAdd()">💾 추가</button>
     </div>
   </div>
 </div>
@@ -3988,15 +4083,32 @@ function renderContractHistory() {
     };
   });
 
-  // 합산 후 정렬: 건물→동→호수→계약시작일 오름차순
+  // 합산 후 정렬: 건물명→동→호수→계약시작일 오름차순
   const allRecords = [...records, ...activeRecords];
   allRecords.sort((a, b) => {
+    const bc = String(a.building||'').localeCompare(String(b.building||''));
+    if (bc !== 0) return bc;
     const dc = String(a.dong||'').localeCompare(String(b.dong||''), undefined, {numeric:true});
     if (dc !== 0) return dc;
     const rc = String(a.room||'').localeCompare(String(b.room||''), undefined, {numeric:true});
     if (rc !== 0) return rc;
     return String(a.contractStart||'').localeCompare(String(b.contractStart||''));
   });
+
+  // 기간 중복 감지: 같은 건물+동+호수에서 계약 기간이 겹치는 경우
+  const overlapIds = new Set();
+  for (let i = 0; i < allRecords.length; i++) {
+    for (let j = i + 1; j < allRecords.length; j++) {
+      const a = allRecords[i], b = allRecords[j];
+      if (a.building !== b.building || String(a.dong||'') !== String(b.dong||'') || String(a.room||'') !== String(b.room||'')) break;
+      const aS = a.contractStart, aE = a.contractEnd || '9999-12-31';
+      const bS = b.contractStart, bE = b.contractEnd || '9999-12-31';
+      if (aS && bS && aS <= bE && bS <= aE) {
+        overlapIds.add(a.id || a._tenantId);
+        overlapIds.add(b.id || b._tenantId);
+      }
+    }
+  }
 
   if (allRecords.length === 0) {
     tbody.innerHTML = `<tr><td colspan="15"><div class="empty-state"><div class="empty-icon">📋</div>
@@ -4034,6 +4146,12 @@ function renderContractHistory() {
       rowStyle = '';
     }
     const evictDate = (r._isCurrent || isExtension(r)) ? '-' : (r.archivedAt || '-');
+    const recKey = r.id || r._tenantId;
+    const isOverlap = overlapIds.has(recKey);
+    const noteDisplay = [
+      r.note || '',
+      isOverlap ? '<span style="color:#dc2626;font-weight:600;">⚠ 기간 중복</span>' : ''
+    ].filter(Boolean).join(' ');
     const manageBtns = r._isCurrent
       ? `<button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${r._tenantId}')">수정</button>`
       : `<div style="display:flex;gap:4px;">
@@ -4051,10 +4169,10 @@ function renderContractHistory() {
       <td style="text-align:right;">${r.management ? Number(r.management).toLocaleString() : '-'}</td>
       <td>${fmtDate(r.contractStart)||'-'}</td>
       <td>${fmtDate(r.contractEnd)||'-'}</td>
-      <td style="text-align:center;">${r.extendCount || 0}회</td>
+      <td style="text-align:center;">${r.extendCount || 0}</td>
       <td style="color:#dc2626;">${evictDate}</td>
       <td>${statusBadge}</td>
-      <td style="font-size:12px;color:var(--gray-500);max-width:160px;white-space:normal;">${r.note||'-'}</td>
+      <td style="font-size:12px;color:var(--gray-500);max-width:160px;white-space:normal;">${noteDisplay || '-'}</td>
       <td>${manageBtns}</td>
     </tr>`;
   }).join('');
@@ -4102,6 +4220,120 @@ function saveHistoryEdit() {
   closeModal('historyEditModal');
   renderContractHistory();
   showToast('히스토리가 수정됐습니다.');
+}
+
+// ============================================================
+// 계약 히스토리 수동 추가
+// ============================================================
+function openHistoryAddModal() {
+  // 입력 초기화
+  ['haName','haPhone','haDeposit','haRent','haManagement','haContractStart',
+   'haContractEnd','haMoveIn','haArchivedAt','haNote'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('haType').value = '월세';
+  document.getElementById('haExtendCount').value = '0';
+  document.getElementById('haPayDay').value = '';
+
+  // 건물 드롭다운 채우기
+  const buildSel = document.getElementById('haBuilding');
+  const props = getData('properties') || [];
+  buildSel.innerHTML = '<option value="">선택</option>' +
+    props.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  buildSel.value = '';
+
+  // 동/호수 초기화
+  document.getElementById('haDong').innerHTML = '<option value="">선택</option>';
+  document.getElementById('haDong').disabled = true;
+  document.getElementById('haRoom').innerHTML = '<option value="">선택</option>';
+  document.getElementById('haRoom').disabled = true;
+
+  openModal('historyAddModal');
+}
+
+function onHaBuildingChange() {
+  const building = document.getElementById('haBuilding').value;
+  const dongSel  = document.getElementById('haDong');
+  const roomSel  = document.getElementById('haRoom');
+  dongSel.innerHTML = '<option value="">선택</option>';
+  roomSel.innerHTML = '<option value="">선택</option>';
+  dongSel.disabled = true;
+  roomSel.disabled = true;
+  if (!building) return;
+  const prop = (getData('properties') || []).find(p => p.name === building);
+  if (!prop) return;
+  const rooms = prop.rooms || [];
+  const dongs = [...new Set(rooms.map(r => r.dong).filter(Boolean))];
+  if (dongs.length > 0) {
+    dongSel.innerHTML = '<option value="">전체</option>' +
+      dongs.map(d => `<option value="${d}">${d}</option>`).join('');
+    dongSel.disabled = false;
+    // 동 없는 경우 바로 호수
+  }
+  // 호수 채우기 (동 미선택 시 전체)
+  const allRooms = rooms.map(r => r.roomNo).filter(Boolean)
+    .sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
+  roomSel.innerHTML = '<option value="">선택</option>' +
+    allRooms.map(rn => `<option value="${rn}">${fmtRoom(String(rn))}</option>`).join('');
+  roomSel.disabled = false;
+}
+
+function onHaDongChange() {
+  const building = document.getElementById('haBuilding').value;
+  const dong     = document.getElementById('haDong').value;
+  const roomSel  = document.getElementById('haRoom');
+  roomSel.innerHTML = '<option value="">선택</option>';
+  if (!building) return;
+  const prop = (getData('properties') || []).find(p => p.name === building);
+  if (!prop) return;
+  const rooms = (prop.rooms || []).filter(r => !dong || r.dong === dong);
+  const sorted = rooms.map(r => r.roomNo).filter(Boolean)
+    .sort((a, b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
+  roomSel.innerHTML = '<option value="">선택</option>' +
+    sorted.map(rn => `<option value="${rn}">${fmtRoom(String(rn))}</option>`).join('');
+  roomSel.disabled = false;
+}
+
+function saveHistoryAdd() {
+  const building = document.getElementById('haBuilding').value.trim();
+  const roomNo   = document.getElementById('haRoom').value.trim();
+  const name     = document.getElementById('haName').value.trim();
+  const contractStart = document.getElementById('haContractStart').value.trim();
+  if (!building) { showToast('건물을 선택해주세요.', 'error'); return; }
+  if (!roomNo)   { showToast('호수를 선택해주세요.', 'error'); return; }
+  if (!name)     { showToast('임차인명을 입력해주세요.', 'error'); return; }
+  if (!contractStart) { showToast('계약 시작일을 입력해주세요.', 'error'); return; }
+
+  // 동 정보 찾기
+  const prop = (getData('properties') || []).find(p => p.name === building);
+  const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(roomNo));
+  const dong = rm?.dong || document.getElementById('haDong').value || '';
+
+  const newRec = {
+    id: uid(),
+    building, dong, room: roomNo,
+    name,
+    phone:         document.getElementById('haPhone').value.trim(),
+    type:          document.getElementById('haType').value,
+    deposit:       Number((document.getElementById('haDeposit').value || '0').replace(/,/g, '')),
+    rent:          Number((document.getElementById('haRent').value || '0').replace(/,/g, '')),
+    management:    Number((document.getElementById('haManagement').value || '0').replace(/,/g, '')),
+    payDay:        Number(document.getElementById('haPayDay').value || 5),
+    extendCount:   Number(document.getElementById('haExtendCount').value || 0),
+    contractStart,
+    contractEnd:   document.getElementById('haContractEnd').value.trim(),
+    moveIn:        document.getElementById('haMoveIn').value.trim() || contractStart,
+    archivedAt:    document.getElementById('haArchivedAt').value.trim(),
+    note:          document.getElementById('haNote').value.trim(),
+    reason:        'manual'
+  };
+
+  const history = getData('contractHistory') || [];
+  history.push(newRec);
+  setData('contractHistory', history);
+  closeModal('historyAddModal');
+  showToast('히스토리가 추가됐습니다.');
+  renderContractHistory();
 }
 
 function deleteHistoryRecord(id) {
