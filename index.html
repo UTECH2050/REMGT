@@ -4223,7 +4223,7 @@ function renderContractHistory() {
       statusBadge = `<span class="badge" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">퇴거</span>`;
       rowStyle = '';
     }
-    const extYN    = ext
+    const extYN    = r._isCurrent ? '' : ext
       ? `<span style="color:#2563eb;font-weight:700;">O</span>`
       : `<span style="color:#9ca3af;">X</span>`;
     const evictDate = (r._isCurrent || ext) ? '-' : (r.archivedAt || '-');
