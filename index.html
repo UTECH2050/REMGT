@@ -1218,23 +1218,6 @@
           <input type="text" id="regContractEnd" placeholder="0000-00-00" maxlength="10"
                  oninput="fmtIsoDate(this);updatePayDateDisplay()" style="width:100%;text-align:center;">
         </div>
-        <div id="regExtendBtnWrap" style="flex:0 0 auto;display:flex;flex-direction:column;justify-content:flex-end;">
-          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;visibility:hidden;">연장</label>
-          <button type="button" onclick="extendContract()"
-                  style="height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--primary);color:var(--primary);background:#fff;font-size:13px;cursor:pointer;white-space:nowrap;font-weight:500;">
-            🔄 계약 연장
-          </button>
-        </div>
-        <div id="regOrigStartWrap" style="flex:1;min-width:0;display:none;">
-          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">최초 계약일</label>
-          <input type="text" id="regOrigStart" placeholder="0000-00-00" maxlength="10"
-                 oninput="fmtIsoDate(this)" style="width:100%;text-align:center;background:#f3f4f6;color:#6b7280;" readonly>
-        </div>
-        <div id="regExtendCountWrap" style="flex:0 0 auto;display:none;">
-          <label style="font-size:12px;color:var(--gray-500);margin-bottom:4px;display:block;white-space:nowrap;">연장계약</label>
-          <input type="number" id="regExtendCount" min="0" max="99"
-                 style="width:72px;height:36px;text-align:center;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;">
-        </div>
       </div>
       <!-- 전세/월세 + 보증금/월세/관리비/선불후불 -->
       <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:nowrap;">
@@ -1283,6 +1266,7 @@
     <div class="modal-footer" style="justify-content:space-between;">
       <div style="display:flex;gap:8px;">
         <button class="btn btn-danger" id="regDeleteBtn" style="display:none;" onclick="deleteTenantFromModal()">🗑 삭제</button>
+        <button class="btn btn-outline" id="regExtendBtn" style="display:none;border-color:var(--primary);color:var(--primary);" onclick="extendContract()">🔄 계약 연장</button>
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-outline" id="regResetBtn" onclick="clearRegisterForm()">초기화</button>
@@ -2400,9 +2384,6 @@ function openRegisterForRoom(btn) {
     // 타이틀: 임차인 등록: 건물명 호실
     const titleEl = document.getElementById('regCardTitle');
     if (titleEl) titleEl.textContent = `➕ 임차인 등록: ${prop.name} ${roomNo}`;
-    // 신규 등록: 계약연장 버튼 숨김
-    const extWrap = document.getElementById('regExtendBtnWrap');
-    if (extWrap) extWrap.style.display = 'none';
     openModal('registerModal');
     // 모달 렌더 후 건물·호실 선택
     setTimeout(() => {
@@ -3350,9 +3331,8 @@ function updatePayDateDisplay() {
 
 function clearRegisterForm() {
   _editingTenantId = null;
-  _originalContractEnd = '';
   ['regName','regPhone','regDeposit','regRent','regManagement',
-   'regContractStart','regContractEnd','regOrigStart','regNote'].forEach(f => {
+   'regContractStart','regContractEnd','regNote'].forEach(f => {
     const el = document.getElementById(f);
     if (el) el.value = '';
   });
@@ -3372,16 +3352,9 @@ function clearRegisterForm() {
   if (mgmtWrap) mgmtWrap.style.display = 'block';
   const payTypeWrap = document.getElementById('regPayTypeWrap');
   if (payTypeWrap) payTypeWrap.style.display = 'block';
-  // 계약연장 버튼 리셋 (기본 표시)
-  const extWrap2 = document.getElementById('regExtendBtnWrap');
-  if (extWrap2) extWrap2.style.display = 'flex';
-  // 계약연장 리셋
-  const extSel = document.getElementById('regExtendSelect');
-  if (extSel) extSel.value = '';
-  const origWrap = document.getElementById('regOrigStartWrap');
-  if (origWrap) origWrap.style.display = 'none';
-  const ecWrap = document.getElementById('regExtendCountWrap');
-  if (ecWrap) ecWrap.style.display = 'none';
+  // 계약연장·삭제 버튼 초기화
+  const extBtn2 = document.getElementById('regExtendBtn');
+  if (extBtn2) extBtn2.style.display = 'none';
   // 입금일자 리셋
   const pd = document.getElementById('regPayDateDisplay');
   if (pd) pd.textContent = '-';
@@ -3415,32 +3388,15 @@ function openRegisterEdit(id) {
   const alert = document.getElementById('regNoPropAlert');
   if (alert) alert.style.display = 'none';
   const delBtn = document.getElementById('regDeleteBtn');
-  // 계약관리 페이지에서 열면 삭제 버튼 숨김
+  // 계약관리 페이지에서 열면: 삭제 숨김, 계약연장 버튼 표시
   if (delBtn) delBtn.style.display = currentPage === 'contracts' ? 'none' : 'inline-flex';
-  // 원본 만기일 저장 (연장 계산 기준)
-  const t = getData('tenants').find(x => x.id === id);
-  _originalContractEnd = t?.contractEnd || '';
+  const extBtn = document.getElementById('regExtendBtn');
+  if (extBtn) extBtn.style.display = currentPage === 'contracts' ? 'inline-flex' : 'none';
   // 수정 모드: 초기화 숨김, 취소 표시
-  // (최초계약일 표시 여부는 prefillRegisterForm에서 extendCount 기준으로 처리)
   const resetBtn  = document.getElementById('regResetBtn');
   const cancelBtn = document.getElementById('regCancelBtn');
   if (resetBtn)  resetBtn.style.display  = 'none';
   if (cancelBtn) cancelBtn.style.display = 'inline-flex';
-  // 계약 연장 버튼: 계약종료 3개월 이내 또는 경과한 경우만 활성화
-  const extWrap = document.getElementById('regExtendBtnWrap');
-  if (extWrap) {
-    let showExtend = false;
-    if (t?.contractEnd) {
-      const endStr = t.contractEnd.replace(/[^\d]/g,'');
-      if (endStr.length === 8) {
-        const endDate  = new Date(+endStr.slice(0,4), +endStr.slice(4,6)-1, +endStr.slice(6,8));
-        const today2   = new Date(); today2.setHours(0,0,0,0);
-        const diffDays = Math.ceil((endDate - today2) / 86400000);
-        showExtend = diffDays <= 90; // 3개월(90일) 이내 또는 경과(음수)
-      }
-    }
-    extWrap.style.display = showExtend ? 'flex' : 'none';
-  }
   openModal('registerModal');
   // 모달이 화면에 렌더된 뒤 특이사항 높이 재계산
   setTimeout(() => {
@@ -3523,20 +3479,6 @@ function prefillRegisterForm(id) {
     periodEl2.value = '';
   }
 
-  // 최초 계약일: 연장 횟수가 있고 moveIn이 현재 contractStart와 다를 때만 표시
-  const origStartEl = document.getElementById('regOrigStart');
-  const origWrap2   = document.getElementById('regOrigStartWrap');
-  const extCount    = t.extendCount || 0;
-  const origDate    = (t.moveIn && t.moveIn !== t.contractStart) ? t.moveIn : '';
-  const isExtended  = extCount > 0 && !!origDate;
-  if (origStartEl) origStartEl.value = origDate || t.contractStart || '';
-  if (origWrap2) origWrap2.style.display = isExtended ? 'block' : 'none';
-
-  // 연장횟수 입력란: 수정 모드에서 항상 표시
-  const extCountEl   = document.getElementById('regExtendCount');
-  const extCountWrap = document.getElementById('regExtendCountWrap');
-  if (extCountEl)   extCountEl.value = extCount;
-  if (extCountWrap) extCountWrap.style.display = 'flex';
 
   // 입금일자 표시 업데이트
   updatePayDateDisplay();
@@ -3614,25 +3556,14 @@ function saveRegisterTenant() {
     payType: document.getElementById('regPayType')?.value || '선불',
     contractStart,
     contractEnd: document.getElementById('regContractEnd').value,
-    moveIn: document.getElementById('regOrigStart').value || contractStart,
+    moveIn: contractStart,
     type, status,
     note: document.getElementById('regNote').value
   };
   if (_editingTenantId) {
     const idx = tenants.findIndex(t => t.id === _editingTenantId);
     if (idx !== -1) {
-      // 계약 연장 버튼이 눌린 경우 (regOrigStart에 값이 있으면 연장된 것)
-      const origStartEl2 = document.getElementById('regOrigStart');
-      const wasExtended  = origStartEl2 && origStartEl2.value !== '' && origStartEl2.value !== fields.contractStart;
-      const prevCount = tenants[idx].extendCount || 0;
-      // 연장횟수 입력란이 표시된 경우 해당 값 우선 사용
-      const ecInput = document.getElementById('regExtendCount');
-      const ecWrapVisible = document.getElementById('regExtendCountWrap')?.style.display !== 'none';
-      if (ecInput && ecWrapVisible) {
-        fields.extendCount = Number(ecInput.value) || 0;
-      } else {
-        fields.extendCount = wasExtended ? prevCount + 1 : prevCount;
-      }
+      fields.extendCount = tenants[idx].extendCount || 0;
       tenants[idx] = { ...tenants[idx], ...fields };
       setData('tenants', tenants);
       _editingTenantId = null;
