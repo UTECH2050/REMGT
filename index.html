@@ -2092,9 +2092,18 @@ function updateBadges() {
   b2.classList.toggle('orange', expired === 0 && expiring > 0); // 임박만 있으면 주황
   // expired > 0 이면 기본 빨강(.nav-badge) 유지
 
-  // 공실 = 전체 등록 호수 - 현재 임대중 호수
-  const totalRooms   = (getData('properties') || []).reduce((s, p) => s + (p.rooms || []).length, 0);
-  const activeRooms  = getData('tenants').filter(t => t.status === '입주' && t.name).length;
+  // 공실 = 물건 등록 기준 전체 호실 순회, 매칭 임차인이 입주+이름 있는 경우만 활성
+  // (임차인 레코드와 물건 등록이 불일치하는 케이스도 정확하게 처리)
+  const _allProps   = getData('properties') || [];
+  const _allTenants = getData('tenants');
+  let totalRooms = 0, activeRooms = 0;
+  _allProps.forEach(p => {
+    (p.rooms || []).forEach(r => {
+      totalRooms++;
+      const t = _allTenants.find(x => x.building === p.name && String(x.room) === String(r.roomNo));
+      if (t?.status === '입주' && t?.name) activeRooms++;
+    });
+  });
   const vacant = Math.max(0, totalRooms - activeRooms);
   const b3 = document.getElementById('vacantBadge');
   if (b3) {
@@ -2109,11 +2118,19 @@ function updateBadges() {
 // ============================================================
 function renderDashboard() {
   const tenants = getData('tenants');
-  const active = tenants.filter(t => t.status === '입주' && t.name);
-  // 전체 호실 수 = 물건 등록 기준 (임차인 레코드 없는 빈 방 포함)
-  const totalRooms = (getData('properties') || []).reduce((s, p) => s + (p.rooms || []).length, 0);
-  const vacantCount = Math.max(0, totalRooms - active.length);
-  const total = totalRooms;
+  // 물건 등록 기준으로 순회 — 뷰와 동일한 로직으로 활성/공실 집계
+  const _dProps = getData('properties') || [];
+  let totalRooms2 = 0, activeCount = 0;
+  _dProps.forEach(p => {
+    (p.rooms || []).forEach(r => {
+      totalRooms2++;
+      const t2 = tenants.find(x => x.building === p.name && String(x.room) === String(r.roomNo));
+      if (t2?.status === '입주' && t2?.name) activeCount++;
+    });
+  });
+  const active = tenants.filter(t => t.status === '입주' && t.name); // 수입 계산용
+  const vacantCount = Math.max(0, totalRooms2 - activeCount);
+  const total = totalRooms2;
 
   // This month payments
   const ym = getYM();
@@ -2134,14 +2151,14 @@ function renderDashboard() {
       <div>
         <div class="stat-label">총 호실</div>
         <div class="stat-value">${total}개</div>
-        <div class="stat-sub">입주 ${active.length} / 공실 ${vacantCount}</div>
+        <div class="stat-sub">입주 ${activeCount} / 공실 ${vacantCount}</div>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon green">📈</div>
       <div>
         <div class="stat-label">입주율</div>
-        <div class="stat-value">${total > 0 ? Math.round(active.length / total * 100) : 0}%</div>
+        <div class="stat-value">${total > 0 ? Math.round(activeCount / total * 100) : 0}%</div>
         <div class="stat-sub">공실 ${vacantCount}개</div>
       </div>
     </div>
