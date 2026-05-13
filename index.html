@@ -1283,7 +1283,6 @@
     <div class="modal-footer" style="justify-content:space-between;">
       <div style="display:flex;gap:8px;">
         <button class="btn btn-danger" id="regDeleteBtn" style="display:none;" onclick="deleteTenantFromModal()">🗑 삭제</button>
-        <button class="btn btn-warning" id="regEvictBtn" style="display:none;background:#f59e0b;border-color:#f59e0b;color:#fff;" onclick="evictTenant()">🚪 퇴거 처리</button>
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-outline" id="regResetBtn" onclick="clearRegisterForm()">초기화</button>
@@ -3371,8 +3370,6 @@ function clearRegisterForm() {
   if (saveBtn) saveBtn.textContent = '💾 등록 저장';
   const delBtn = document.getElementById('regDeleteBtn');
   if (delBtn) delBtn.style.display = 'none';
-  const evictBtn2 = document.getElementById('regEvictBtn');
-  if (evictBtn2) evictBtn2.style.display = 'none';
 }
 
 function openRegisterModal() {
@@ -3397,12 +3394,6 @@ function openRegisterEdit(id) {
   if (alert) alert.style.display = 'none';
   const delBtn = document.getElementById('regDeleteBtn');
   if (delBtn) delBtn.style.display = 'inline-flex';
-  // 퇴거 처리 버튼: 임차인 이름이 있을 때만 표시
-  const evictBtn = document.getElementById('regEvictBtn');
-  if (evictBtn) {
-    const tForEvict = getData('tenants').find(x => x.id === id);
-    evictBtn.style.display = tForEvict?.name ? 'inline-flex' : 'none';
-  }
   // 원본 만기일 저장 (연장 계산 기준)
   const t = getData('tenants').find(x => x.id === id);
   _originalContractEnd = t?.contractEnd || '';
