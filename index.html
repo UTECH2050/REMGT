@@ -1477,6 +1477,28 @@
     </div>
   </div>
 </div>
+<!-- 계약종료 확인 모달 -->
+<div class="modal-overlay" id="contractEndModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#dc2626,#b91c1c);border-radius:12px 12px 0 0;">
+      <span class="modal-title" style="color:#fff;">📋 계약종료 처리</span>
+      <button class="modal-close" onclick="closeModal('contractEndModal')" style="color:#fff;">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="contractEndInfo" style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13.5px;color:#7f1d1d;line-height:1.8;"></div>
+      <div class="form-group" style="margin:0;">
+        <label style="font-weight:600;">계약 종료일 확인 <span style="font-size:12px;color:#6b7280;font-weight:400;">(다를 경우 수정 후 확인)</span></label>
+        <input type="text" id="contractEndDateInput" placeholder="YYYY-MM-DD" maxlength="10"
+          oninput="fmtIsoDate(this)"
+          style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;margin-top:6px;">
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end;gap:10px;">
+      <button class="btn btn-outline" onclick="closeModal('contractEndModal')">취소</button>
+      <button class="btn btn-danger" onclick="confirmContractEnd()">✅ 계약종료 확인</button>
+    </div>
+  </div>
+</div>
 <!-- KB 시세 조회 모달 -->
 <div class="modal-overlay" id="kbModal">
   <div class="modal" style="max-width:520px;">
@@ -3393,7 +3415,8 @@ function openRegisterEdit(id) {
   const alert = document.getElementById('regNoPropAlert');
   if (alert) alert.style.display = 'none';
   const delBtn = document.getElementById('regDeleteBtn');
-  if (delBtn) delBtn.style.display = 'inline-flex';
+  // 계약관리 페이지에서 열면 삭제 버튼 숨김
+  if (delBtn) delBtn.style.display = currentPage === 'contracts' ? 'none' : 'inline-flex';
   // 원본 만기일 저장 (연장 계산 기준)
   const t = getData('tenants').find(x => x.id === id);
   _originalContractEnd = t?.contractEnd || '';
@@ -4097,7 +4120,10 @@ function renderContracts(filter, statusFilter) {
       <td>${t.rent ? Number(t.rent).toLocaleString() : '-'}</td>
       <td><span class="badge ${badge} ${d<=30&&d>=0?'expiry-soon':''}">${dText}</span></td>
       <td><span class="badge ${d<0?'badge-danger':d<=90?'badge-warning':'badge-success'}">${d<0?'만료':d<=90?'만료임박':'계약중'}</span></td>
-      <td><button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${t.id}')">수정</button></td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${t.id}')">수정</button>
+        <button class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;margin-left:4px;" onclick="openContractEnd('${t.id}')">계약종료</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -4588,6 +4614,51 @@ function archiveTenant(tenantId, extraNote) {
 }
 
 let _evictingTenantId = null;
+let _contractEndTenantId = null;
+
+// 계약종료 확인 모달 열기
+function openContractEnd(tenantId) {
+  const t = getData('tenants').find(x => x.id === tenantId);
+  if (!t) return;
+  _contractEndTenantId = tenantId;
+  const infoEl = document.getElementById('contractEndInfo');
+  const prop = getData('properties').find(p => p.name === t.building);
+  const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(t.room));
+  const dong = rm?.dong ? rm.dong + ' ' : '';
+  if (infoEl) {
+    infoEl.innerHTML =
+      `<strong>임차인:</strong> ${t.name}<br>` +
+      `<strong>호실:</strong> ${t.building} ${dong}${fmtRoom(t.room)}<br>` +
+      `<strong>계약 기간:</strong> ${fmtDate(t.contractStart)} ~ ${fmtDate(t.contractEnd)}<br>` +
+      `<strong>임대유형:</strong> ${t.type || '월세'} &nbsp;|&nbsp; <strong>보증금:</strong> ${t.deposit ? Number(t.deposit).toLocaleString() + '만원' : '-'}`;
+  }
+  const dateInput = document.getElementById('contractEndDateInput');
+  if (dateInput) dateInput.value = t.contractEnd || '';
+  openModal('contractEndModal');
+}
+
+// 계약종료 확인 처리
+function confirmContractEnd() {
+  const id = _contractEndTenantId;
+  if (!id) return;
+  const newEndDate = (document.getElementById('contractEndDateInput')?.value || '').trim();
+  if (!newEndDate || newEndDate.length < 10) {
+    showToast('계약 종료일을 입력해주세요.', 'error'); return;
+  }
+  // 종료일 업데이트 후 아카이브
+  const tenants = getData('tenants');
+  const idx = tenants.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  tenants[idx].contractEnd = newEndDate;
+  setData('tenants', tenants);
+  const t = tenants[idx];
+  closeModal('contractEndModal');
+  archiveTenant(id, '');
+  updateBadges();
+  showToast(`'${t.name}' 계약종료 처리 완료. 계약 히스토리에 기록됐습니다.`);
+  if (currentPage === 'tenants')   renderTenants();
+  if (currentPage === 'contracts') renderContracts();
+}
 
 function evictTenant() {
   const id = _editingTenantId;
