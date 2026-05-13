@@ -781,7 +781,7 @@
         <div class="form-group">
           <label>임대 유형 <span class="required">*</span></label>
           <select id="tType">
-            <option>월세</option><option>반전세</option><option>전세</option><option>상가</option><option>사무실</option>
+            <option>월세</option><option>전세</option><option>상가</option><option>사무실</option>
           </select>
         </div>
         <div class="form-group"></div>
@@ -1239,11 +1239,10 @@
       <!-- 전세/월세 + 보증금/월세/관리비/선불후불 -->
       <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:nowrap;">
         <div class="form-group" style="margin:0;flex:0 0 60px;">
-          <label>임대유형</label>
+          <label>전세/월세</label>
           <select id="regLeaseType" onchange="onLeaseTypeChange()"
                   style="height:36px;border-radius:8px;border:1px solid var(--gray-200);padding:0 4px;font-size:13px;background:#fff;width:100%;">
             <option value="월세">월세</option>
-            <option value="반전세">반전세</option>
             <option value="전세">전세</option>
           </select>
         </div>
@@ -1315,7 +1314,6 @@
           <label>유형</label>
           <select id="histEditType">
             <option value="월세">월세</option>
-            <option value="반전세">반전세</option>
             <option value="전세">전세</option>
           </select>
         </div>
@@ -1407,7 +1405,6 @@
           <label>유형</label>
           <select id="haType">
             <option value="월세">월세</option>
-            <option value="반전세">반전세</option>
             <option value="전세">전세</option>
             <option value="상가">상가</option>
           </select>
