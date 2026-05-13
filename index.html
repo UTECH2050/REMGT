@@ -1941,6 +1941,17 @@ function navigate(page) {
 // ============================================================
 function fmtMoney(v) { return Number(v||0).toLocaleString() + '만원'; }
 function fmtRoom(r) { if (!r) return ''; return r.replace(/^\S*동/, '').replace(/호+$/, ''); }
+// 임대유형 뱃지: 전세=주황, 반전세(월세+보증금5000↑)=앰버, 월세=노랑
+function leaseTypeBadge(type, deposit) {
+  const dep = Number(deposit) || 0;
+  if (type === '전세') {
+    return `<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;background:#fff0e6;color:#c2410c;">전세</span>`;
+  } else if (dep >= 5000) {
+    return `<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;background:#fef3c7;color:#b45309;">반전세</span>`;
+  } else {
+    return `<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;background:#fefce8;color:#a16207;">월세</span>`;
+  }
+}
 function getTenantDong(building, roomNo) {
   const prop = getData('properties').find(p => p.name === building);
   const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(roomNo));
@@ -4091,7 +4102,7 @@ function renderContracts(filter, statusFilter) {
       <td>${t.name}</td>
       <td>${fmtDate(t.contractStart)}</td>
       <td>${fmtDate(t.contractEnd)}</td>
-      <td><span class="badge badge-primary">${t.type||'월세'}</span></td>
+      <td>${leaseTypeBadge(t.type, t.deposit)}</td>
       <td>${t.deposit ? Number(t.deposit).toLocaleString() : '-'}</td>
       <td>${t.rent ? Number(t.rent).toLocaleString() : '-'}</td>
       <td><span class="badge ${badge} ${d<=30&&d>=0?'expiry-soon':''}">${dText}</span></td>
@@ -4347,7 +4358,7 @@ function renderContractHistory() {
       <td>${r.dong||'-'}</td>
       <td><strong>${fmtRoom(r.room)}</strong></td>
       <td>${r.name||'-'}</td>
-      <td><span class="badge badge-primary">${r.type||'월세'}</span></td>
+      <td>${leaseTypeBadge(r.type, r.deposit)}</td>
       <td style="text-align:right;">${r.deposit ? Number(r.deposit).toLocaleString() : '-'}</td>
       <td style="text-align:right;">${r.rent    ? Number(r.rent).toLocaleString()    : '-'}</td>
       <td style="text-align:right;">${r.management ? Number(r.management).toLocaleString() : '-'}</td>
