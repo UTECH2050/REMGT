@@ -781,7 +781,7 @@
         <div class="form-group">
           <label>임대 유형 <span class="required">*</span></label>
           <select id="tType">
-            <option>월세</option><option>전세</option><option>상가</option><option>사무실</option>
+            <option>월세</option><option>반전세</option><option>전세</option><option>상가</option><option>사무실</option>
           </select>
         </div>
         <div class="form-group"></div>
@@ -1239,10 +1239,11 @@
       <!-- 전세/월세 + 보증금/월세/관리비/선불후불 -->
       <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:nowrap;">
         <div class="form-group" style="margin:0;flex:0 0 60px;">
-          <label>전세/월세</label>
+          <label>임대유형</label>
           <select id="regLeaseType" onchange="onLeaseTypeChange()"
                   style="height:36px;border-radius:8px;border:1px solid var(--gray-200);padding:0 4px;font-size:13px;background:#fff;width:100%;">
             <option value="월세">월세</option>
+            <option value="반전세">반전세</option>
             <option value="전세">전세</option>
           </select>
         </div>
@@ -1314,6 +1315,7 @@
           <label>유형</label>
           <select id="histEditType">
             <option value="월세">월세</option>
+            <option value="반전세">반전세</option>
             <option value="전세">전세</option>
           </select>
         </div>
@@ -1405,6 +1407,7 @@
           <label>유형</label>
           <select id="haType">
             <option value="월세">월세</option>
+            <option value="반전세">반전세</option>
             <option value="전세">전세</option>
             <option value="상가">상가</option>
           </select>
@@ -1943,10 +1946,9 @@ function fmtMoney(v) { return Number(v||0).toLocaleString() + '만원'; }
 function fmtRoom(r) { if (!r) return ''; return r.replace(/^\S*동/, '').replace(/호+$/, ''); }
 // 임대유형 뱃지: 전세=주황, 반전세(월세+보증금5000↑)=앰버, 월세=노랑
 function leaseTypeBadge(type, deposit) {
-  const dep = Number(deposit) || 0;
   if (type === '전세') {
     return `<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;background:#fff0e6;color:#c2410c;">전세</span>`;
-  } else if (dep >= 5000) {
+  } else if (type === '반전세') {
     return `<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;background:#fef3c7;color:#b45309;">반전세</span>`;
   } else {
     return `<span style="display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;background:#fefce8;color:#a16207;">월세</span>`;
@@ -3269,7 +3271,7 @@ function onLeaseTypeChange() {
   const mgmtWrap     = document.getElementById('regMgmtWrap');
   const payTypeWrap  = document.getElementById('regPayTypeWrap');
   const isJeonse     = leaseType === '전세';
-  // 월세·관리비 표시 제어
+  // 월세·관리비 표시 제어 (전세만 숨김, 반전세·월세는 표시)
   if (rentWrap)    rentWrap.style.display    = isJeonse ? 'none' : 'block';
   if (mgmtWrap)    mgmtWrap.style.display    = isJeonse ? 'none' : 'block';
   // 선불/후불·납부일 표시 제어
@@ -3482,7 +3484,7 @@ function prefillRegisterForm(id) {
   // 전세/월세 유형 (t.type: '전세' 또는 '월세')
   const leaseTypeEl2 = document.getElementById('regLeaseType');
   if (leaseTypeEl2) {
-    leaseTypeEl2.value = (t.type === '전세') ? '전세' : '월세';
+    leaseTypeEl2.value = (t.type === '전세' || t.type === '반전세' || t.type === '월세') ? t.type : '월세';
     onLeaseTypeChange();
   }
 
