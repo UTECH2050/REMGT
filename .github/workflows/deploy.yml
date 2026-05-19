@@ -14,7 +14,19 @@ jobs:
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
+      - name: Get Netlify Site ID
+        run: |
+          SITE_ID=$(curl -s -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            https://api.netlify.com/api/v1/sites \
+            | python3 -c "import sys,json; sites=json.load(sys.stdin); match=[s for s in sites if s.get('name')=='remgt-rental' or 'remgt-rental' in s.get('ssl_url','')]; print(match[0]['id'] if match else '')")
+          echo "Found site ID: $SITE_ID"
+          echo "NETLIFY_SITE_ID=$SITE_ID" >> $GITHUB_ENV
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
       - name: Deploy to Netlify
-        run: netlify deploy --prod --dir=. --site=remgt-rental
+        run: |
+          echo "Deploying to site: $NETLIFY_SITE_ID"
+          netlify deploy --prod --dir=. --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
