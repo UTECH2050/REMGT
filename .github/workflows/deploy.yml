@@ -1,4 +1,4 @@
-name: Deploy to Netlify
+name: Deploy to Vercel
 
 on:
   push:
@@ -11,41 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install jq
-        run: sudo apt-get install -y jq
+      - name: Install Vercel CLI
+        run: npm install -g vercel
 
-      - name: Find Site ID and Deploy
+      - name: Deploy to Vercel
         run: |
-          SITES=$(curl -s -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" https://api.netlify.com/api/v1/sites)
-          echo "Number of sites: $(echo "$SITES" | jq length)"
-          echo "Site names: $(echo "$SITES" | jq -r '.[].name')"
-
-          SITE_ID=$(echo "$SITES" | jq -r '.[] | select(.name | ascii_downcase | contains("remgt")) | .id' | head -1)
-          if [ -z "$SITE_ID" ]; then
-            SITE_ID=$(echo "$SITES" | jq -r '.[] | select(.ssl_url | ascii_downcase | contains("remgt")) | .id' | head -1)
-          fi
-          echo "Site ID: $SITE_ID"
-
-          if [ -z "$SITE_ID" ]; then
-            echo "ERROR: Site not found"; exit 1
-          fi
-
-          zip -j deploy.zip index.html
-
-          HTTP_STATUS=$(curl -s -o /tmp/response.json -w "%{http_code}" \
-            -X POST \
-            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
-            -H "Content-Type: application/zip" \
-            --data-binary @deploy.zip \
-            "https://api.netlify.com/api/v1/sites/$SITE_ID/deploys")
-
-          echo "Deploy status: $HTTP_STATUS"
-          cat /tmp/response.json | jq '{id,state,deploy_ssl_url}' 2>/dev/null || cat /tmp/response.json
-
-          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
-            echo "SUCCESS"
-          else
-            echo "FAILED"; exit 1
-          fi
+          vercel deploy --prod \
+            --token "$VERCEL_TOKEN" \
+            --yes \
+            --name remgt-rental
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
