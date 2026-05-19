@@ -11,52 +11,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get Netlify Site ID
-        id: site
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Find Site ID and Deploy
         run: |
           SITES=$(curl -s -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" https://api.netlify.com/api/v1/sites)
-          echo "Sites: $(echo "$SITES" | python3 -c "import sys,json; s=json.load(sys.stdin); print([(x['name'],x['id']) for x in s])")"
-          SITE_ID=$(echo "$SITES" | python3 -c "
-import sys, json, re
-sites = json.load(sys.stdin)
-for s in sites:
-    if re.search('remgt', s.get('name','') + s.get('ssl_url',''), re.I):
-        print(s['id']); break
-")
-          echo "site_id=$SITE_ID" >> "$GITHUB_OUTPUT"
-          echo "Found: $SITE_ID"
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          echo "Number of sites: $(echo "$SITES" | jq length)"
+          echo "Site names: $(echo "$SITES" | jq -r '.[].name')"
 
-      - name: Deploy via Netlify API (zip upload)
-        run: |
-          SITE_ID="${{ steps.site.outputs.site_id }}"
-          echo "Deploying to: $SITE_ID"
-          
-          # Create zip of index.html
-          zip deploy.zip index.html
-          
-          # Upload to Netlify as new production deploy
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+          SITE_ID=$(echo "$SITES" | jq -r '.[] | select(.name | ascii_downcase | contains("remgt")) | .id' | head -1)
+          if [ -z "$SITE_ID" ]; then
+            SITE_ID=$(echo "$SITES" | jq -r '.[] | select(.ssl_url | ascii_downcase | contains("remgt")) | .id' | head -1)
+          fi
+          echo "Site ID: $SITE_ID"
+
+          if [ -z "$SITE_ID" ]; then
+            echo "ERROR: Site not found"; exit 1
+          fi
+
+          zip -j deploy.zip index.html
+
+          HTTP_STATUS=$(curl -s -o /tmp/response.json -w "%{http_code}" \
             -X POST \
             -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
             -H "Content-Type: application/zip" \
             --data-binary @deploy.zip \
             "https://api.netlify.com/api/v1/sites/$SITE_ID/deploys")
-          
-          HTTP_STATUS=$(echo "$RESPONSE" | tail -1 | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | head -n -1)
-          
-          echo "HTTP Status: $HTTP_STATUS"
-          echo "Response: $BODY" | head -c 500
-          
+
+          echo "Deploy status: $HTTP_STATUS"
+          cat /tmp/response.json | jq '{id,state,deploy_ssl_url}' 2>/dev/null || cat /tmp/response.json
+
           if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
-            echo "Deploy created successfully!"
-            DEPLOY_ID=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))")
-            echo "Deploy ID: $DEPLOY_ID"
+            echo "SUCCESS"
           else
-            echo "Deploy failed with status $HTTP_STATUS"
-            exit 1
+            echo "FAILED"; exit 1
           fi
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
