@@ -638,7 +638,7 @@
                     <th><button class="sort-btn" onclick="sortContracts('deposit')">보증금 <span class="sort-icon" id="csi-deposit">⇅</span></button></th>
                     <th><button class="sort-btn" onclick="sortContracts('rent')">월세 <span class="sort-icon" id="csi-rent">⇅</span></button></th>
                     <th>남은 기간</th>
-                    <th>상태</th><th>관리</th>
+                    <th>상태</th><th>계약관리</th>
                   </tr>
                 </thead>
                 <tbody id="contractTbody"></tbody>
@@ -1269,6 +1269,7 @@
       <div style="display:flex;gap:8px;">
         <button class="btn btn-danger" id="regDeleteBtn" style="display:none;" onclick="deleteTenantFromModal()">🗑 삭제</button>
         <button class="btn btn-outline" id="regExtendBtn" style="display:none;border-color:var(--primary);color:var(--primary);" onclick="extendContract()">🔄 계약 연장</button>
+        <button class="btn btn-sm" id="regContractEndBtn" style="display:none;background:#dc2626;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;" onclick="openContractEndFromModal()">📋 계약종료</button>
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-outline" id="regResetBtn" onclick="clearRegisterForm()">초기화</button>
@@ -3427,6 +3428,8 @@ function openRegisterEdit(id) {
   if (delBtn) delBtn.style.display = currentPage === 'contracts' ? 'none' : 'inline-flex';
   const extBtn = document.getElementById('regExtendBtn');
   if (extBtn) extBtn.style.display = currentPage === 'contracts' ? 'inline-flex' : 'none';
+  const contractEndBtn = document.getElementById('regContractEndBtn');
+  if (contractEndBtn) contractEndBtn.style.display = currentPage === 'contracts' ? 'inline-flex' : 'none';
   // 수정 모드: 초기화 숨김, 취소 표시
   const resetBtn  = document.getElementById('regResetBtn');
   const cancelBtn = document.getElementById('regCancelBtn');
@@ -4210,7 +4213,6 @@ function renderContracts(filter, statusFilter) {
       <td><span class="badge ${d<0?'badge-danger':d<=90?'badge-warning':'badge-success'}">${d<0?'만료':d<=90?'만료임박':'계약중'}</span></td>
       <td style="white-space:nowrap;">
         <button class="btn btn-outline btn-sm" onclick="openRegisterEdit('${t.id}')">수정</button>
-        <button class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;margin-left:4px;" onclick="openContractEnd('${t.id}')">계약종료</button>
       </td>
     </tr>`;
   }).join('');
@@ -4703,6 +4705,13 @@ function archiveTenant(tenantId, extraNote) {
 
 let _evictingTenantId = null;
 let _contractEndTenantId = null;
+
+// 수정 모달에서 계약종료 버튼 클릭 시 — 수정 모달 닫고 계약종료 확인창 열기
+function openContractEndFromModal() {
+  const id = _editingTenantId;
+  closeModal('registerModal');
+  setTimeout(() => openContractEnd(id), 200);
+}
 
 // 계약종료 확인 모달 열기
 function openContractEnd(tenantId) {
