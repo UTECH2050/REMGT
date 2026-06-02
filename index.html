@@ -295,15 +295,28 @@
   .progress-bar { background: var(--gray-200); border-radius: 4px; height: 8px; overflow: hidden; }
   .progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
 
-  /* Month tab */
-  .month-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
-  .month-tab {
-    padding: 6px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
-    cursor: pointer; background: var(--gray-100); color: var(--gray-600);
-    border: 1px solid transparent; transition: all 0.15s;
+  /* Month selector */
+  .ym-selector { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 14px; padding: 10px 16px; }
+  .ym-year-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .ym-arrow {
+    width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--gray-200);
+    background: white; color: var(--gray-600); font-size: 14px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; line-height: 1;
   }
-  .month-tab:hover { background: var(--primary-light); color: var(--primary); }
-  .month-tab.active { background: var(--primary); color: white; }
+  .ym-arrow:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+  .ym-arrow:disabled { opacity: 0.3; cursor: default; }
+  .ym-year-label { font-size: 15px; font-weight: 800; color: var(--primary); min-width: 70px; text-align: center; letter-spacing: -0.3px; }
+  .ym-divider { width: 1px; height: 26px; background: var(--gray-200); flex-shrink: 0; }
+  .ym-months { display: flex; gap: 5px; flex-wrap: wrap; }
+  .ym-btn {
+    padding: 5px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; background: white; color: var(--gray-600);
+    border: 1.5px solid var(--gray-200); transition: all 0.15s; line-height: 1;
+  }
+  .ym-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+  .ym-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 6px rgba(37,99,235,0.25); }
+  .ym-btn.disabled { opacity: 0.32; cursor: default; pointer-events: none; }
 
   /* Empty state */
   .empty-state { text-align: center; padding: 56px 24px; color: var(--gray-400); }
@@ -541,7 +554,7 @@
 
     <!-- ===== PAYMENTS ===== -->
     <div id="page-payments" class="page">
-      <div class="month-tabs" id="paymentMonthTabs"></div>
+      <div class="ym-selector" id="paymentMonthTabs"></div>
       <div class="grid-2 mb-4">
         <div class="card">
           <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
@@ -594,7 +607,8 @@
                   <th><button class="sort-btn" onclick="sortPayments('rent')">월세 <span class="sort-icon" id="psi-rent">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortPayments('management')">관리비 <span class="sort-icon" id="psi-management">⇅</span></button></th>
                   <th>합계</th>
-                  <th>납부현황</th>
+                  <th>월세 납부</th>
+                  <th>관리비 납부</th>
                   <th><button class="sort-btn" onclick="sortPayments('paidDate')">납부일 <span class="sort-icon" id="psi-paidDate">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortPayments('unpaidMonths')">누적미납 <span class="sort-icon" id="psi-unpaidMonths">⇅</span></button></th>
                   <th>비고</th>
@@ -1048,7 +1062,7 @@
           </select>
         </div>
       </div>
-      <div class="form-row">
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
         <div class="form-group">
           <label>세대수</label>
           <input type="text" id="propUnits" placeholder="" oninput="fmtComma(this)" style="text-align:right;">
@@ -1057,15 +1071,25 @@
           <label>용적률 (%)</label>
           <input type="text" id="propFar" placeholder="" style="text-align:right;">
         </div>
+        <div class="form-group">
+          <label>사용승인일자</label>
+          <input type="text" id="propApprovalDate" placeholder="예: 20050315" maxlength="10" oninput="fmtApprovalDate(this)" style="text-align:center;">
+        </div>
+        <div class="form-group">
+          <label>관리소 전화번호</label>
+          <input type="text" id="propMgmtPhone" placeholder="예: 02-1234-5678" maxlength="13" oninput="fmtPhone(this)">
+        </div>
       </div>
       <div class="form-group">
-        <label style="display:flex;align-items:center;gap:8px;">주소 <button type="button" class="btn btn-outline btn-sm" onclick="searchPropAddress()" style="white-space:nowrap;padding:2px 10px;font-size:12px;">🔍 검색</button></label>
-        <div id="propAddrDisplay" onclick="searchPropAddress()"
-             style="flex:1;border:1px solid var(--gray-200);border-radius:8px;padding:9px 12px;background:#f8fafc;cursor:pointer;min-height:38px;font-size:13.5px;line-height:1.6;word-break:break-all;">
-          <span id="propAddrText" style="color:var(--gray-400);">클릭하여 주소를 검색하세요</span>
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          주소
+          <button type="button" class="btn btn-outline btn-sm" onclick="searchPropAddress()" style="white-space:nowrap;padding:2px 10px;font-size:12px;">🔍 주소 검색 참고</button>
+        </label>
+        <div style="display:flex;gap:8px;flex-direction:column;">
+          <input type="text" id="propAddress" placeholder="지번 주소 (예: 서울시 강남구 역삼동 123-45)" style="font-size:13px;">
+          <input type="text" id="propRoadAddress" placeholder="도로명 주소 (예: 서울시 강남구 테헤란로 123)" style="font-size:13px;">
         </div>
-        <input type="hidden" id="propAddress">
-        <input type="hidden" id="propRoadAddress">
+        <div id="propAddrHelper" style="font-size:11.5px;color:#6b7280;margin-top:5px;">🔍 검색 버튼으로 주소를 참고한 후 위 입력란에 직접 입력하세요.</div>
       </div>
       <div class="form-group">
         <label>메모</label>
@@ -2650,7 +2674,7 @@ function renderPropertiesPage() {
           <span class="prop-name-cell" style="font-size:15px;font-weight:700;white-space:nowrap;">${p.name}${roomCount > 0 ? `<span style="font-size:13px;font-weight:400;color:var(--gray-400);margin-left:5px;">(${roomCount})</span>` : ''}</span>
           <span style="display:flex;align-items:center;gap:6px;overflow:hidden;">
             <span class="badge badge-primary" style="white-space:nowrap;flex-shrink:0;">${p.type||'주거'}</span>
-            ${p.address ? `<span style="font-size:12px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.address}${p.roadAddress ? ` <span style="color:var(--gray-300);">/</span> ${p.roadAddress}` : ''}${p.units ? ` <span style="color:var(--gray-300);">/</span> ${Number(p.units).toLocaleString()}세대` : ''}${p.far ? ` <span style="color:var(--gray-300);">/</span> 용적률 ${p.far}%` : ''}</span>` : ''}
+            ${(p.roadAddress||p.address) ? `<span style="font-size:12px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📍 ${p.roadAddress||p.address}${p.approvalDate ? ` <span style="color:var(--gray-300);">/</span> 사용승인 ${p.approvalDate.replace(/-/g,'.')}` : ''}${p.units ? ` <span style="color:var(--gray-300);">/</span> ${Number(p.units).toLocaleString()}세대` : ''}${p.far ? ` <span style="color:var(--gray-300);">/</span> 용적률 ${p.far}%` : ''}</span>` : ''}
           </span>
         </div>
         <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
@@ -2708,32 +2732,32 @@ function togglePropRooms(propId) {
 }
 
 function openPropertyModal(id) {
-  document.getElementById('propId').value       = '';
-  document.getElementById('propName').value     = '';
-  document.getElementById('propAddress').value  = '';
+  document.getElementById('propId').value          = '';
+  document.getElementById('propName').value        = '';
+  document.getElementById('propAddress').value     = '';
   document.getElementById('propRoadAddress').value = '';
-  document.getElementById('propUnits').value    = '';
-  document.getElementById('propFar').value      = '';
-  document.getElementById('propNote').value     = '';
-  document.getElementById('propType').value     = '아파트';
-  const addrSpan = document.getElementById('propAddrText');
-  addrSpan.innerHTML = '🔍 클릭하여 주소를 검색하세요';
-  addrSpan.style.color = 'var(--gray-400)';
+  document.getElementById('propUnits').value       = '';
+  document.getElementById('propFar').value         = '';
+  document.getElementById('propApprovalDate').value = '';
+  document.getElementById('propMgmtPhone').value   = '';
+  document.getElementById('propNote').value        = '';
+  document.getElementById('propType').value        = '아파트';
+  const addrHelper = document.getElementById('propAddrHelper');
+  if (addrHelper) addrHelper.innerHTML = '🔍 검색 버튼으로 주소를 참고한 후 위 입력란에 직접 입력하세요.';
   document.getElementById('propertyModalTitle').textContent = id ? '🏠 건물 수정' : '🏠 건물 추가';
   if (id) {
     const p = getData('properties').find(x => x.id === id);
     if (p) {
-      document.getElementById('propId').value      = p.id;
-      document.getElementById('propName').value    = p.name;
-      document.getElementById('propAddress').value = p.address || '';
-      document.getElementById('propRoadAddress').value = p.roadAddress || '';
-      document.getElementById('propUnits').value   = p.units ? Number(p.units).toLocaleString() : '';
-      document.getElementById('propFar').value     = p.far   || '';
-      document.getElementById('propNote').value    = p.note  || '';
-      document.getElementById('propType').value    = p.type  || '아파트';
-      if (p.address) {
-        setPropAddrDisplay(p.address, p.roadAddress || '');
-      }
+      document.getElementById('propId').value           = p.id;
+      document.getElementById('propName').value         = p.name;
+      document.getElementById('propAddress').value      = p.address || '';
+      document.getElementById('propRoadAddress').value  = p.roadAddress || '';
+      document.getElementById('propUnits').value        = p.units ? Number(p.units).toLocaleString() : '';
+      document.getElementById('propFar').value          = p.far   || '';
+      document.getElementById('propApprovalDate').value = p.approvalDate || '';
+      document.getElementById('propMgmtPhone').value    = p.mgmtPhone || '';
+      document.getElementById('propNote').value         = p.note  || '';
+      document.getElementById('propType').value         = p.type  || '아파트';
     }
   }
   // 삭제 버튼: 수정 시에만 표시 (동호수 없을 때만 활성화)
@@ -2773,11 +2797,13 @@ function saveProperty() {
       const oldName = props[idx].name;
       props[idx].name        = name;
       props[idx].type        = document.getElementById('propType').value;
-      props[idx].address     = document.getElementById('propAddress').value.trim();
-      props[idx].roadAddress = document.getElementById('propRoadAddress').value.trim();
-      props[idx].units       = document.getElementById('propUnits').value.replace(/,/g,'').trim();
-      props[idx].far         = document.getElementById('propFar').value.trim();
-      props[idx].note        = document.getElementById('propNote').value;
+      props[idx].address      = document.getElementById('propAddress').value.trim();
+      props[idx].roadAddress  = document.getElementById('propRoadAddress').value.trim();
+      props[idx].units        = document.getElementById('propUnits').value.replace(/,/g,'').trim();
+      props[idx].far          = document.getElementById('propFar').value.trim();
+      props[idx].approvalDate = normalizeApprovalDate(document.getElementById('propApprovalDate').value);
+      props[idx].mgmtPhone    = document.getElementById('propMgmtPhone').value.trim();
+      props[idx].note         = document.getElementById('propNote').value;
       // 건물명이 바뀐 경우 임대차 데이터의 building 필드도 일괄 업데이트
       if (oldName !== name) {
         const tenants = getData('tenants');
@@ -2788,11 +2814,14 @@ function saveProperty() {
     }
   } else {
     props.push({ id: uid(), name, type: document.getElementById('propType').value,
-      address: document.getElementById('propAddress').value.trim(),
-      roadAddress: document.getElementById('propRoadAddress').value.trim(),
-      units: document.getElementById('propUnits').value.replace(/,/g,'').trim(),
-      far:   document.getElementById('propFar').value.trim(),
-      note: document.getElementById('propNote').value, rooms: [] });
+      address:      document.getElementById('propAddress').value.trim(),
+      roadAddress:  document.getElementById('propRoadAddress').value.trim(),
+      units:        document.getElementById('propUnits').value.replace(/,/g,'').trim(),
+      far:          document.getElementById('propFar').value.trim(),
+      approvalDate: normalizeApprovalDate(document.getElementById('propApprovalDate').value),
+      mgmtPhone:    document.getElementById('propMgmtPhone').value.trim(),
+      note:         document.getElementById('propNote').value,
+      rooms: [] });
   }
   setData('properties', props);
   closeModal('propertyModal');
@@ -2931,24 +2960,74 @@ function setPropAddrDisplay(jibun, road) {
   span.style.color = 'var(--gray-700)';
 }
 
+function closeDaumLayer() {
+  const l = document.getElementById('daumPostcodeLayer');
+  const b = document.getElementById('daumPostcodeBg');
+  if (l) l.remove();
+  if (b) b.remove();
+}
+
 function searchPropAddress() {
-  function openPopup() {
+  function openLayer() {
+    closeDaumLayer();
+    const W = Math.min(500, Math.floor(window.innerWidth * 0.94));
+    const HEADER_H = 46;
+    const EMBED_H  = 430;
+
+    const bg = document.createElement('div');
+    bg.id = 'daumPostcodeBg';
+    bg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100000;';
+    bg.onclick = closeDaumLayer;
+
+    const layer = document.createElement('div');
+    layer.id = 'daumPostcodeLayer';
+    layer.style.cssText =
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);' +
+      'width:' + W + 'px;height:' + (HEADER_H + EMBED_H) + 'px;' +
+      'background:#fff;border-radius:14px;' +
+      'box-shadow:0 20px 60px rgba(0,0,0,0.35);z-index:100001;overflow:hidden;';
+
+    const header = document.createElement('div');
+    header.style.cssText =
+      'height:' + HEADER_H + 'px;display:flex;align-items:center;' +
+      'justify-content:space-between;padding:0 16px;' +
+      'border-bottom:1px solid #e5e7eb;box-sizing:border-box;';
+    header.innerHTML =
+      '<span style="font-size:14px;font-weight:700;color:#1f2937;">&#128269; 주소 검색</span>' +
+      '<button onclick="closeDaumLayer()" style="background:none;border:none;' +
+      'font-size:22px;cursor:pointer;color:#6b7280;line-height:1;padding:0;">&#215;</button>';
+
+    const wrap = document.createElement('div');
+    wrap.id = 'daumPostcodeWrap';
+    wrap.style.cssText = 'width:' + W + 'px;height:' + EMBED_H + 'px;overflow:hidden;';
+
+    layer.appendChild(header);
+    layer.appendChild(wrap);
+    document.body.appendChild(bg);
+    document.body.appendChild(layer);
+
     new daum.Postcode({
+      width:  W,
+      height: EMBED_H,
+      animation: false,
       oncomplete: function(data) {
         const jibun = data.jibunAddress || data.autoJibunAddress || data.address || '';
         const road  = data.roadAddress  || data.autoRoadAddress  || '';
         document.getElementById('propAddress').value     = jibun;
         document.getElementById('propRoadAddress').value = road;
-        setPropAddrDisplay(jibun, road);
+        const helper = document.getElementById('propAddrHelper');
+        if (helper) helper.innerHTML = '✅ 아래 주소가 자동 입력됐어요. 필요시 직접 수정하세요.';
+        closeDaumLayer();
       }
-    }).open();
+    }).embed(wrap);
   }
+
   if (window.daum && window.daum.Postcode) {
-    openPopup();
+    openLayer();
   } else {
     const s = document.createElement('script');
     s.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
-    s.onload = openPopup;
+    s.onload = openLayer;
     document.head.appendChild(s);
   }
 }
@@ -3139,10 +3218,18 @@ function initRegisterPage() {
 
 // ── 입력 자동 포맷 함수 ──────────────────────────────────
 function fmtPhone(el) {
-  let v = el.value.replace(/\D/g, '').slice(0, 11);
-  if (v.length <= 3)       el.value = v;
-  else if (v.length <= 7)  el.value = v.slice(0,3) + '-' + v.slice(3);
-  else                     el.value = v.slice(0,3) + '-' + v.slice(3,7) + '-' + v.slice(7);
+  const v = el.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length === 0) { el.value = ''; return; }
+  // 02 지역번호: 02-XXX-XXXX (9자리) 또는 02-XXXX-XXXX (10자리)
+  if (v.startsWith('02')) {
+    if (v.length <= 2)       el.value = v;
+    else if (v.length <= 5)  el.value = v.slice(0,2) + '-' + v.slice(2);
+    else if (v.length <= 9)  el.value = v.slice(0,2) + '-' + v.slice(2,5) + '-' + v.slice(5);
+    else                     el.value = v.slice(0,2) + '-' + v.slice(2,6) + '-' + v.slice(6);
+  }
+  // 휴대폰·일반 3자리 지역번호: 11자리 → 010-XXXX-XXXX, 10자리 → 0XX-XXX-XXXX
+  else if (v.length <= 10)   el.value = v.slice(0,3) + (v.length>3?'-':'') + v.slice(3,6) + (v.length>6?'-':'') + v.slice(6);
+  else                       el.value = v.slice(0,3) + '-' + v.slice(3,7) + '-' + v.slice(7);
 }
 
 // 평 입력 → ㎡ 환산 힌트 표시
@@ -3162,6 +3249,24 @@ function syncArea(type, from) {
 }
 // 구 버전 호환 (호출부 잔재 대비)
 function updateAreaHint() {}
+
+function normalizeApprovalDate(val) {
+  const d = val.replace(/\D/g, '');
+  if (d.length === 8) return d.slice(0,4) + '-' + d.slice(4,6) + '-' + d.slice(6);
+  return val;
+}
+
+function fmtApprovalDate(el) {
+  // 숫자만 추출
+  const digits = el.value.replace(/\D/g, '').slice(0, 8);
+  let out = digits;
+  if (digits.length > 4 && digits.length <= 6) {
+    out = digits.slice(0,4) + '-' + digits.slice(4);
+  } else if (digits.length > 6) {
+    out = digits.slice(0,4) + '-' + digits.slice(4,6) + '-' + digits.slice(6);
+  }
+  el.value = out;
+}
 
 function fmtComma(el) {
   const raw = el.value.replace(/[^\d]/g, '');
@@ -3854,29 +3959,53 @@ function deleteTenantFromModal() {
 // PAYMENTS
 // ============================================================
 let selectedYM = getYM();
+let selectedYear = new Date().getFullYear();
+
+function getYearRange() {
+  const curYear = new Date().getFullYear();
+  const payments = getData('payments');
+  const tenants = getData('tenants');
+  const usedYears = new Set([curYear]);
+  payments.forEach(p => { if (p.yearMonth) usedYears.add(parseInt(p.yearMonth.split('-')[0])); });
+  tenants.forEach(t => { if (t.startDate) usedYears.add(parseInt(t.startDate.split('-')[0])); });
+  return { minYear: Math.min(...usedYears), maxYear: curYear + 1 };
+}
 
 function renderPayments() {
-  // Build month tabs (last 6 months + current)
   const tabs = document.getElementById('paymentMonthTabs');
-  const months = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-  }
-  // Add next month
-  const nd = new Date(); nd.setMonth(nd.getMonth()+1);
-  months.push(`${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,'0')}`);
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth() + 1;
+  const { minYear, maxYear } = getYearRange();
 
-  tabs.innerHTML = months.map(ym => {
-    const [y, m] = ym.split('-');
-    return `<div class="month-tab ${ym===selectedYM?'active':''}" onclick="selectMonth('${ym}')">${y}년 ${parseInt(m)}월</div>`;
-  }).join('');
+  const canPrev = selectedYear > minYear;
+  const canNext = selectedYear < maxYear;
+
+  let html = `<div class="ym-year-nav">`;
+  html += `<button class="ym-arrow" onclick="changeYear(-1)"${canPrev?'':' disabled'}>&#8249;</button>`;
+  html += `<span class="ym-year-label">${selectedYear}년</span>`;
+  html += `<button class="ym-arrow" onclick="changeYear(1)"${canNext?'':' disabled'}>&#8250;</button>`;
+  html += `</div><div class="ym-divider"></div><div class="ym-months">`;
+  for (let m = 1; m <= 12; m++) {
+    const ym = `${selectedYear}-${String(m).padStart(2,'0')}`;
+    const isFuture = selectedYear > curYear || (selectedYear === curYear && m > curMonth + 1);
+    const isActive = ym === selectedYM;
+    html += `<button class="ym-btn${isActive?' active':''}${isFuture?' disabled':''}" onclick="selectMonth('${ym}')">${m}월</button>`;
+  }
+  html += `</div>`;
+  tabs.innerHTML = html;
   renderPaymentTable();
+}
+
+function changeYear(delta) {
+  const { minYear, maxYear } = getYearRange();
+  selectedYear = Math.max(minYear, Math.min(maxYear, selectedYear + delta));
+  renderPayments();
 }
 
 function selectMonth(ym) {
   selectedYM = ym;
+  selectedYear = parseInt(ym.split('-')[0]);
   renderPayments();
 }
 
@@ -3939,20 +4068,16 @@ function renderPaymentTable() {
       unpaidCell = `<span style="background:#7f1d1d;color:#fff;padding:3px 8px;border-radius:6px;font-size:12px;font-weight:700;">🚨 ${unpaidMonths}개월 누적</span>`;
     }
 
-    // 납부현황: 월세·관리비 개별 버튼 or N/A 원형 배지 (한 줄)
+    // 납부현황: 월세·관리비 분리 컬럼
     const hasRent = Number(t.rent||0) > 0;
     const hasMgmt = Number(t.management||0) > 0;
-    const naChip = `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:20px;border:1.5px solid #d1d5db;border-radius:10px;font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:0;padding:0 4px;">N/A</span>`;
+    const naChip = `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:24px;border:1.5px solid #d1d5db;border-radius:6px;font-size:10px;font-weight:700;color:#9ca3af;padding:0 6px;">N/A</span>`;
     const mkPayBtn = (paid, tid, ym, type) => {
       const bg = paid ? '#16a34a' : '#dc2626';
-      return `<button style="background:${bg};color:#fff;border:none;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;" onclick="togglePayHistMonth('${tid}','${ym}','${type}',${!paid})">${paid?'납부':'미납'}</button>`;
+      return `<button style="background:${bg};color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-width:48px;" onclick="togglePayHistMonth('${tid}','${ym}','${type}',${!paid})">${paid?'납부':'미납'}</button>`;
     };
-    const rentChip = hasRent ? mkPayBtn(p.rentPaid, t.id, selectedYM, 'rent') : naChip;
-    const mgmtChip = hasMgmt ? mkPayBtn(p.mgmtPaid, t.id, selectedYM, 'mgmt') : naChip;
-    const payBtn = `<div style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">
-      <span style="font-size:10px;color:#9ca3af;font-weight:500;">월</span>${rentChip}
-      <span style="font-size:10px;color:#9ca3af;font-weight:500;">관</span>${mgmtChip}
-    </div>`;
+    const rentCell = hasRent ? mkPayBtn(p.rentPaid, t.id, selectedYM, 'rent') : naChip;
+    const mgmtCell = hasMgmt ? mkPayBtn(p.mgmtPaid, t.id, selectedYM, 'mgmt') : naChip;
     return `<tr${unpaidMonths >= 2 ? ' style="background:#fff5f5;"' : ''}>
       <td>${t.building ? t.building : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
       <td>${getTenantDong(t.building, t.room)}</td>
@@ -3961,7 +4086,8 @@ function renderPaymentTable() {
       <td>${fmtMoney(t.rent)}</td>
       <td>${fmtMoney(t.management)}</td>
       <td><strong>${fmtMoney(total)}</strong></td>
-      <td style="text-align:center;">${payBtn}</td>
+      <td style="text-align:center;">${rentCell}</td>
+      <td style="text-align:center;">${mgmtCell}</td>
       <td>${p.paidDate ? fmtDate(p.paidDate) : '-'}</td>
       <td>${unpaidCell}</td>
       <td><input type="text" value="${p.note||''}" placeholder="메모" style="width:100px;padding:4px 8px;font-size:12px" onchange="updatePaymentNote('${t.id}','${selectedYM}',this.value)"></td>
@@ -3969,7 +4095,7 @@ function renderPaymentTable() {
     </tr>`;
   }).join('');
 
-  document.getElementById('paymentTbody').innerHTML = rows || '<tr><td colspan="12"><div class="empty-state"><p>입주중인 임차인이 없습니다.</p></div></td></tr>';
+  document.getElementById('paymentTbody').innerHTML = rows || '<tr><td colspan="13"><div class="empty-state"><p>입주중인 임차인이 없습니다.</p></div></td></tr>';
 
   document.getElementById('paidCount').textContent = paidCount;
   document.getElementById('unpaidCount').textContent = unpaidCount;
