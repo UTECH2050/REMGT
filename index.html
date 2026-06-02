@@ -219,8 +219,9 @@
 
   /* Badges */
   .badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 52px; padding: 3px 8px; border-radius: 20px;
+    font-size: 11.5px; font-weight: 600; text-align: center; white-space: nowrap;
   }
   .badge-success { background: var(--success-light); color: var(--success); }
   .badge-danger { background: var(--danger-light); color: var(--danger); }
@@ -2611,9 +2612,14 @@ function saveTenant() {
 // 소유부동산 (PROPERTIES)
 // ============================================================
 function renderPropertiesPage() {
-  const props = getData('properties').slice().sort((a, b) =>
-    String(a.name||'').localeCompare(String(b.name||''), 'ko')
-  );
+  const TYPE_ORDER = ['아파트','오피스텔','상가','사무실','주택','기타'];
+  const props = getData('properties').slice().sort((a, b) => {
+    const ta = TYPE_ORDER.indexOf(a.type||'기타');
+    const tb = TYPE_ORDER.indexOf(b.type||'기타');
+    const ti = (ta < 0 ? 99 : ta) - (tb < 0 ? 99 : tb);
+    if (ti !== 0) return ti;
+    return String(a.name||'').localeCompare(String(b.name||''), 'ko');
+  });
   const list  = document.getElementById('propList');
   if (!list) return;
   if (props.length === 0) {
