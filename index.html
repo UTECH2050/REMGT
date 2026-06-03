@@ -1757,151 +1757,24 @@ function emergencyResetAdmin(e) {
 }
 
 function doLogin() {
-  try {
-    const idEl = document.getElementById('loginId');
-    const id = idEl ? idEl.value.trim().toLowerCase() : '';
-    const errEl = document.getElementById('loginError');
-    if (errEl) errEl.style.display = 'none';
-    if (!id) {
-      if (errEl) { errEl.textContent = '아이디를 입력해주세요.'; errEl.style.display = 'block'; }
-      return;
-    }
-    // admin 이면 무조건 진입
-    if (id === 'admin') {
-      _currentSession = { userId: 'admin', name: '관리자', role: 'admin' };
-      try { localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch(e) {}
-      const overlay = document.getElementById('loginOverlay');
-      if (overlay) overlay.style.display = 'none';
-      try { seedDemoData(); } catch(e) { console.warn('seedDemoData:', e); }
-      try { updateBadges(); } catch(e) { console.warn('updateBadges:', e); }
-      try { renderDashboard(); } catch(e) { console.warn('renderDashboard:', e); }
-      return;
-    }
-    // 다른 계정
-    const users = getUsers();
-    const user = users.find(u => u.id === id);
-    if (user) {
-      _currentSession = { userId: user.id, name: user.name, role: user.role };
-      try { localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch(e) {}
-      const overlay = document.getElementById('loginOverlay');
-      if (overlay) overlay.style.display = 'none';
-      try { seedDemoData(); } catch(e) {}
-      try { updateBadges(); } catch(e) {}
-      try { renderDashboard(); } catch(e) {}
-      return;
-    }
-    if (errEl) { errEl.textContent = '등록되지 않은 아이디입니다.'; errEl.style.display = 'block'; }
-  } catch(e) {
-    alert('로그인 오류: ' + e.message);
+  const idEl = document.getElementById('loginId');
+  const id = (idEl ? idEl.value : '').trim().toLowerCase();
+  if (!id) {
+    const e = document.getElementById('loginError');
+    if (e) { e.textContent='아이디를 입력해주세요.'; e.style.display='block'; }
+    return;
   }
-}
-
-
-async function doChangePassword() {
-  const current = document.getElementById('cpCurrent').value;
-  const newPw   = document.getElementById('cpNew').value;
-  const confirm = document.getElementById('cpConfirm').value;
-  const errEl   = document.getElementById('changePwError');
-  errEl.style.display = 'none';
-  if (!current || !newPw || !confirm) { showAuthError(errEl, '모든 항목을 입력해주세요.'); return; }
-  if (newPw.length < 8) { showAuthError(errEl, '새 비밀번호는 8자 이상이어야 합니다.'); return; }
-  if (newPw !== confirm) { showAuthError(errEl, '새 비밀번호가 일치하지 않습니다.'); return; }
-  const pendingId = sessionStorage.getItem('remgt_pending_user');
-  const users = getUsers();
-  const user = users.find(u => u.id === pendingId);
-  if (!user) { showAuthError(errEl, '오류가 발생했습니다. 다시 로그인하세요.'); return; }
-  const currentHash = await sha256(user.salt + ':' + current);
-  if (currentHash !== user.hash) { showAuthError(errEl, '현재 비밀번호가 올바르지 않습니다.'); return; }
-  if (newPw === current) { showAuthError(errEl, '새 비밀번호는 기존 비밀번호와 달라야 합니다.'); return; }
-  // 비밀번호 변경
-  const newSalt = makeSalt();
-  const newHash = await sha256(newSalt + ':' + newPw);
-  user.salt = newSalt;
-  user.hash = newHash;
-  user.mustChangePassword = false;
-  saveUsers(users);
-  sessionStorage.removeItem('remgt_pending_user');
-  document.getElementById('changePwOverlay').classList.add('hidden');
-  completeLogin(user);
-}
-
-// ── 이메일 인증 비밀번호 재설정 ──
-let _erVerifiedUserId = null;
-
-function toggleEmailReset(e) {
-  if (e) e.preventDefault();
-  const panel = document.getElementById('emailResetPanel');
-  if (!panel) return;
-  const isHidden = panel.style.display === 'none';
-  panel.style.display = isHidden ? 'block' : 'none';
-  if (isHidden) {
-    _erVerifiedUserId = null;
-    document.getElementById('erId').value = '';
-    document.getElementById('erEmail').value = '';
-    document.getElementById('erNewPw').value = '';
-    document.getElementById('erConfirmPw').value = '';
-    document.getElementById('emailResetStep1').style.display = 'block';
-    document.getElementById('emailResetStep2').style.display = 'none';
-    const msg = document.getElementById('emailResetMsg');
-    msg.style.display = 'none'; msg.textContent = '';
+  if (id !== 'admin') {
+    const e = document.getElementById('loginError');
+    if (e) { e.textContent='admin 으로 입력해주세요.'; e.style.display='block'; }
+    return;
   }
+  // admin → 세션 저장 후 새로고침
+  const session = { userId:'admin', name:'관리자', role:'admin' };
+  localStorage.setItem('remgt_sys_session', JSON.stringify(session));
+  window.location.reload();
 }
 
-function showErMsg(txt, ok) {
-  const msg = document.getElementById('emailResetMsg');
-  msg.textContent = txt;
-  msg.style.background = ok ? '#dcfce7' : '#fee2e2';
-  msg.style.color = ok ? '#166534' : '#991b1b';
-  msg.style.display = 'block';
-}
-
-function verifyEmailForReset() {
-  const id    = (document.getElementById('erId').value || '').trim();
-  const email = (document.getElementById('erEmail').value || '').trim().toLowerCase();
-  if (!id || !email) { showErMsg('아이디와 이메일을 모두 입력해주세요.', false); return; }
-  const users = getUsers();
-  const user  = users.find(u => u.id === id);
-  if (!user || (user.email || '').toLowerCase() !== email) {
-    showErMsg('아이디 또는 이메일이 일치하지 않습니다.', false); return;
-  }
-  _erVerifiedUserId = id;
-  showErMsg('이메일이 확인되었습니다. 새 비밀번호를 입력하세요.', true);
-  document.getElementById('emailResetStep1').style.display = 'none';
-  document.getElementById('emailResetStep2').style.display = 'block';
-  setTimeout(() => {
-    const msg = document.getElementById('emailResetMsg');
-    msg.style.display = 'none';
-  }, 2000);
-}
-
-async function doEmailReset() {
-  if (!_erVerifiedUserId) return;
-  const newPw  = document.getElementById('erNewPw').value;
-  const confPw = document.getElementById('erConfirmPw').value;
-  if (newPw.length < 8) { showErMsg('새 비밀번호는 8자 이상이어야 합니다.', false); return; }
-  if (newPw !== confPw)  { showErMsg('새 비밀번호가 일치하지 않습니다.', false); return; }
-  const users = getUsers();
-  const user  = users.find(u => u.id === _erVerifiedUserId);
-  if (!user) { showErMsg('오류가 발생했습니다.', false); return; }
-  const newSalt = makeSalt();
-  const newHash = await sha256(newSalt + ':' + newPw);
-  user.salt = newSalt; user.hash = newHash; user.mustChangePassword = false;
-  saveUsers(users);
-  showErMsg('비밀번호가 재설정되었습니다. 새 비밀번호로 로그인하세요.', true);
-  _erVerifiedUserId = null;
-  setTimeout(() => {
-    document.getElementById('emailResetPanel').style.display = 'none';
-    document.getElementById('loginId').value = user.id;
-  }, 2000);
-}
-
-// 이메일 수정 모달 (설정 페이지)
-
-function completeLogin(user) {
-  _currentSession = { userId: user.id, name: user.name, role: user.role };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession));
-  showApp();
-}
 
 function doLogout() {
   _currentSession = null;
@@ -5414,21 +5287,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const dashDateEl = document.getElementById('dashDate');
   if (dashDateEl) dashDateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
-  // admin 계정 보장
-  initAuthSystem();
+  // 세션 확인 — 있으면 앱 진입
+  let session = null;
+  try { session = JSON.parse(localStorage.getItem('remgt_sys_session')); } catch(e) {}
 
-  // 저장된 세션 있으면 바로 진입
-  try {
-    const saved = localStorage.getItem(SESSION_KEY);
-    if (saved) {
-      _currentSession = JSON.parse(saved);
-      if (_currentSession && _currentSession.userId) { showApp(); return; }
-    }
-  } catch {}
-
-  // 세션 없으면 로그인 화면 표시
-  const ol = document.getElementById('loginOverlay');
-  if (ol) { ol.style.display = ''; ol.classList.remove('hidden'); }
+  if (session && session.userId) {
+    _currentSession = session;
+    initAuthSystem();
+    document.getElementById('loginOverlay').style.display = 'none';
+    try { seedDemoData(); } catch(e) { console.error('seedDemoData error:', e); }
+    try { updateBadges(); } catch(e) { console.error('updateBadges error:', e); }
+    try { renderDashboard(); } catch(e) { console.error('renderDashboard error:', e); }
+  } else {
+    // 세션 없으면 로그인 화면
+    document.getElementById('loginOverlay').style.display = 'flex';
+  }
 });
 
 // 외부 클릭으로 팝업 닫기 비활성화 (사용자 요청)
