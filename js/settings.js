@@ -64,14 +64,19 @@ function renderSettings() {
 
 // 보안 질문 모달
 function openSecurityQModal() {
-  const r = getRecovery ? getRecovery() : null;
-  const s = document.getElementById('sqModalStatus');
-  if (s) s.textContent = r ? '현재 질문: ' + r.question : '보안 질문이 등록되지 않았습니다.';
-  const e = document.getElementById('sqModalError');
-  if (e) e.style.display = 'none';
-  const a = document.getElementById('sqModalAnswer');
-  if (a) a.value = '';
-  openModal('securityQModal');
+  try {
+    const r = (typeof getRecovery === 'function') ? getRecovery() : null;
+    const s = document.getElementById('sqModalStatus');
+    if (s) s.textContent = r ? '현재 질문: ' + r.question : '보안 질문이 등록되지 않았습니다.';
+    const e = document.getElementById('sqModalError');
+    if (e) e.style.display = 'none';
+    const a = document.getElementById('sqModalAnswer');
+    if (a) a.value = '';
+    // 모달 직접 표시
+    const overlay = document.getElementById('securityQModal');
+    if (overlay) { overlay.classList.add('open'); overlay.style.display = 'flex'; }
+    else { alert('모달을 찾을 수 없습니다. (securityQModal)'); }
+  } catch(err) { alert('오류: ' + err.message); }
 }
 function doSaveRecoveryModal() {
   const q   = document.getElementById('sqModalQuestion')?.value || '';
