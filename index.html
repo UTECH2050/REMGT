@@ -384,6 +384,9 @@
     <div style="text-align:center;margin-top:14px;">
       <a href="#" style="font-size:12px;color:#6b7280;text-decoration:underline;" onclick="toggleEmailReset(event)">비밀번호를 잊으셨나요?</a>
     </div>
+    <div style="text-align:center;margin-top:10px;">
+      <a href="#" style="font-size:11px;color:#d1d5db;text-decoration:none;" onclick="emergencyResetAdmin(event)">관리자 계정 초기화</a>
+    </div>
     <!-- 이메일 인증 비밀번호 재설정 패널 -->
     <div id="emailResetPanel" style="display:none;margin-top:16px;padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
       <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;">🔑 비밀번호 재설정</div>
@@ -1714,28 +1717,46 @@ function saveUsers(users) {
 // 시스템 초기화: admin 계정이 없으면 생성
 async function initAuthSystem() {
   let users = getUsers();
-  if (!users.find(u => u.id === 'admin')) {
-    const salt = makeSalt();
-    const hash = await sha256(salt + ':' + 'admin1522');
-    users.push({
-      id: 'admin',
-      name: '관리자',
-      role: 'admin',
-      email: 'wooyoung.yu@navercorp.com',
-      salt,
-      hash,
-      mustChangePassword: false,
-      createdAt: new Date().toISOString().slice(0,10)
-    });
-    saveUsers(users);
+  const adminUser = users.find(u => u.id === 'admin');
+  if (!adminUser) {
+    await _createAdminAccount(users);
   } else {
     // 기존 admin에 email 필드 없으면 추가
-    const admin = users.find(u => u.id === 'admin');
-    if (!admin.email) {
-      admin.email = 'wooyoung.yu@navercorp.com';
+    if (!adminUser.email) {
+      adminUser.email = 'wooyoung.yu@navercorp.com';
       saveUsers(users);
     }
+    // salt/hash 누락 시 재생성
+    if (!adminUser.salt || !adminUser.hash) {
+      await _createAdminAccount(users.filter(u => u.id !== 'admin'));
+    }
   }
+}
+
+async function _createAdminAccount(existingUsers) {
+  const salt = makeSalt();
+  const hash = await sha256(salt + ':' + 'admin1522');
+  existingUsers.push({
+    id: 'admin', name: '관리자', role: 'admin',
+    email: 'wooyoung.yu@navercorp.com',
+    salt, hash, mustChangePassword: false,
+    createdAt: new Date().toISOString().slice(0,10)
+  });
+  saveUsers(existingUsers);
+}
+
+async function emergencyResetAdmin(e) {
+  e.preventDefault();
+  if (!confirm('관리자 계정을 admin / admin1522 으로 초기화하시겠습니까?')) return;
+  const users = getUsers().filter(u => u.id !== 'admin');
+  await _createAdminAccount(users);
+  document.getElementById('loginId').value = 'admin';
+  document.getElementById('loginPw').value = '';
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'block';
+  errEl.style.background = '#dcfce7';
+  errEl.style.color = '#15803d';
+  errEl.textContent = '관리자 계정이 초기화됐습니다. 비밀번호: admin1522';
 }
 
 async function doLogin() {
