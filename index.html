@@ -735,12 +735,12 @@
             <table>
               <thead>
                 <tr>
-                  <th>지출일자</th>
-                  <th>건물명</th>
+                  <th><button class="sort-btn" onclick="sortExpenses('date')">지출일자 <span class="sort-icon" id="esi-date">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortExpenses('category')">지출항목 <span class="sort-icon" id="esi-category">⇅</span></button></th>
+                  <th><button class="sort-btn" onclick="sortExpenses('building')">건물명 <span class="sort-icon" id="esi-building">⇅</span></button></th>
                   <th>동</th>
                   <th>호수</th>
-                  <th>지출항목</th>
-                  <th style="text-align:right;">금액</th>
+                  <th><button class="sort-btn" onclick="sortExpenses('amount')" style="width:100%;">금액 <span class="sort-icon" id="esi-amount">⇅</span></button></th>
                   <th>메모</th>
                   <th>수정</th>
                 </tr>
@@ -5219,6 +5219,14 @@ function deleteExpense(id) {
 // EXPENSES PAGE
 // ============================================================
 let expSelectedYear = new Date().getFullYear();
+let expSortKey = 'date';
+let expSortDir = 'desc';
+
+function sortExpenses(key) {
+  if (expSortKey === key) expSortDir = expSortDir === 'asc' ? 'desc' : 'asc';
+  else { expSortKey = key; expSortDir = key === 'amount' ? 'desc' : 'asc'; }
+  renderExpensesPage();
+}
 
 function changeExpYear(delta) {
   expSelectedYear += delta;
@@ -5258,7 +5266,23 @@ function renderExpensesPage() {
   const filterB = bSel ? bSel.value : '';
   let filtered = allExpenses.filter(e => e.date?.startsWith(String(expSelectedYear)));
   if (filterB) filtered = filtered.filter(e => e.building === filterB);
-  filtered.sort((a,b) => b.date.localeCompare(a.date));
+  // 정렬 적용
+  filtered.sort((a,b) => {
+    let va, vb;
+    if (expSortKey === 'date')     { va = a.date||''; vb = b.date||''; }
+    else if (expSortKey === 'category') { va = a.category||''; vb = b.category||''; }
+    else if (expSortKey === 'building') { va = a.building||''; vb = b.building||''; }
+    else if (expSortKey === 'amount')   { va = Number(a.amount||0); vb = Number(b.amount||0); }
+    else { va = a.date||''; vb = b.date||''; }
+    if (typeof va === 'number') return expSortDir === 'asc' ? va-vb : vb-va;
+    return expSortDir === 'asc' ? va.localeCompare(vb,'ko') : vb.localeCompare(va,'ko');
+  });
+  // 소팅 아이콘 업데이트
+  ['date','category','building','amount'].forEach(k => {
+    const el = document.getElementById('esi-'+k);
+    if (!el) return;
+    el.className = 'sort-icon' + (expSortKey===k ? (' ' + expSortDir) : '');
+  });
 
   // 요약 카드
   const totalAmt  = filtered.reduce((s,e) => s + Number(e.amount||0), 0);
@@ -5297,10 +5321,10 @@ function renderExpensesPage() {
   tbody.innerHTML = filtered.map(e => `
     <tr>
       <td style="white-space:nowrap;">${fmtDate(e.date)}</td>
+      <td><span style="font-size:12px;background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.category}</span></td>
       <td>${e.building ? `<span style="font-size:12px;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.building}</span>` : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
       <td style="font-size:13px;text-align:center;">${e.dong||'-'}</td>
       <td style="font-size:13px;text-align:center;">${e.hosu||'-'}</td>
-      <td><span style="font-size:12px;background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.category}</span></td>
       <td style="text-align:right;"><strong style="color:var(--danger);">${Number(e.amount||0).toLocaleString()}만원</strong></td>
       <td style="font-size:12px;color:var(--gray-500);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.memo||'-'}</td>
       <td><button class="btn btn-outline btn-sm" onclick="openExpenseModal('${e.id}')">수정</button></td>
