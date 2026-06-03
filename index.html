@@ -1749,7 +1749,6 @@ function emergencyResetAdmin(e) {
   e.preventDefault();
   initAuthSystem();
   document.getElementById('loginId').value = 'admin';
-  document.getElementById('loginPw').value = '';
   const errEl = document.getElementById('loginError');
   errEl.style.display = 'block';
   errEl.style.background = '#dcfce7';
@@ -1758,24 +1757,43 @@ function emergencyResetAdmin(e) {
 }
 
 function doLogin() {
-  const id = document.getElementById('loginId').value.trim().toLowerCase();
-  const errEl = document.getElementById('loginError');
-  errEl.style.display = 'none';
-  if (!id) { errEl.textContent = '아이디를 입력해주세요.'; errEl.style.display = 'block'; return; }
-  // admin 입력 시 바로 진입
-  if (id === 'admin') {
-    initAuthSystem();
+  try {
+    const idEl = document.getElementById('loginId');
+    const id = idEl ? idEl.value.trim().toLowerCase() : '';
+    const errEl = document.getElementById('loginError');
+    if (errEl) errEl.style.display = 'none';
+    if (!id) {
+      if (errEl) { errEl.textContent = '아이디를 입력해주세요.'; errEl.style.display = 'block'; }
+      return;
+    }
+    // admin 이면 무조건 진입
+    if (id === 'admin') {
+      _currentSession = { userId: 'admin', name: '관리자', role: 'admin' };
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch(e) {}
+      const overlay = document.getElementById('loginOverlay');
+      if (overlay) overlay.style.display = 'none';
+      try { seedDemoData(); } catch(e) { console.warn('seedDemoData:', e); }
+      try { updateBadges(); } catch(e) { console.warn('updateBadges:', e); }
+      try { renderDashboard(); } catch(e) { console.warn('renderDashboard:', e); }
+      return;
+    }
+    // 다른 계정
     const users = getUsers();
-    const user = users.find(u => u.id === 'admin') || { id:'admin', name:'관리자', role:'admin' };
-    completeLogin(user);
-    return;
+    const user = users.find(u => u.id === id);
+    if (user) {
+      _currentSession = { userId: user.id, name: user.name, role: user.role };
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch(e) {}
+      const overlay = document.getElementById('loginOverlay');
+      if (overlay) overlay.style.display = 'none';
+      try { seedDemoData(); } catch(e) {}
+      try { updateBadges(); } catch(e) {}
+      try { renderDashboard(); } catch(e) {}
+      return;
+    }
+    if (errEl) { errEl.textContent = '등록되지 않은 아이디입니다.'; errEl.style.display = 'block'; }
+  } catch(e) {
+    alert('로그인 오류: ' + e.message);
   }
-  // 등록된 다른 계정 확인 (비밀번호 없이 ID만으로)
-  const users = getUsers();
-  const user = users.find(u => u.id === id);
-  if (user) { completeLogin(user); return; }
-  errEl.textContent = '등록되지 않은 아이디입니다.';
-  errEl.style.display = 'block';
 }
 
 
@@ -1874,8 +1892,6 @@ async function doEmailReset() {
   setTimeout(() => {
     document.getElementById('emailResetPanel').style.display = 'none';
     document.getElementById('loginId').value = user.id;
-    document.getElementById('loginPw').value = '';
-    document.getElementById('loginPw').focus();
   }, 2000);
 }
 
@@ -1889,12 +1905,14 @@ function completeLogin(user) {
 
 function doLogout() {
   _currentSession = null;
-  localStorage.removeItem(SESSION_KEY);
+  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
   sessionStorage.removeItem('remgt_pending_user');
-  document.getElementById('loginId').value = '';
-  document.getElementById('loginPw').value = '';
-  document.getElementById('changePwOverlay').classList.add('hidden');
-  document.getElementById('loginOverlay').classList.remove('hidden');
+  const idEl = document.getElementById('loginId');
+  if (idEl) idEl.value = '';
+  const overlay = document.getElementById('loginOverlay');
+  if (overlay) { overlay.style.display = ''; overlay.classList.remove('hidden'); }
+  const cpOverlay = document.getElementById('changePwOverlay');
+  if (cpOverlay) cpOverlay.classList.add('hidden');
 }
 
 function showAuthError(el, msg) {
@@ -5409,7 +5427,8 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch {}
 
   // 세션 없으면 로그인 화면 표시
-  document.getElementById('loginOverlay').classList.remove('hidden');
+  const ol = document.getElementById('loginOverlay');
+  if (ol) { ol.style.display = ''; ol.classList.remove('hidden'); }
 });
 
 // 외부 클릭으로 팝업 닫기 비활성화 (사용자 요청)
