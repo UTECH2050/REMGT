@@ -738,8 +738,7 @@
                   <th style="text-align:center;min-width:90px;"><button class="sort-btn" onclick="sortExpenses('date')">지출일자 <span class="sort-icon" id="esi-date">⇅</span></button></th>
                   <th style="text-align:center;min-width:80px;"><button class="sort-btn" onclick="sortExpenses('category')">지출항목 <span class="sort-icon" id="esi-category">⇅</span></button></th>
                   <th style="text-align:center;min-width:90px;"><button class="sort-btn" onclick="sortExpenses('building')">건물명 <span class="sort-icon" id="esi-building">⇅</span></button></th>
-                  <th style="text-align:center;min-width:46px;">동</th>
-                  <th style="text-align:center;min-width:50px;">호수</th>
+                  <th style="text-align:center;min-width:70px;">동호수</th>
                   <th style="text-align:right;min-width:90px;"><button class="sort-btn" onclick="sortExpenses('amount')" style="width:100%;justify-content:flex-end;">금액 <span class="sort-icon" id="esi-amount">⇅</span></button></th>
                   <th style="text-align:center;">메모</th>
                   <th style="text-align:center;min-width:52px;">수정</th>
@@ -5140,7 +5139,8 @@ function fillExpDongHosu(buildingName, selDong, selHosu) {
     ? rooms.filter(r => (r.dong||'') === dongEl.value)
     : rooms;
   filteredRooms.sort((a,b)=>String(a.roomNo||'').localeCompare(String(b.roomNo||''),'ko'));
-  hosuEl.innerHTML = '<option value="">-</option>' + filteredRooms.map(r=>`<option value="${r.roomNo}">${r.roomNo}</option>`).join('');
+  // hosu만 표시 (roomNo에는 동+호수 합쳐져 있으므로 hosu 필드 사용)
+  hosuEl.innerHTML = '<option value="">-</option>' + filteredRooms.map(r=>`<option value="${r.hosu||r.roomNo}">${r.hosu ? r.hosu+'호' : r.roomNo}</option>`).join('');
   if (selHosu) hosuEl.value = selHosu;
 }
 
@@ -5341,8 +5341,7 @@ function renderExpensesPage() {
       <td style="white-space:nowrap;text-align:center;">${fmtDate(e.date)}</td>
       <td style="text-align:center;"><span style="font-size:12px;background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.category}</span></td>
       <td style="text-align:center;">${e.building ? `<span style="font-size:12px;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.building}</span>` : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
-      <td style="font-size:13px;text-align:center;">${e.dong||'-'}</td>
-      <td style="font-size:13px;text-align:center;">${e.hosu||'-'}</td>
+      <td style="font-size:13px;text-align:center;">${e.dong&&e.hosu ? e.dong+'동 '+e.hosu+'호' : e.dong ? e.dong+'동' : e.hosu ? e.hosu+'호' : '-'}</td>
       <td style="text-align:right;padding-right:12px;"><strong style="color:var(--danger);">${Number(e.amount||0).toLocaleString()}만원</strong></td>
       <td style="font-size:12px;color:var(--gray-500);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.memo||'-'}</td>
       <td style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="openExpenseModal('${e.id}')">수정</button></td>
