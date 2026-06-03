@@ -734,15 +734,15 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr>
-                  <th><button class="sort-btn" onclick="sortExpenses('date')">지출일자 <span class="sort-icon" id="esi-date">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortExpenses('category')">지출항목 <span class="sort-icon" id="esi-category">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortExpenses('building')">건물명 <span class="sort-icon" id="esi-building">⇅</span></button></th>
-                  <th>동</th>
-                  <th>호수</th>
-                  <th><button class="sort-btn" onclick="sortExpenses('amount')" style="width:100%;">금액 <span class="sort-icon" id="esi-amount">⇅</span></button></th>
-                  <th>메모</th>
-                  <th>수정</th>
+                <tr style="text-align:center;">
+                  <th style="text-align:center;min-width:90px;"><button class="sort-btn" onclick="sortExpenses('date')">지출일자 <span class="sort-icon" id="esi-date">⇅</span></button></th>
+                  <th style="text-align:center;min-width:80px;"><button class="sort-btn" onclick="sortExpenses('category')">지출항목 <span class="sort-icon" id="esi-category">⇅</span></button></th>
+                  <th style="text-align:center;min-width:90px;"><button class="sort-btn" onclick="sortExpenses('building')">건물명 <span class="sort-icon" id="esi-building">⇅</span></button></th>
+                  <th style="text-align:center;min-width:46px;">동</th>
+                  <th style="text-align:center;min-width:50px;">호수</th>
+                  <th style="text-align:right;min-width:90px;"><button class="sort-btn" onclick="sortExpenses('amount')" style="width:100%;justify-content:flex-end;">금액 <span class="sort-icon" id="esi-amount">⇅</span></button></th>
+                  <th style="text-align:center;">메모</th>
+                  <th style="text-align:center;min-width:52px;">수정</th>
                 </tr>
               </thead>
               <tbody id="expenseListTbody"></tbody>
@@ -771,9 +771,7 @@
       </div>
       <div class="grid-2 mb-6">
         <div class="card">
-          <div class="card-header"><span class="card-title">지출 내역</span>
-            <button class="btn btn-primary btn-sm" onclick="openExpenseModal()">+ 지출 추가</button>
-          </div>
+          <div class="card-header"><span class="card-title">지출 내역</span></div>
           <div class="card-body" style="padding:0">
             <div class="table-wrap">
               <table><thead><tr><th>날짜</th><th>항목</th><th>금액</th><th>메모</th><th>관리</th></tr></thead>
@@ -5320,14 +5318,14 @@ function renderExpensesPage() {
   }
   tbody.innerHTML = filtered.map(e => `
     <tr>
-      <td style="white-space:nowrap;">${fmtDate(e.date)}</td>
-      <td><span style="font-size:12px;background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.category}</span></td>
-      <td>${e.building ? `<span style="font-size:12px;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.building}</span>` : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
+      <td style="white-space:nowrap;text-align:center;">${fmtDate(e.date)}</td>
+      <td style="text-align:center;"><span style="font-size:12px;background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.category}</span></td>
+      <td style="text-align:center;">${e.building ? `<span style="font-size:12px;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.building}</span>` : '<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
       <td style="font-size:13px;text-align:center;">${e.dong||'-'}</td>
       <td style="font-size:13px;text-align:center;">${e.hosu||'-'}</td>
-      <td style="text-align:right;"><strong style="color:var(--danger);">${Number(e.amount||0).toLocaleString()}만원</strong></td>
-      <td style="font-size:12px;color:var(--gray-500);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.memo||'-'}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="openExpenseModal('${e.id}')">수정</button></td>
+      <td style="text-align:right;padding-right:12px;"><strong style="color:var(--danger);">${Number(e.amount||0).toLocaleString()}만원</strong></td>
+      <td style="font-size:12px;color:var(--gray-500);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.memo||'-'}</td>
+      <td style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="openExpenseModal('${e.id}')">수정</button></td>
     </tr>`).join('');
 }
 
