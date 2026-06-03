@@ -850,6 +850,34 @@
 
 <!-- ========== MODALS ========== -->
 
+<!-- 복구 옵션 모달 -->
+<div class="modal-overlay" id="importOptionModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title">📥 복구 방법 선택</span>
+      <button class="modal-close" onclick="closeModal('importOptionModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="importModalInfo" style="font-size:13px;color:var(--gray-500);margin-bottom:20px;padding:10px 14px;background:var(--gray-50);border-radius:8px;"></div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <button onclick="applyImport('replace')"
+          style="background:#dc2626;color:#fff;border:none;padding:14px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;text-align:left;">
+          🔄 완전 교체 복구
+          <div style="font-size:12px;font-weight:400;margin-top:4px;opacity:0.85;">기존 데이터를 모두 삭제하고 백업 파일로 교체합니다.</div>
+        </button>
+        <button onclick="applyImport('merge')"
+          style="background:#2563eb;color:#fff;border:none;padding:14px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;text-align:left;">
+          🔀 데이터 병합 복구
+          <div style="font-size:12px;font-weight:400;margin-top:4px;opacity:0.85;">기존 데이터를 유지하면서 백업 데이터를 추가/업데이트합니다.</div>
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('importOptionModal')">취소</button>
+    </div>
+  </div>
+</div>
+
 <!-- Tenant Modal -->
 <div class="modal-overlay" id="tenantModal">
   <div class="modal">
@@ -3770,6 +3798,56 @@ function resetAllData() {
   window.location.reload();
 }
 
+function applyImport(mode) {
+  // mode: 'replace' | 'merge'
+  closeModal('importOptionModal');
+  const { backup, input } = window._pendingBackup || {};
+  if (!backup) return;
+  const prefix = _currentSession ? 'remgt_u_' + _currentSession.userId + '_' : 'remgt_tmp_';
+  if (mode === 'replace') {
+    // 기존 데이터 전부 삭제 후 복원
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(prefix)) keysToRemove.push(k);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    Object.entries(backup.data).forEach(([k, v]) => {
+      localStorage.setItem(prefix + k, JSON.stringify(v));
+    });
+  } else {
+    // merge: 배열 데이터는 id 기준 병합, 나머지는 덮어쓰기
+    Object.entries(backup.data).forEach(([k, v]) => {
+      const fullKey = prefix + k;
+      try {
+        const existing = JSON.parse(localStorage.getItem(fullKey) || '[]');
+        if (Array.isArray(existing) && Array.isArray(v)) {
+          // id 기준 병합 (백업 데이터 우선)
+          const merged = [...existing];
+          v.forEach(item => {
+            const idx = merged.findIndex(x => x.id && x.id === item.id);
+            if (idx >= 0) merged[idx] = item;
+            else merged.push(item);
+          });
+          localStorage.setItem(fullKey, JSON.stringify(merged));
+        } else {
+          localStorage.setItem(fullKey, JSON.stringify(v));
+        }
+      } catch(e) {
+        localStorage.setItem(fullKey, JSON.stringify(v));
+      }
+    });
+  }
+  if (input) input.value = '';
+  window._pendingBackup = null;
+  const statusEl = document.getElementById('backupStatus');
+  if (statusEl) {
+    statusEl.style.cssText = 'display:block;background:#dcfce7;color:#15803d;padding:10px 14px;border-radius:8px;font-size:13px;';
+    statusEl.textContent = '✅ ' + (mode==='replace'?'완전 교체':'데이터 병합') + ' 복구 완료! 페이지를 새로고침합니다.';
+  }
+  setTimeout(() => window.location.reload(), 1500);
+}
+
 function exportData() {
   const prefix = _currentSession ? 'remgt_u_' + _currentSession.userId + '_' : 'remgt_tmp_';
   const backup = { version: 1, exportedAt: new Date().toISOString(), userId: _currentSession?.userId || 'admin', data: {} };
@@ -3798,34 +3876,19 @@ function importData(input) {
     try {
       const backup = JSON.parse(e.target.result);
       if (!backup.data || backup.version !== 1) {
-        showToast('올바른 백업 파일이 아닙니다.', 'error'); return;
+        showToast('올바른 백업 파일이 아닙니다.', 'error');
+        input.value = ''; return;
       }
-      const prefix = _currentSession ? 'remgt_u_' + _currentSession.userId + '_' : 'remgt_tmp_';
-      // 기존 데이터 삭제
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith(prefix)) keysToRemove.push(k);
-      }
-      keysToRemove.forEach(k => localStorage.removeItem(k));
-      // 백업 데이터 복원
-      Object.entries(backup.data).forEach(([k, v]) => {
-        localStorage.setItem(prefix + k, JSON.stringify(v));
-      });
-      input.value = '';
-      const statusEl = document.getElementById('backupStatus');
-      if (statusEl) {
-        statusEl.style.display = 'block';
-        statusEl.style.background = '#dcfce7';
-        statusEl.style.color = '#15803d';
-        statusEl.style.padding = '10px 14px';
-        statusEl.style.borderRadius = '8px';
-        const keys = Object.keys(backup.data);
-        statusEl.textContent = '✅ 복구 완료! (' + keys.join(', ') + ') — 페이지를 새로고침합니다.';
-      }
-      setTimeout(() => window.location.reload(), 1500);
+      // 복구 옵션 선택 모달 표시
+      window._pendingBackup = { backup, input };
+      const date = backup.exportedAt ? backup.exportedAt.slice(0,10) : '알 수 없음';
+      const keys = Object.keys(backup.data);
+      document.getElementById('importModalInfo').innerHTML =
+        '<b>백업일:</b> ' + date + '&nbsp;&nbsp;<b>항목:</b> ' + keys.join(', ');
+      openModal('importOptionModal');
     } catch(err) {
       showToast('파일 읽기 오류: ' + err.message, 'error');
+      input.value = '';
     }
   };
   reader.readAsText(file);
