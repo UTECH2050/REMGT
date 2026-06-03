@@ -5287,12 +5287,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const dashDateEl = document.getElementById('dashDate');
   if (dashDateEl) dashDateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
-  // 로그인 없이 바로 admin으로 진입
+  // admin 세션 설정
   _currentSession = { userId: 'admin', name: '관리자', role: 'admin' };
   try { localStorage.setItem('remgt_sys_session', JSON.stringify(_currentSession)); } catch(e) {}
-  try { seedDemoData(); } catch(e) { console.error(e); }
-  try { updateBadges(); } catch(e) { console.error(e); }
-  try { renderDashboard(); } catch(e) { console.error(e); }
+
+  // 기존 remgt_tmp_ 데이터를 remgt_u_admin_ 으로 마이그레이션
+  const KEYS = ['properties','tenants','payments','contracts','expenses','history'];
+  KEYS.forEach(k => {
+    const tmpKey   = 'remgt_tmp_' + k;
+    const adminKey = 'remgt_u_admin_' + k;
+    try {
+      const tmpData   = localStorage.getItem(tmpKey);
+      const adminData = localStorage.getItem(adminKey);
+      // admin 키에 데이터가 없고 tmp 키에 있으면 마이그레이션
+      if (tmpData && (!adminData || adminData === '[]')) {
+        localStorage.setItem(adminKey, tmpData);
+        console.log('migrated:', k);
+      }
+    } catch(e) {}
+  });
+
+  try { seedDemoData(); } catch(e) { console.error('seed:', e); }
+  try { updateBadges(); } catch(e) { console.error('badges:', e); }
+  try { renderDashboard(); } catch(e) { console.error('dashboard:', e); }
+  try { navigate('dashboard'); } catch(e) { console.error('navigate:', e); }
 });
 
 // 외부 클릭으로 팝업 닫기 비활성화 (사용자 요청)
