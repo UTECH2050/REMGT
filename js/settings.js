@@ -83,10 +83,11 @@ function doSaveRecoveryModal() {
   const ans = (document.getElementById('sqModalAnswer')?.value || '').trim();
   const e   = document.getElementById('sqModalError');
   if (!ans) { if(e){e.textContent='답변을 입력해주세요.';e.style.display='block';} return; }
-  if (saveRecovery) saveRecovery(q, ans);
-  closeModal('securityQModal');
-  showToast('✅ 보안 질문이 저장됐습니다.');
-  renderSettings();
+  if (typeof saveRecovery === 'function') saveRecovery(q, ans);
+  const ov = document.getElementById('securityQModal');
+  if (ov) { ov.classList.remove('open'); ov.style.display = 'none'; }
+  if (typeof showToast === 'function') showToast('✅ 보안 질문이 저장됐습니다.');
+  if (typeof renderSettings === 'function') renderSettings();
 }
 
 // 계정 수정 모달 열기
