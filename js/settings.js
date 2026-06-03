@@ -3,47 +3,21 @@ if (typeof window.REMGT === 'undefined') window.REMGT = {};
 
 // SETTINGS
 function renderSettings() {
-  // 내 계정 정보 + 비밀번호 변경 + 보안 질문 포함
+  // 내 계정 정보
   const myEl = document.getElementById('settingsMyAccount');
   if (myEl && _currentSession) {
     const users = getUsers();
     const me = users.find(u => u.id === _currentSession.userId);
     const roleName = _currentSession.role === 'admin' ? '관리자' : '일반';
-    const r = getRecovery();
-    const qStatus = r
-      ? '<span style="color:#16a34a;font-weight:600;">✅ 등록됨: ' + r.question + '</span>'
-      : '<span style="color:#dc2626;font-weight:600;">⚠️ 미등록</span>';
     myEl.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-        <!-- 계정 정보 + 비밀번호 변경 -->
-        <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:20px;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-            <div style="font-size:32px;">👤</div>
-            <div>
-              <div style="font-size:15px;font-weight:700;color:var(--gray-800);">${me?.name || _currentSession.userId}</div>
-              <div style="font-size:12px;color:var(--gray-500);">아이디: <b>${_currentSession.userId}</b> · 역할: <b>${roleName}</b></div>
-            </div>
-          </div>
-          <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:10px;">🔑 비밀번호 변경</div>
-          <div id="spError" style="display:none;font-size:12px;padding:8px 12px;border-radius:6px;margin-bottom:8px;"></div>
-          <input type="password" id="spCurrent" placeholder="현재 비밀번호"
-            style="width:100%;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;margin-bottom:6px;box-sizing:border-box;">
-          <input type="password" id="spNew" placeholder="새 비밀번호 (6자 이상)"
-            style="width:100%;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;margin-bottom:6px;box-sizing:border-box;">
-          <input type="password" id="spConfirm" placeholder="새 비밀번호 확인"
-            style="width:100%;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;margin-bottom:10px;box-sizing:border-box;">
-          <button class="btn btn-primary" onclick="doChangePwdSettings()" style="width:100%;">변경 저장</button>
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="font-size:36px;">👤</div>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:700;color:var(--gray-800);">${me?.name || _currentSession.userId}</div>
+          <div style="font-size:13px;color:var(--gray-500);margin-top:2px;">아이디: <b>${_currentSession.userId}</b> &nbsp;·&nbsp; 역할: <b>${roleName}</b></div>
+          ${me?.mustChangePassword ? '<div style="font-size:12px;color:#dc2626;margin-top:4px;">⚠️ 비밀번호 변경이 필요합니다</div>' : ''}
         </div>
-        <!-- 보안 질문 -->
-        <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:20px;">
-          <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:8px;">❓ 보안 질문</div>
-          <div style="font-size:12px;color:var(--gray-500);margin-bottom:16px;line-height:1.6;">
-            비밀번호를 잊어버렸을 때 본인 확인에 사용됩니다.<br>${qStatus}
-          </div>
-          <button class="btn btn-outline" onclick="openSecurityQuestionModal()" style="width:100%;">
-            ${r ? '🔄 보안 질문 변경' : '➕ 보안 질문 등록'}
-          </button>
-        </div>
+        <button class="btn btn-outline" onclick="openSelfPasswordChange()">🔑 비밀번호 변경</button>
       </div>`;
   }
   // 계정 목록
@@ -76,31 +50,6 @@ function renderSettings() {
       </td>
     </tr>`;
   }).join('');
-}
-
-// 보안 질문 모달
-function openSecurityQuestionModal() {
-  const r = getRecovery();
-  const statusEl = document.getElementById('sqModalStatus');
-  if (statusEl) statusEl.textContent = r ? '현재 질문: ' + r.question : '보안 질문이 등록되지 않았습니다.';
-  const errEl = document.getElementById('sqModalError');
-  if (errEl) errEl.style.display = 'none';
-  const ansEl = document.getElementById('sqModalAnswer');
-  if (ansEl) ansEl.value = '';
-  openModal('securityQuestionModal');
-}
-
-function doSaveRecoveryModal() {
-  const q   = document.getElementById('sqModalQuestion')?.value || '';
-  const ans = document.getElementById('sqModalAnswer')?.value || '';
-  const errEl = document.getElementById('sqModalError');
-  if (!ans.trim()) {
-    if (errEl) { errEl.textContent='답변을 입력해주세요.'; errEl.style.display='block'; } return;
-  }
-  saveRecovery(q, ans);
-  closeModal('securityQuestionModal');
-  showToast('✅ 보안 질문이 저장됐습니다.');
-  renderSettings();
 }
 
 // 계정 수정 모달 열기
@@ -148,7 +97,7 @@ function openAddUserModal() {
   openModal('addUserModal');
 }
 
-function addUser() {
+async function addUser() {
   const id   = document.getElementById('newUserId').value.trim();
   const name = document.getElementById('newUserName').value.trim();
   const role = document.getElementById('newUserRole').value;
@@ -157,8 +106,8 @@ function addUser() {
   if (!pw || pw.length < 8) { showToast('임시 비밀번호는 8자 이상이어야 합니다.', 'error'); return; }
   const users = getUsers();
   if (users.find(u => u.id === id)) { showToast('이미 존재하는 아이디입니다.', 'error'); return; }
-  const salt = MASTER_SALT;
-  const hash = hashPwd(pw);
+  const salt = makeSalt();
+  const hash = await sha256(salt + ':' + pw);
   const email = (document.getElementById('newUserEmail')?.value || '').trim();
   users.push({ id, name, role, email, salt, hash, mustChangePassword: true, createdAt: new Date().toISOString().slice(0,10) });
   saveUsers(users);
