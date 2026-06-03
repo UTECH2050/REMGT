@@ -438,7 +438,7 @@
 
 <!-- Sidebar -->
 <aside class="sidebar">
-  <div class="sidebar-logo" onclick="location.reload()">
+  <div class="sidebar-logo" onclick="resetAllData()" title="클릭하면 전체 초기화">
     <h1>🏢 REMGT <span style="font-size:11px;font-weight:400;color:#6b7280;letter-spacing:0;">Ver 1.0</span></h1>
   </div>
   <nav class="sidebar-nav">
@@ -3757,6 +3757,19 @@ function saveRegisterTenant() {
 // ============================================================
 // BACKUP / RESTORE
 // ============================================================
+function resetAllData() {
+  if (!confirm('⚠️ 전체 초기화\n\n모든 데이터(물건, 임차인, 계약, 수납, 지출)가 삭제됩니다.\n정말 초기화하시겠습니까?')) return;
+  if (!confirm('한 번 더 확인합니다.\n모든 데이터가 영구 삭제됩니다.')) return;
+  // remgt_ 로 시작하는 모든 키 삭제
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('remgt_')) keys.push(k);
+  }
+  keys.forEach(k => localStorage.removeItem(k));
+  window.location.reload();
+}
+
 function exportData() {
   const prefix = _currentSession ? 'remgt_u_' + _currentSession.userId + '_' : 'remgt_tmp_';
   const backup = { version: 1, exportedAt: new Date().toISOString(), userId: _currentSession?.userId || 'admin', data: {} };
