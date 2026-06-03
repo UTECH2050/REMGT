@@ -1698,13 +1698,29 @@ let _currentSession = null; // { userId, name, role }
 const USERS_KEY  = 'remgt_sys_users';
 const SESSION_KEY = 'remgt_sys_session';
 
-// SHA-256 해시 (Web Crypto API)
-async function sha256(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+// ── 단순 동기 해시 (crypto.subtle 의존성 제거) ──
+const ADMIN_DEFAULT_PW = 'admin1522'; // 소스코드 고정 관리자 비밀번호
+
+function simpleHash(str) {
+  // 동기 방식 해시: FNV-1a 32bit + base36 인코딩
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h * 16777619) >>> 0;
+  }
+  // 두 번 돌려 충돌 감소
+  let h2 = 3735928559;
+  for (let i = str.length - 1; i >= 0; i--) {
+    h2 ^= str.charCodeAt(i);
+    h2 = (h2 * 16777619) >>> 0;
+  }
+  return h.toString(36).padStart(7,'0') + h2.toString(36).padStart(7,'0') + btoa(str).replace(/[^a-z0-9]/gi,'').slice(0,8);
 }
+// 하위 호환: async sha256 → sync wrapper (기존 코드에서 await sha256() 호출 유지)
+async function sha256(str) { return simpleHash(str); }
+
 function makeSalt() {
-  return Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 }
 
 function getUsers() {
@@ -1714,49 +1730,39 @@ function saveUsers(users) {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-// 시스템 초기화: admin 계정이 없으면 생성
-async function initAuthSystem() {
+// 시스템 초기화: 항상 admin 계정을 소스코드 기준으로 보장
+function initAuthSystem() {
   let users = getUsers();
-  const adminUser = users.find(u => u.id === 'admin');
-  if (!adminUser) {
-    await _createAdminAccount(users);
-  } else {
-    // 기존 admin에 email 필드 없으면 추가
-    if (!adminUser.email) {
-      adminUser.email = 'wooyoung.yu@navercorp.com';
-      saveUsers(users);
-    }
-    // salt/hash 누락 시 재생성
-    if (!adminUser.salt || !adminUser.hash) {
-      await _createAdminAccount(users.filter(u => u.id !== 'admin'));
-    }
-  }
-}
-
-async function _createAdminAccount(existingUsers) {
-  const salt = makeSalt();
-  const hash = await sha256(salt + ':' + 'admin1522');
-  existingUsers.push({
+  const adminIdx = users.findIndex(u => u.id === 'admin');
+  const salt = 'remgt_fixed_salt_admin';
+  const hash = simpleHash(salt + ':' + ADMIN_DEFAULT_PW);
+  const adminObj = {
     id: 'admin', name: '관리자', role: 'admin',
     email: 'wooyoung.yu@navercorp.com',
     salt, hash, mustChangePassword: false,
-    createdAt: new Date().toISOString().slice(0,10)
-  });
-  saveUsers(existingUsers);
+    createdAt: '2025-01-01'
+  };
+  // admin 계정이 없거나 hash가 맞지 않으면 재설정
+  if (adminIdx < 0) {
+    users.push(adminObj);
+  } else if (users[adminIdx].hash !== hash || !users[adminIdx].salt) {
+    // 기존 admin 유지하되 인증정보만 리셋
+    users[adminIdx] = { ...users[adminIdx], ...adminObj };
+  }
+  saveUsers(users);
 }
 
-async function emergencyResetAdmin(e) {
+// admin 계정 초기화 버튼 (로그인 화면)
+function emergencyResetAdmin(e) {
   e.preventDefault();
-  if (!confirm('관리자 계정을 admin / admin1522 으로 초기화하시겠습니까?')) return;
-  const users = getUsers().filter(u => u.id !== 'admin');
-  await _createAdminAccount(users);
+  initAuthSystem();
   document.getElementById('loginId').value = 'admin';
   document.getElementById('loginPw').value = '';
   const errEl = document.getElementById('loginError');
   errEl.style.display = 'block';
   errEl.style.background = '#dcfce7';
   errEl.style.color = '#15803d';
-  errEl.textContent = '관리자 계정이 초기화됐습니다. 비밀번호: admin1522';
+  errEl.textContent = '✅ 관리자 계정이 초기화됐습니다. 비밀번호: admin1522';
 }
 
 async function doLogin() {
@@ -5399,7 +5405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (dashDateEl) dashDateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
   // 인증 시스템 초기화 (admin 계정 최초 생성)
-  await initAuthSystem();
+  initAuthSystem();
 
   // 저장된 세션 복원
   try {
