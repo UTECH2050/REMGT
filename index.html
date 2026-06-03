@@ -438,7 +438,7 @@
 
 <!-- Sidebar -->
 <aside class="sidebar">
-  <div class="sidebar-logo" onclick="resetAllData()" title="클릭하면 전체 초기화">
+  <div class="sidebar-logo" onclick="refreshHome()" title="홈으로 이동">
     <h1>🏢 REMGT <span style="font-size:11px;font-weight:400;color:#6b7280;letter-spacing:0;">Ver 1.0</span></h1>
   </div>
   <nav class="sidebar-nav">
@@ -3785,6 +3785,12 @@ function saveRegisterTenant() {
 // ============================================================
 // BACKUP / RESTORE
 // ============================================================
+function refreshHome() {
+  // 캐시 무효화 후 홈(대시보드)으로 이동
+  navigate('dashboard');
+  window.location.reload(true);
+}
+
 function resetAllData() {
   if (!confirm('⚠️ 전체 초기화\n\n모든 데이터(물건, 임차인, 계약, 수납, 지출)가 삭제됩니다.\n정말 초기화하시겠습니까?')) return;
   if (!confirm('한 번 더 확인합니다.\n모든 데이터가 영구 삭제됩니다.')) return;
