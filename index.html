@@ -469,6 +469,9 @@
       <span class="icon">💳</span> 수납 관리
       <span class="nav-badge" id="unpaidBadge" style="display:none">0</span>
     </div>
+    <div class="nav-item" onclick="navigate('expenses')">
+      <span class="icon">💸</span> 지출 관리
+    </div>
   </nav>
   <div class="sidebar-footer" style="display:flex;flex-direction:column;gap:8px;">
     <div id="sidebarSettingsItem" onclick="navigate('settings')" style="cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#d1d5db;font-size:13px;">
@@ -701,6 +704,50 @@
       </div>
     </div>
 
+    <!-- ===== EXPENSES ===== -->
+    <div id="page-expenses" class="page">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <select id="expFilterBuilding" onchange="renderExpensesPage()" style="width:auto;min-width:120px;">
+            <option value="">전체 건물</option>
+          </select>
+          <select id="expFilterCategory" onchange="renderExpensesPage()" style="width:auto;min-width:120px;">
+            <option value="">전체 항목</option>
+            <option>중개수수료</option><option>수선비</option><option>관리비</option>
+            <option>보험료</option><option>세금</option><option>광고비</option><option>인건비</option><option>기타</option>
+          </select>
+          <select id="expFilterYear" onchange="renderExpensesPage()" style="width:auto;min-width:100px;"></select>
+        </div>
+        <button class="btn btn-primary" onclick="openExpenseModal()">+ 지출 추가</button>
+      </div>
+      <!-- 요약 카드 -->
+      <div class="stats-grid" id="expenseStats" style="margin-bottom:20px;"></div>
+      <!-- 지출 목록 테이블 -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">지출 내역</span>
+          <span id="expTotalLabel" style="font-size:13px;color:var(--gray-500);"></span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>날짜</th>
+                  <th>건물</th>
+                  <th>항목</th>
+                  <th>금액</th>
+                  <th>메모</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+              <tbody id="expenseListTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== ANALYTICS ===== -->
     <div id="page-analytics" class="page">
       <div class="filter-bar" style="margin-bottom:20px">
@@ -892,16 +939,25 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label>항목 <span class="required">*</span></label>
-          <select id="eCategory">
-            <option>수선비</option><option>관리비</option><option>보험료</option>
-            <option>세금</option><option>광고비</option><option>인건비</option><option>기타</option>
+          <label>건물</label>
+          <select id="eBuilding">
+            <option value="">전체 / 공통</option>
           </select>
         </div>
         <div class="form-group">
           <label>대상 호실</label>
           <input type="text" id="eRoom" placeholder="전체 (공란 가능)">
         </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>항목 <span class="required">*</span></label>
+          <select id="eCategory">
+            <option>중개수수료</option><option>수선비</option><option>관리비</option>
+            <option>보험료</option><option>세금</option><option>광고비</option><option>인건비</option><option>기타</option>
+          </select>
+        </div>
+        <div class="form-group"></div>
       </div>
       <div class="form-group">
         <label>메모</label>
@@ -1986,6 +2042,7 @@ function navigate(page) {
   if (page === 'payments') renderPayments();
   if (page === 'contracts') renderContracts();
   if (page === 'analytics') renderAnalytics();
+  if (page === 'expenses') renderExpensesPage();
   if (page === 'settings') renderSettings();
 }
 
@@ -5035,10 +5092,20 @@ function destroyChart(id) {
 
 // Expenses
 function openExpenseModal(id) {
+  // 건물 드롭다운 채우기
+  const bSel = document.getElementById('eBuilding');
+  bSel.innerHTML = '<option value="">전체 / 공통</option>';
+  getData('properties').forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.name; opt.textContent = p.name;
+    bSel.appendChild(opt);
+  });
+
   document.getElementById('expenseId').value = '';
-  document.getElementById('eDate').value = today(); // YYYY-MM-DD format, compatible with fmtIsoDate
+  document.getElementById('eDate').value = today();
   document.getElementById('eAmount').value = '';
-  document.getElementById('eCategory').value = '수선비';
+  document.getElementById('eCategory').value = '중개수수료';
+  document.getElementById('eBuilding').value = '';
   document.getElementById('eRoom').value = '';
   document.getElementById('eMemo').value = '';
   if (id) {
@@ -5047,9 +5114,10 @@ function openExpenseModal(id) {
       document.getElementById('expenseId').value = e.id;
       document.getElementById('eDate').value = e.date || '';
       document.getElementById('eAmount').value = e.amount ? Number(e.amount).toLocaleString() : '';
-      document.getElementById('eCategory').value = e.category;
-      document.getElementById('eRoom').value = e.room;
-      document.getElementById('eMemo').value = e.memo;
+      document.getElementById('eCategory').value = e.category || '기타';
+      document.getElementById('eBuilding').value = e.building || '';
+      document.getElementById('eRoom').value = e.room || '';
+      document.getElementById('eMemo').value = e.memo || '';
     }
   }
   openModal('expenseModal');
@@ -5064,6 +5132,7 @@ function saveExpense() {
   const obj = {
     id: id || uid(), date, amount: Number(amount.replace(/,/g,'')),
     category: document.getElementById('eCategory').value,
+    building: document.getElementById('eBuilding').value,
     room: document.getElementById('eRoom').value,
     memo: document.getElementById('eMemo').value
   };
@@ -5071,16 +5140,90 @@ function saveExpense() {
   else expenses.push(obj);
   setData('expenses', expenses);
   closeModal('expenseModal');
-  renderAnalytics();
+  if (document.getElementById('page-expenses').classList.contains('active')) renderExpensesPage();
+  else renderAnalytics();
   showToast('지출이 저장되었습니다.');
 }
 
 function deleteExpense(id) {
   confirm('이 지출 항목을 삭제하시겠습니까?', () => {
     setData('expenses', getData('expenses').filter(e=>e.id!==id));
-    renderAnalytics();
+    if (document.getElementById('page-expenses').classList.contains('active')) renderExpensesPage();
+    else renderAnalytics();
     showToast('삭제되었습니다.');
   });
+}
+
+// ============================================================
+// EXPENSES PAGE
+// ============================================================
+function renderExpensesPage() {
+  const allExpenses = getData('expenses');
+  const properties  = getData('properties');
+
+  // 건물 필터 드롭다운 채우기
+  const bSel = document.getElementById('expFilterBuilding');
+  const curB = bSel.value;
+  bSel.innerHTML = '<option value="">전체 건물</option>';
+  properties.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.name; opt.textContent = p.name;
+    bSel.appendChild(opt);
+  });
+  bSel.value = curB;
+
+  // 연도 필터 채우기
+  const ySel = document.getElementById('expFilterYear');
+  const curY = ySel.value;
+  const years = [...new Set(allExpenses.map(e => e.date?.slice(0,4)).filter(Boolean))].sort().reverse();
+  if (!years.includes(new Date().getFullYear().toString())) years.unshift(new Date().getFullYear().toString());
+  ySel.innerHTML = '<option value="">전체 연도</option>' + years.map(y=>`<option value="${y}">${y}년</option>`).join('');
+  ySel.value = curY;
+
+  // 필터 적용
+  const filterB = document.getElementById('expFilterBuilding').value;
+  const filterC = document.getElementById('expFilterCategory').value;
+  const filterY = document.getElementById('expFilterYear').value;
+
+  let filtered = allExpenses.slice();
+  if (filterB) filtered = filtered.filter(e => e.building === filterB);
+  if (filterC) filtered = filtered.filter(e => e.category === filterC);
+  if (filterY) filtered = filtered.filter(e => e.date?.startsWith(filterY));
+  filtered.sort((a,b) => b.date.localeCompare(a.date));
+
+  // 요약 카드
+  const totalAmt = filtered.reduce((s,e) => s + Number(e.amount||0), 0);
+  const statsEl = document.getElementById('expenseStats');
+  // 항목별 집계
+  const catMap = {};
+  filtered.forEach(e => { catMap[e.category] = (catMap[e.category]||0) + Number(e.amount||0); });
+  const topCats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  statsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-label">총 지출</div><div class="stat-value" style="color:var(--danger)">${totalAmt.toLocaleString()}만원</div></div>
+    <div class="stat-card"><div class="stat-label">지출 건수</div><div class="stat-value">${filtered.length}건</div></div>
+    ${topCats.map(([cat,amt])=>`<div class="stat-card"><div class="stat-label">${cat}</div><div class="stat-value" style="font-size:16px">${amt.toLocaleString()}만원</div></div>`).join('')}
+  `;
+
+  // 총합 라벨
+  const totalLabel = document.getElementById('expTotalLabel');
+  if (totalLabel) totalLabel.textContent = `${filtered.length}건 · 합계 ${totalAmt.toLocaleString()}만원`;
+
+  // 테이블
+  const tbody = document.getElementById('expenseListTbody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>지출 내역이 없습니다.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(e => `
+    <tr>
+      <td>${fmtDate(e.date)}</td>
+      <td>${e.building ? `<span style="font-size:12px;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:10px;">${e.building}</span>` : '<span style="color:var(--gray-400);font-size:12px;">공통</span>'}</td>
+      <td><span class="badge badge-gray" style="width:auto;min-width:60px;">${e.category}</span></td>
+      <td><strong style="color:var(--danger)">${Number(e.amount||0).toLocaleString()}만원</strong></td>
+      <td style="font-size:12px;color:var(--gray-500);">${e.room ? `[${e.room}] ` : ''}${e.memo||'-'}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="openExpenseModal('${e.id}')">수정</button>
+          <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="deleteExpense('${e.id}')">삭제</button></td>
+    </tr>`).join('');
 }
 
 // ============================================================
