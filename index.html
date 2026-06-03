@@ -2338,6 +2338,7 @@ function renderDashboard() {
   `;
 
   // Expiry list
+  const expiring = getData('tenants').filter(t => t.status==='입주' && t.contractEnd && daysUntil(t.contractEnd) <= 90 && daysUntil(t.contractEnd) >= 0);
   document.getElementById('dashExpiryList').innerHTML = expiring.length === 0
     ? '<div class="empty-state"><div class="empty-icon">✅</div><p>90일 내 만료 예정 계약 없음</p></div>'
     : expiring.map(t => {
