@@ -5400,36 +5400,19 @@ function renderExpensesPage() {
 // ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   const dashDateEl = document.getElementById('dashDate');
   if (dashDateEl) dashDateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
-  // 인증 시스템 초기화 (소스코드 기준 admin 계정 항상 보장)
+  // admin 계정 항상 보장
   initAuthSystem();
 
-  // 저장된 세션 복원 시도
-  try {
-    const saved = localStorage.getItem(SESSION_KEY);
-    if (saved) {
-      _currentSession = JSON.parse(saved);
-      showApp();
-      return;
-    }
-  } catch {}
-
-  // 세션 없으면 admin 자동 로그인 (소스코드 비밀번호 기준)
+  // 무조건 admin으로 자동 로그인
   const users = getUsers();
   const admin = users.find(u => u.id === 'admin');
-  if (admin) {
-    const inputHash = simpleHash(admin.salt + ':' + ADMIN_DEFAULT_PW);
-    if (inputHash === admin.hash) {
-      completeLogin(admin);
-      return;
-    }
-  }
-
-  // 자동 로그인 실패 시 로그인 화면 표시
-  document.getElementById('loginOverlay').classList.remove('hidden');
+  _currentSession = { userId: admin ? admin.id : 'admin', name: admin ? admin.name : '관리자', role: 'admin' };
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch {}
+  showApp();
 });
 
 // 외부 클릭으로 팝업 닫기 비활성화 (사용자 요청)
