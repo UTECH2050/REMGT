@@ -4373,9 +4373,9 @@ function renderPaymentTable() {
       <td>${getTenantDong(t.building, t.room)}</td>
       <td><strong>${fmtRoom(t.room)}</strong></td>
       <td>${t.name}</td>
-      <td>${Number(t.rent||0)>0?fmtMoney(t.rent):'<span style="color:var(--gray-300)">-</span>'}</td>
-      <td>${Number(t.management||0)>0?fmtMoney(t.management):'<span style="color:var(--gray-300)">-</span>'}</td>
-      <td><strong>${fmtMoney(total)}</strong></td>
+      <td>${Number(t.rent||0)>0?Number(t.rent).toLocaleString():'<span style="color:var(--gray-300)">-</span>'}</td>
+      <td>${Number(t.management||0)>0?Number(t.management).toLocaleString():'<span style="color:var(--gray-300)">-</span>'}</td>
+      <td><strong>${Number(total||0).toLocaleString()}</strong></td>
       <td style="text-align:center;">${rentCell}</td>
       <td style="text-align:center;">${mgmtCell}</td>
       <td>${p.paidDate ? fmtDate(p.paidDate) : '-'}</td>
