@@ -2281,7 +2281,7 @@ function renderDashboard() {
   document.getElementById('dashPaymentSummary').innerHTML = `
     <div style="display:flex;justify-content:space-between;margin-bottom:12px">
       <span style="font-size:28px;font-weight:800;color:var(--primary)">${rate}%</span>
-      <span style="font-size:13px;color:var(--gray-500)">${paidAmt.toLocaleString()} / ${totalAmt.toLocaleString()} 만원</span>
+      <span style="font-size:13px;color:var(--gray-500);margin-left:16px;">${paidAmt.toLocaleString()} / ${totalAmt.toLocaleString()} 만원</span>
     </div>
     <div class="progress-bar" style="height:12px;margin-bottom:16px">
       <div class="progress-fill" style="background:var(--primary);width:${rate}%"></div>
@@ -2292,7 +2292,6 @@ function renderDashboard() {
         const room = (prop?.rooms||[]).find(r=>String(r.roomNo)===String(t.room));
         const dong = room?.dong || '';
         const hosu = room?.hosu || fmtRoom(t.room);
-        const totalAmt = Number(t.rent||0)+Number(t.management||0);
         return `<div style="display:flex;align-items:center;font-size:12.5px;padding:6px 4px;border-bottom:1px solid var(--gray-100);gap:8px;">
           <span class="badge ${allPaid?'badge-success':'badge-danger'}" style="width:auto;min-width:40px;flex-shrink:0;">${allPaid?'납부':'미납'}</span>
           <span style="color:var(--gray-600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
@@ -2300,7 +2299,7 @@ function renderDashboard() {
             ${dong?`<span style="color:var(--gray-400);margin:0 3px;">·</span>${dong}동`:''}
             <span style="color:var(--gray-400);margin:0 3px;">·</span>${hosu}호
             <span style="color:var(--gray-400);margin:0 4px;">|</span>${t.name}
-            ${totalAmt>0?`<span style="color:var(--gray-400);margin:0 4px;">|</span><span style="color:var(--gray-700);font-weight:600;">${totalAmt.toLocaleString()}만</span>`:''}
+
           </span>
         </div>`;
       };
