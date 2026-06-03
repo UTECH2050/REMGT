@@ -124,8 +124,18 @@ function verifyRecoveryAnswer(answer) {
   return sha256sync(answer.toLowerCase().trim()) === r.answerHash;
 }
 
-// 시스템 초기화 (호환성용)
-function initAuthSystem() {}
+// 시스템 초기화: admin 계정이 없으면 자동 생성
+function initAuthSystem() {
+  const users = getUsers();
+  if (!users.find(u => u.id === 'admin')) {
+    users.push({
+      id: 'admin', name: '관리자', role: 'admin',
+      email: '', createdAt: new Date().toISOString().slice(0,10),
+      mustChangePassword: false
+    });
+    saveUsers(users);
+  }
+}
 
 // ── 로그인 ───────────────────────────────────────────────────────────────────
 function doLogin() {
