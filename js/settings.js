@@ -36,19 +36,13 @@ function renderSettings() {
         </div>
         <!-- 보안 질문 -->
         <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:20px;">
-          <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:6px;">❓ 보안 질문 설정</div>
-          <div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">${qStatus}</div>
-          <div id="sqError" style="display:none;font-size:12px;padding:8px 12px;border-radius:6px;margin-bottom:8px;"></div>
-          <select id="sqQuestion" style="width:100%;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;margin-bottom:6px;box-sizing:border-box;">
-            <option>어머니의 성함은?</option>
-            <option>태어난 도시는?</option>
-            <option>첫 번째 반려동물 이름은?</option>
-            <option>초등학교 이름은?</option>
-            <option>좋아하는 음식은?</option>
-          </select>
-          <input type="text" id="sqAnswer" placeholder="답변 입력 (대소문자 무시)"
-            style="width:100%;padding:8px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;margin-bottom:10px;box-sizing:border-box;">
-          <button class="btn btn-primary" onclick="doSaveRecovery()" style="width:100%;">보안 질문 저장</button>
+          <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:8px;">❓ 보안 질문</div>
+          <div style="font-size:12px;color:var(--gray-500);margin-bottom:16px;line-height:1.6;">
+            비밀번호를 잊어버렸을 때 본인 확인에 사용됩니다.<br>${qStatus}
+          </div>
+          <button class="btn btn-outline" onclick="openSecurityQuestionModal()" style="width:100%;">
+            ${r ? '🔄 보안 질문 변경' : '➕ 보안 질문 등록'}
+          </button>
         </div>
       </div>`;
   }
@@ -82,6 +76,31 @@ function renderSettings() {
       </td>
     </tr>`;
   }).join('');
+}
+
+// 보안 질문 모달
+function openSecurityQuestionModal() {
+  const r = getRecovery();
+  const statusEl = document.getElementById('sqModalStatus');
+  if (statusEl) statusEl.textContent = r ? '현재 질문: ' + r.question : '보안 질문이 등록되지 않았습니다.';
+  const errEl = document.getElementById('sqModalError');
+  if (errEl) errEl.style.display = 'none';
+  const ansEl = document.getElementById('sqModalAnswer');
+  if (ansEl) ansEl.value = '';
+  openModal('securityQuestionModal');
+}
+
+function doSaveRecoveryModal() {
+  const q   = document.getElementById('sqModalQuestion')?.value || '';
+  const ans = document.getElementById('sqModalAnswer')?.value || '';
+  const errEl = document.getElementById('sqModalError');
+  if (!ans.trim()) {
+    if (errEl) { errEl.textContent='답변을 입력해주세요.'; errEl.style.display='block'; } return;
+  }
+  saveRecovery(q, ans);
+  closeModal('securityQuestionModal');
+  showToast('✅ 보안 질문이 저장됐습니다.');
+  renderSettings();
 }
 
 // 계정 수정 모달 열기
