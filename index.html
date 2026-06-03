@@ -5020,15 +5020,25 @@ function _doEvict(id, extraNote) {
 // ============================================================
 function renderAnalytics() {
   const yearSel = document.getElementById('analyticsYear');
-  if (yearSel.options.length === 0) {
-    const y = new Date().getFullYear();
-    for (let i = y - 2; i <= y + 1; i++) {
-      const o = document.createElement('option');
-      o.value = i; o.textContent = i + '년';
-      if (i === y) o.selected = true;
-      yearSel.appendChild(o);
-    }
+  const curY = new Date().getFullYear();
+  // 실제 데이터 기반 연도 범위 계산
+  const allPayments = getData('payments');
+  const allExpenses = getData('expenses');
+  const allTenants  = getData('tenants');
+  const usedYears = new Set([curY]);
+  allPayments.forEach(p => { if (p.yearMonth) usedYears.add(parseInt(p.yearMonth.slice(0,4))); });
+  allExpenses.forEach(e => { if (e.date) usedYears.add(parseInt(e.date.slice(0,4))); });
+  allTenants.forEach(t => { if (t.startDate) usedYears.add(parseInt(t.startDate.slice(0,4))); });
+  const minY = Math.min(...usedYears);
+  const maxY = curY; // 손익분석은 현재년도까지
+  const prevVal = yearSel.value ? Number(yearSel.value) : curY;
+  yearSel.innerHTML = '';
+  for (let i = maxY; i >= minY; i--) {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = i + '년';
+    yearSel.appendChild(o);
   }
+  yearSel.value = usedYears.has(prevVal) ? prevVal : curY;
   const year = Number(yearSel.value);
   const tenants = getData('tenants').filter(t => t.status==='입주' && t.name);
   const payments = getData('payments');
