@@ -2347,17 +2347,37 @@ function renderDashboard() {
         </div>`;
       }).join('');
 
-  // Room grid
-  const allRooms = [...new Set(tenants.map(t=>t.room))].sort();
-  document.getElementById('dashRoomGrid').innerHTML = tenants.sort((a,b)=>a.room.localeCompare(b.room,undefined,{numeric:true})).map(t => {
-    const vacant = t.status === '공실';
-    const exp = t.contractEnd && daysUntil(t.contractEnd) <= 90 && daysUntil(t.contractEnd) >= 0;
-    return `<div style="background:${vacant?'var(--gray-100)':exp?'var(--warning-light)':'var(--success-light)'};border:1px solid ${vacant?'var(--gray-200)':exp?'#fde68a':'#bbf7d0'};border-radius:8px;padding:12px;text-align:center;cursor:pointer" onclick="navigate('tenants')">
-      <div style="font-size:13px;font-weight:700;color:${vacant?'var(--gray-400)':'var(--gray-800)'}">${fmtRoom(t.room)}</div>
-      <div style="font-size:11px;color:${vacant?'var(--gray-400)':'var(--gray-600)'};margin-top:2px">${vacant?'공실':t.name}</div>
-      ${!vacant?`<div style="font-size:11px;color:var(--gray-500);margin-top:2px">${Number(t.rent||0)+Number(t.management||0)}만</div>`:''}
-    </div>`;
-  }).join('');
+  // Room grid — properties 등록 호실 기준 (공실 포함)
+  const props = getData('properties');
+  const roomCards = [];
+  props.forEach(p => {
+    (p.rooms || []).forEach(r => {
+      const t = tenants.find(x => x.building === p.name && String(x.room) === String(r.roomNo) && x.status === '입주' && x.name);
+      const dong = r.dong || '';
+      const label = (dong ? dong + '/' : '') + fmtRoom(r.roomNo);
+      const sortKey = (p.name||'') + '|' + (dong||'') + '|' + String(r.roomNo||'');
+      if (t) {
+        const exp = t.contractEnd && daysUntil(t.contractEnd) <= 90 && daysUntil(t.contractEnd) >= 0;
+        roomCards.push({ sortKey, html: `<div style="background:${exp?'var(--warning-light)':'var(--success-light)'};border:1px solid ${exp?'#fde68a':'#bbf7d0'};border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;" onclick="navigate('tenants')">
+          <div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--gray-800);">${label}</div>
+          <div style="font-size:11px;color:var(--gray-600);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
+          <div style="font-size:11px;color:var(--gray-500);margin-top:1px;">${Number(t.rent||0)+Number(t.management||0)}만</div>
+        </div>` });
+      } else {
+        roomCards.push({ sortKey, html: `<div style="background:var(--gray-100);border:1px solid var(--gray-200);border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;" onclick="navigate('tenants')">
+          <div style="font-size:11px;color:var(--gray-400);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--gray-400);">${label}</div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:2px;">공실</div>
+        </div>` });
+      }
+    });
+  });
+  roomCards.sort((a,b) => a.sortKey.localeCompare(b.sortKey, 'ko', {numeric:true}));
+  const gridEl = document.getElementById('dashRoomGrid');
+  gridEl.innerHTML = roomCards.length
+    ? roomCards.map(c=>c.html).join('')
+    : '<div style="color:var(--gray-400);font-size:13px;padding:12px;">등록된 호실이 없습니다.</div>';
 }
 
 // ============================================================
