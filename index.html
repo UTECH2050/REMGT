@@ -370,23 +370,15 @@
   <div class="auth-card">
     <div class="auth-logo">🏢</div>
     <div class="auth-title">부동산 임대차 관리 시스템</div>
-    <div class="auth-sub">계정 정보를 입력하여 로그인하세요</div>
+    <div class="auth-sub">아이디를 입력하세요</div>
     <div class="auth-error" id="loginError"></div>
     <div class="auth-field">
-      <label>아이디 (이메일)</label>
-      <input type="text" id="loginId" placeholder="아이디를 입력하세요" autocomplete="username" onkeydown="if(event.key==='Enter') doLogin()">
+      <label>아이디</label>
+      <input type="text" id="loginId" placeholder="admin" autocomplete="username"
+        onkeydown="if(event.key==='Enter') doLogin()"
+        oninput="this.value=this.value.toLowerCase().trim()">
     </div>
-    <div class="auth-field">
-      <label>비밀번호</label>
-      <input type="password" id="loginPw" placeholder="비밀번호를 입력하세요" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
-    </div>
-    <button class="auth-btn" onclick="doLogin()">🔐 로그인</button>
-    <div style="text-align:center;margin-top:14px;">
-      <a href="#" style="font-size:12px;color:#6b7280;text-decoration:underline;" onclick="toggleEmailReset(event)">비밀번호를 잊으셨나요?</a>
-    </div>
-    <div style="text-align:center;margin-top:10px;">
-      <a href="#" style="font-size:11px;color:#d1d5db;text-decoration:none;" onclick="emergencyResetAdmin(event)">관리자 계정 초기화</a>
-    </div>
+    <button class="auth-btn" onclick="doLogin()">🔐 입장</button>
     <!-- 이메일 인증 비밀번호 재설정 패널 -->
     <div id="emailResetPanel" style="display:none;margin-top:16px;padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
       <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;">🔑 비밀번호 재설정</div>
@@ -1765,27 +1757,27 @@ function emergencyResetAdmin(e) {
   errEl.textContent = '✅ 관리자 계정이 초기화됐습니다. 비밀번호: admin1522';
 }
 
-async function doLogin() {
-  const id = document.getElementById('loginId').value.trim();
-  const pw = document.getElementById('loginPw').value;
+function doLogin() {
+  const id = document.getElementById('loginId').value.trim().toLowerCase();
   const errEl = document.getElementById('loginError');
   errEl.style.display = 'none';
-  if (!id) { showAuthError(errEl, '아이디를 입력해주세요.'); return; }
-  if (!pw) { showAuthError(errEl, '비밀번호를 입력해주세요.'); return; }
-  const users = getUsers();
-  const user = users.find(u => u.id === id);
-  if (!user) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
-  const hash = await sha256(user.salt + ':' + pw);
-  if (hash !== user.hash) { showAuthError(errEl, '아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
-  // 로그인 성공
-  if (user.mustChangePassword) {
-    sessionStorage.setItem('remgt_pending_user', user.id);
-    document.getElementById('loginOverlay').classList.add('hidden');
-    document.getElementById('changePwOverlay').classList.remove('hidden');
+  if (!id) { errEl.textContent = '아이디를 입력해주세요.'; errEl.style.display = 'block'; return; }
+  // admin 입력 시 바로 진입
+  if (id === 'admin') {
+    initAuthSystem();
+    const users = getUsers();
+    const user = users.find(u => u.id === 'admin') || { id:'admin', name:'관리자', role:'admin' };
+    completeLogin(user);
     return;
   }
-  completeLogin(user);
+  // 등록된 다른 계정 확인 (비밀번호 없이 ID만으로)
+  const users = getUsers();
+  const user = users.find(u => u.id === id);
+  if (user) { completeLogin(user); return; }
+  errEl.textContent = '등록되지 않은 아이디입니다.';
+  errEl.style.display = 'block';
 }
+
 
 async function doChangePassword() {
   const current = document.getElementById('cpCurrent').value;
@@ -5404,15 +5396,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const dashDateEl = document.getElementById('dashDate');
   if (dashDateEl) dashDateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
-  // admin 계정 항상 보장
+  // admin 계정 보장
   initAuthSystem();
 
-  // 무조건 admin으로 자동 로그인
-  const users = getUsers();
-  const admin = users.find(u => u.id === 'admin');
-  _currentSession = { userId: admin ? admin.id : 'admin', name: admin ? admin.name : '관리자', role: 'admin' };
-  try { localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch {}
-  showApp();
+  // 저장된 세션 있으면 바로 진입
+  try {
+    const saved = localStorage.getItem(SESSION_KEY);
+    if (saved) {
+      _currentSession = JSON.parse(saved);
+      if (_currentSession && _currentSession.userId) { showApp(); return; }
+    }
+  } catch {}
+
+  // 세션 없으면 로그인 화면 표시
+  document.getElementById('loginOverlay').classList.remove('hidden');
 });
 
 // 외부 클릭으로 팝업 닫기 비활성화 (사용자 요청)
