@@ -78,14 +78,21 @@ function openSecurityQModal() {
     else { alert('모달을 찾을 수 없습니다. (securityQModal)'); }
   } catch(err) { alert('오류: ' + err.message); }
 }
+function closeSecurityQModal() {
+  const ov = document.getElementById('securityQModal');
+  if (ov) { ov.classList.remove('open'); ov.style.display = 'none'; }
+}
+
 function doSaveRecoveryModal() {
   const q   = document.getElementById('sqModalQuestion')?.value || '';
   const ans = (document.getElementById('sqModalAnswer')?.value || '').trim();
   const e   = document.getElementById('sqModalError');
-  if (!ans) { if(e){e.textContent='답변을 입력해주세요.';e.style.display='block';} return; }
+  if (!ans) {
+    if (e) { e.textContent = '답변을 입력해주세요.'; e.style.display = 'block'; }
+    return;
+  }
   if (typeof saveRecovery === 'function') saveRecovery(q, ans);
-  const ov = document.getElementById('securityQModal');
-  if (ov) { ov.classList.remove('open'); ov.style.display = 'none'; }
+  closeSecurityQModal();
   if (typeof showToast === 'function') showToast('✅ 보안 질문이 저장됐습니다.');
   if (typeof renderSettings === 'function') renderSettings();
 }
