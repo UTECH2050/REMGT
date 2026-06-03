@@ -5404,10 +5404,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const dashDateEl = document.getElementById('dashDate');
   if (dashDateEl) dashDateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
-  // 인증 시스템 초기화 (admin 계정 최초 생성)
+  // 인증 시스템 초기화 (소스코드 기준 admin 계정 항상 보장)
   initAuthSystem();
 
-  // 저장된 세션 복원
+  // 저장된 세션 복원 시도
   try {
     const saved = localStorage.getItem(SESSION_KEY);
     if (saved) {
@@ -5417,7 +5417,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch {}
 
-  // 세션 없으면 로그인 화면
+  // 세션 없으면 admin 자동 로그인 (소스코드 비밀번호 기준)
+  const users = getUsers();
+  const admin = users.find(u => u.id === 'admin');
+  if (admin) {
+    const inputHash = simpleHash(admin.salt + ':' + ADMIN_DEFAULT_PW);
+    if (inputHash === admin.hash) {
+      completeLogin(admin);
+      return;
+    }
+  }
+
+  // 자동 로그인 실패 시 로그인 화면 표시
   document.getElementById('loginOverlay').classList.remove('hidden');
 });
 
