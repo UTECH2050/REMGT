@@ -2337,25 +2337,33 @@ function renderDashboard() {
       const t = tenants.find(x => x.building === p.name && String(x.room) === String(r.roomNo) && x.status === '입주' && x.name);
       const dong = r.dong || '';
       const label = (dong ? dong + '/' : '') + fmtRoom(r.roomNo);
-      const sortKey = (p.name||'') + '|' + (dong||'') + '|' + String(r.roomNo||'');
+      // 정렬 우선순위: 0=계약임박, 1=임대중, 2=공실
+      const exp = t && t.contractEnd && daysUntil(t.contractEnd) <= 90 && daysUntil(t.contractEnd) >= 0;
+      const statusOrder = t ? (exp ? 0 : 1) : 2;
+      const roomSortKey = String(statusOrder) + '|' + (p.name||'') + '|' + (dong||'') + '|' + String(r.roomNo||'');
+
       if (t) {
-        const exp = t.contractEnd && daysUntil(t.contractEnd) <= 90 && daysUntil(t.contractEnd) >= 0;
-        roomCards.push({ sortKey, html: `<div style="background:${exp?'var(--warning-light)':'var(--success-light)'};border:1px solid ${exp?'#fde68a':'#bbf7d0'};border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;" onclick="navigate('tenants')">
-          <div style="font-size:11px;color:var(--gray-500);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+        roomCards.push({ sortKey: roomSortKey, statusOrder, html: `<div style="background:${exp?'var(--warning-light)':'var(--success-light)'};border:1px solid ${exp?'#fde68a':'#bbf7d0'};border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;" onclick="navigate('tenants')">
+          <div style="font-size:10px;font-weight:700;color:${exp?'#b45309':'#16a34a'};margin-bottom:2px;">${exp?'⚠️ 계약임박':'● 임대중'}</div>
+          <div style="font-size:11px;color:var(--gray-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
           <div style="font-size:13px;font-weight:700;color:var(--gray-800);">${label}</div>
           <div style="font-size:11px;color:var(--gray-600);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
           <div style="font-size:11px;color:var(--gray-500);margin-top:1px;">${Number(t.rent||0)+Number(t.management||0)}만</div>
         </div>` });
       } else {
-        roomCards.push({ sortKey, html: `<div style="background:var(--gray-100);border:1px solid var(--gray-200);border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;" onclick="navigate('tenants')">
-          <div style="font-size:11px;color:var(--gray-400);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+        roomCards.push({ sortKey: roomSortKey, statusOrder, html: `<div style="background:var(--gray-100);border:1px solid var(--gray-200);border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;" onclick="navigate('tenants')">
+          <div style="font-size:10px;font-weight:700;color:var(--gray-400);margin-bottom:2px;">○ 공실</div>
+          <div style="font-size:11px;color:var(--gray-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
           <div style="font-size:13px;font-weight:700;color:var(--gray-400);">${label}</div>
-          <div style="font-size:11px;color:var(--gray-400);margin-top:2px;">공실</div>
         </div>` });
       }
     });
   });
-  roomCards.sort((a,b) => a.sortKey.localeCompare(b.sortKey, 'ko', {numeric:true}));
+  // 계약임박 → 임대중 → 공실 순 정렬, 같은 상태 내에서는 건물명·동·호수 순
+  roomCards.sort((a,b) => {
+    if (a.statusOrder !== b.statusOrder) return a.statusOrder - b.statusOrder;
+    return a.sortKey.localeCompare(b.sortKey, 'ko', {numeric:true});
+  });
   const gridEl = document.getElementById('dashRoomGrid');
   gridEl.innerHTML = roomCards.length
     ? roomCards.map(c=>c.html).join('')
