@@ -79,13 +79,6 @@ function sha256sync(ascii) {
   return result;
 }
 
-function getUsers() {
-  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch(e) { return []; }
-}
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
 function hashPwd(pwd) {
   return sha256sync(MASTER_SALT + pwd);
 }
