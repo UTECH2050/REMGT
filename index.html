@@ -1752,107 +1752,247 @@
 // ============================================================
 // AUTH SYSTEM
 // ============================================================
-let _currentSession = null; // { userId, name, role }
+// AUTH v2 — 듀얼 해시 (소스 고정 + localStorage) + 보안 질문 복구
+// ============================================================
+let _currentSession = null;
 
-const USERS_KEY  = 'remgt_sys_users';
-const SESSION_KEY = 'remgt_sys_session';
+const USERS_KEY    = 'remgt_sys_users';
+const SESSION_KEY  = 'remgt_sys_session';
+const AUTH_KEY     = 'remgt_auth_v1';
+const RECOVERY_KEY = 'remgt_recovery_v1';
+const MASTER_SALT  = 'remgt_auth_2024_v1';
+// 소스코드 고정 해시: sha256(MASTER_SALT + 'admin1522')
+const MASTER_HASH  = 'ec09c36ed6a142332d69bf425ad07bb65ecee36fb89bd3fefad3ed739a05ae95';
 
-// ── 단순 동기 해시 (crypto.subtle 의존성 제거) ──
-const ADMIN_DEFAULT_PW = 'admin1522'; // 소스코드 고정 관리자 비밀번호
-
-function simpleHash(str) {
-  // 동기 방식 해시: FNV-1a 32bit + base36 인코딩
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = (h * 16777619) >>> 0;
+// ── 순수 JS SHA-256 (동기, crypto.subtle 불필요) ─────────────────────────────
+function sha256sync(ascii) {
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
   }
-  // 두 번 돌려 충돌 감소
-  let h2 = 3735928559;
-  for (let i = str.length - 1; i >= 0; i--) {
-    h2 ^= str.charCodeAt(i);
-    h2 = (h2 * 16777619) >>> 0;
+  const mathPow = Math.pow;
+  const maxWord = mathPow(2, 32);
+  let i, j, result = '';
+  const words = [];
+  const asciiBitLength = ascii.length * 8;
+  let hash = [], k = [];
+  let primeCounter = 0;
+  const isComposite = {};
+  for (let candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+      hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+      k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
+    }
   }
-  return h.toString(36).padStart(7,'0') + h2.toString(36).padStart(7,'0') + btoa(str).replace(/[^a-z0-9]/gi,'').slice(0,8);
-}
-// 하위 호환: async sha256 → sync wrapper (기존 코드에서 await sha256() 호출 유지)
-async function sha256(str) { return simpleHash(str); }
-
-function makeSalt() {
-  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-}
-
-function getUsers() {
-  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch { return []; }
-}
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-// 시스템 초기화: 항상 admin 계정을 소스코드 기준으로 보장
-function initAuthSystem() {
-  let users = getUsers();
-  const adminIdx = users.findIndex(u => u.id === 'admin');
-  const salt = 'remgt_fixed_salt_admin';
-  const hash = simpleHash(salt + ':' + ADMIN_DEFAULT_PW);
-  const adminObj = {
-    id: 'admin', name: '관리자', role: 'admin',
-    email: 'wooyoung.yu@navercorp.com',
-    salt, hash, mustChangePassword: false,
-    createdAt: '2025-01-01'
-  };
-  // admin 계정이 없거나 hash가 맞지 않으면 재설정
-  if (adminIdx < 0) {
-    users.push(adminObj);
-  } else if (users[adminIdx].hash !== hash || !users[adminIdx].salt) {
-    // 기존 admin 유지하되 인증정보만 리셋
-    users[adminIdx] = { ...users[adminIdx], ...adminObj };
+  ascii += '\x80';
+  while (ascii.length % 64 - 56) ascii += '\x00';
+  for (i = 0; i < ascii.length; i++) {
+    j = ascii.charCodeAt(i);
+    if (j >> 8) return '';
+    words[i >> 2] |= j << ((3 - i) % 4) * 8;
   }
-  saveUsers(users);
+  words[words.length] = ((asciiBitLength / maxWord) | 0);
+  words[words.length] = (asciiBitLength);
+  for (j = 0; j < words.length;) {
+    const w = words.slice(j, j += 16);
+    const oldHash = hash.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      const w15 = w[i-15], w2 = w[i-2];
+      const a = hash[0], e = hash[4];
+      const temp1 = hash[7]
+        + (rightRotate(e,6) ^ rightRotate(e,11) ^ rightRotate(e,25))
+        + ((e & hash[5]) ^ (~e & hash[6]))
+        + k[i]
+        + (w[i] = (i<16) ? w[i] : (
+            w[i-16]
+            + (rightRotate(w15,7) ^ rightRotate(w15,18) ^ (w15>>>3))
+            + w[i-7]
+            + (rightRotate(w2,17) ^ rightRotate(w2,19) ^ (w2>>>10))
+          ) | 0);
+      const temp2 = (rightRotate(a,2) ^ rightRotate(a,13) ^ rightRotate(a,22))
+        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+      hash = [(temp1+temp2)|0].concat(hash);
+      hash[4] = (hash[4]+temp1)|0;
+      hash.length = 8;
+    }
+    hash = hash.map((x,i) => (x + oldHash[i]) | 0);
+  }
+  for (i = 0; i < 8; i++) {
+    for (j = 3; j+1; j--) {
+      const b = (hash[i] >> (j*8)) & 255;
+      result += ((b<16)?'0':'') + b.toString(16);
+    }
+  }
+  return result;
 }
 
-// admin 계정 초기화 버튼 (로그인 화면)
-function emergencyResetAdmin(e) {
-  e.preventDefault();
-  initAuthSystem();
-  document.getElementById('loginId').value = 'admin';
-  const errEl = document.getElementById('loginError');
-  errEl.style.display = 'block';
-  errEl.style.background = '#dcfce7';
-  errEl.style.color = '#15803d';
-  errEl.textContent = '✅ 관리자 계정이 초기화됐습니다. 비밀번호: admin1522';
+function hashPwd(pwd) {
+  return sha256sync(MASTER_SALT + pwd);
 }
 
+// 저장된 해시: localStorage 우선, 없으면 소스 고정값
+function getStoredHash() {
+  try {
+    const a = JSON.parse(localStorage.getItem(AUTH_KEY) || '{}');
+    return a.hash || MASTER_HASH;
+  } catch(e) { return MASTER_HASH; }
+}
+
+function verifyPassword(pwd) {
+  return hashPwd(pwd) === getStoredHash();
+}
+
+function savePasswordHash(pwd) {
+  localStorage.setItem(AUTH_KEY, JSON.stringify({
+    hash: hashPwd(pwd), updatedAt: new Date().toISOString()
+  }));
+}
+
+// 보안 질문 저장/검증
+function getRecovery() {
+  try { return JSON.parse(localStorage.getItem(RECOVERY_KEY) || 'null'); } catch(e) { return null; }
+}
+function saveRecovery(question, answer) {
+  localStorage.setItem(RECOVERY_KEY, JSON.stringify({
+    question,
+    answerHash: sha256sync(answer.toLowerCase().trim())
+  }));
+}
+function verifyRecoveryAnswer(answer) {
+  const r = getRecovery();
+  if (!r) return false;
+  return sha256sync(answer.toLowerCase().trim()) === r.answerHash;
+}
+
+// 시스템 초기화 (호환성용)
+function initAuthSystem() {}
+
+// ── 로그인 ───────────────────────────────────────────────────────────────────
 function doLogin() {
-  const idEl = document.getElementById('loginId');
-  const id = (idEl ? idEl.value : '').trim().toLowerCase();
-  if (!id) {
-    const e = document.getElementById('loginError');
-    if (e) { e.textContent='아이디를 입력해주세요.'; e.style.display='block'; }
+  const id  = (document.getElementById('loginId')?.value || '').trim().toLowerCase();
+  const pwd = (document.getElementById('loginPw')?.value || '');
+  const errEl = document.getElementById('loginError');
+  if (errEl) errEl.style.display = 'none';
+
+  if (!id || !pwd) {
+    if (errEl) { errEl.textContent='아이디와 비밀번호를 입력해주세요.'; errEl.style.display='block'; }
     return;
   }
   if (id !== 'admin') {
-    const e = document.getElementById('loginError');
-    if (e) { e.textContent='admin 으로 입력해주세요.'; e.style.display='block'; }
+    if (errEl) { errEl.textContent='등록되지 않은 아이디입니다.'; errEl.style.display='block'; }
     return;
   }
-  // admin → 세션 저장 후 새로고침
-  const session = { userId:'admin', name:'관리자', role:'admin' };
-  localStorage.setItem('remgt_sys_session', JSON.stringify(session));
-  window.location.reload();
+  if (!verifyPassword(pwd)) {
+    if (errEl) { errEl.textContent='비밀번호가 올바르지 않습니다.'; errEl.style.display='block'; }
+    return;
+  }
+  _currentSession = { userId: 'admin', name: '관리자', role: 'admin' };
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch(e) {}
+  document.getElementById('loginOverlay').style.display = 'none';
+  try { seedDemoData(); } catch(e) { console.error(e); }
+  try { updateBadges(); } catch(e) { console.error(e); }
+  try { renderDashboard(); } catch(e) { console.error(e); }
+  // 보안 질문 미설정 시 안내
+  if (!getRecovery()) {
+    setTimeout(() => showToast('⚠️ 비밀번호 복구를 위해 설정 → 보안 질문을 등록해주세요.'), 1500);
+  }
 }
 
+// ── 비밀번호 변경 (설정 페이지) ──────────────────────────────────────────────
+function doChangePwdSettings() {
+  const cur  = document.getElementById('spCurrent')?.value || '';
+  const nw   = document.getElementById('spNew')?.value || '';
+  const conf = document.getElementById('spConfirm')?.value || '';
+  const errEl = document.getElementById('spError');
+  if (errEl) errEl.style.display = 'none';
+
+  if (!cur || !nw || !conf) {
+    if (errEl) { errEl.textContent='모든 항목을 입력해주세요.'; errEl.style.display='block'; } return;
+  }
+  if (!verifyPassword(cur)) {
+    if (errEl) { errEl.textContent='현재 비밀번호가 올바르지 않습니다.'; errEl.style.display='block'; } return;
+  }
+  if (nw.length < 6) {
+    if (errEl) { errEl.textContent='새 비밀번호는 6자 이상이어야 합니다.'; errEl.style.display='block'; } return;
+  }
+  if (nw !== conf) {
+    if (errEl) { errEl.textContent='새 비밀번호가 일치하지 않습니다.'; errEl.style.display='block'; } return;
+  }
+  savePasswordHash(nw);
+  if (errEl) { errEl.style.background='#dcfce7'; errEl.style.color='#15803d'; errEl.textContent='✅ 비밀번호가 변경됐습니다.'; errEl.style.display='block'; }
+  document.getElementById('spCurrent').value='';
+  document.getElementById('spNew').value='';
+  document.getElementById('spConfirm').value='';
+}
+
+// ── 보안 질문 저장 (설정 페이지) ─────────────────────────────────────────────
+function doSaveRecovery() {
+  const q   = document.getElementById('sqQuestion')?.value || '';
+  const ans = document.getElementById('sqAnswer')?.value || '';
+  const errEl = document.getElementById('sqError');
+  if (errEl) errEl.style.display = 'none';
+  if (!q || !ans) {
+    if (errEl) { errEl.textContent='질문과 답변을 모두 입력해주세요.'; errEl.style.display='block'; } return;
+  }
+  saveRecovery(q, ans);
+  if (errEl) { errEl.style.background='#dcfce7'; errEl.style.color='#15803d'; errEl.textContent='✅ 보안 질문이 저장됐습니다.'; errEl.style.display='block'; }
+  document.getElementById('sqAnswer').value='';
+  renderSettings();
+}
+
+// ── 비밀번호 찾기 (로그인 화면) ──────────────────────────────────────────────
+function showRecoveryPanel() {
+  const panel = document.getElementById('recoveryPanel');
+  const r = getRecovery();
+  if (!r) {
+    document.getElementById('recoveryNoSetup').style.display = 'block';
+    document.getElementById('recoveryStep1').style.display = 'none';
+  } else {
+    document.getElementById('recoveryNoSetup').style.display = 'none';
+    document.getElementById('recoveryQuestionText').textContent = r.question;
+    document.getElementById('recoveryStep1').style.display = 'block';
+  }
+  document.getElementById('recoveryStep2').style.display = 'none';
+  document.getElementById('recoveryMsg').style.display = 'none';
+  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function doVerifyRecovery() {
+  const ans = document.getElementById('recoveryAnswer')?.value || '';
+  const msgEl = document.getElementById('recoveryMsg');
+  if (!verifyRecoveryAnswer(ans)) {
+    if (msgEl) { msgEl.style.background='#fee2e2'; msgEl.style.color='#dc2626'; msgEl.textContent='답변이 올바르지 않습니다.'; msgEl.style.display='block'; }
+    return;
+  }
+  document.getElementById('recoveryStep1').style.display = 'none';
+  document.getElementById('recoveryStep2').style.display = 'block';
+  if (msgEl) msgEl.style.display = 'none';
+}
+
+function doRecoveryReset() {
+  const nw   = document.getElementById('recoveryNewPwd')?.value || '';
+  const conf = document.getElementById('recoveryConfirmPwd')?.value || '';
+  const msgEl = document.getElementById('recoveryMsg');
+  if (nw.length < 6) {
+    if (msgEl) { msgEl.style.background='#fee2e2'; msgEl.style.color='#dc2626'; msgEl.textContent='비밀번호는 6자 이상이어야 합니다.'; msgEl.style.display='block'; } return;
+  }
+  if (nw !== conf) {
+    if (msgEl) { msgEl.style.background='#fee2e2'; msgEl.style.color='#dc2626'; msgEl.textContent='비밀번호가 일치하지 않습니다.'; msgEl.style.display='block'; } return;
+  }
+  savePasswordHash(nw);
+  if (msgEl) { msgEl.style.background='#dcfce7'; msgEl.style.color='#15803d'; msgEl.textContent='✅ 비밀번호가 재설정됐습니다. 새 비밀번호로 로그인하세요.'; msgEl.style.display='block'; }
+  setTimeout(() => {
+    document.getElementById('recoveryPanel').style.display = 'none';
+    document.getElementById('loginPw').focus();
+  }, 1800);
+}
 
 function doLogout() {
   _currentSession = null;
   try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
-  sessionStorage.removeItem('remgt_pending_user');
-  const idEl = document.getElementById('loginId');
-  if (idEl) idEl.value = '';
-  const overlay = document.getElementById('loginOverlay');
-  if (overlay) { overlay.style.display = ''; overlay.classList.remove('hidden'); }
-  const cpOverlay = document.getElementById('changePwOverlay');
-  if (cpOverlay) cpOverlay.classList.add('hidden');
+  document.getElementById('loginOverlay').style.display = 'flex';
+  const pwEl = document.getElementById('loginPw');
+  if (pwEl) pwEl.value = '';
 }
 
 function showAuthError(el, msg) {
@@ -5585,30 +5725,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const dashDateEl = document.getElementById('dashDate');
   if (dashDateEl) dashDateEl.textContent = new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
-  // admin 세션 설정
-  _currentSession = { userId: 'admin', name: '관리자', role: 'admin' };
-  try { localStorage.setItem('remgt_sys_session', JSON.stringify(_currentSession)); } catch(e) {}
-
-  // 기존 remgt_tmp_ 데이터를 remgt_u_admin_ 으로 마이그레이션
+  // 기존 remgt_tmp_ 데이터를 remgt_u_admin_ 으로 마이그레이션 (1회)
   const KEYS = ['properties','tenants','payments','contracts','expenses','history'];
   KEYS.forEach(k => {
-    const tmpKey   = 'remgt_tmp_' + k;
-    const adminKey = 'remgt_u_admin_' + k;
+    const tmpKey = 'remgt_tmp_' + k, adminKey = 'remgt_u_admin_' + k;
     try {
-      const tmpData   = localStorage.getItem(tmpKey);
-      const adminData = localStorage.getItem(adminKey);
-      // admin 키에 데이터가 없고 tmp 키에 있으면 마이그레이션
-      if (tmpData && (!adminData || adminData === '[]')) {
-        localStorage.setItem(adminKey, tmpData);
-        console.log('migrated:', k);
-      }
+      const tmpData = localStorage.getItem(tmpKey), adminData = localStorage.getItem(adminKey);
+      if (tmpData && (!adminData || adminData === '[]')) localStorage.setItem(adminKey, tmpData);
     } catch(e) {}
   });
 
-  try { seedDemoData(); } catch(e) { console.error('seed:', e); }
-  try { updateBadges(); } catch(e) { console.error('badges:', e); }
-  try { renderDashboard(); } catch(e) { console.error('dashboard:', e); }
-  try { navigate('dashboard'); } catch(e) { console.error('navigate:', e); }
+  // 세션 복원 또는 로그인 화면 표시
+  let _saved = null;
+  try { _saved = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch(e) {}
+  if (_saved && _saved.userId) {
+    _currentSession = _saved;
+    document.getElementById('loginOverlay').style.display = 'none';
+    try { seedDemoData(); } catch(e) { console.error(e); }
+    try { updateBadges(); } catch(e) { console.error(e); }
+    try { renderDashboard(); } catch(e) { console.error(e); }
+  } else {
+    document.getElementById('loginOverlay').style.display = 'flex';
+  }
 });
 
 // 외부 클릭으로 팝업 닫기 비활성화 (사용자 요청)
