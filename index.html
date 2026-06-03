@@ -786,6 +786,39 @@
         <div class="card-body" id="settingsMyAccount"></div>
       </div>
 
+      <!-- 데이터 백업 / 복구 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">💾 데이터 백업 / 복구</span></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <!-- 백업 -->
+            <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:20px;">
+              <div style="font-size:14px;font-weight:700;color:var(--gray-800);margin-bottom:6px;">📤 데이터 백업</div>
+              <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;line-height:1.6;">
+                현재 PC의 모든 데이터를 JSON 파일로 저장합니다.<br>저장된 파일을 다른 PC에서 복구하세요.
+              </div>
+              <button class="btn btn-primary" onclick="exportData()" style="width:100%;">
+                💾 백업 파일 다운로드
+              </button>
+            </div>
+            <!-- 복구 -->
+            <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:20px;">
+              <div style="font-size:14px;font-weight:700;color:var(--gray-800);margin-bottom:6px;">📥 데이터 복구</div>
+              <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;line-height:1.6;">
+                백업 파일을 불러와 데이터를 복구합니다.<br>⚠️ 현재 데이터는 덮어씌워집니다.
+              </div>
+              <label style="display:block;width:100%;cursor:pointer;">
+                <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importData(this)">
+                <span class="btn btn-outline" style="width:100%;display:block;text-align:center;box-sizing:border-box;">
+                  📂 백업 파일 선택
+                </span>
+              </label>
+            </div>
+          </div>
+          <div id="backupStatus" style="margin-top:12px;font-size:13px;display:none;"></div>
+        </div>
+      </div>
+
       <!-- 계정 관리 -->
       <div class="card">
         <div class="card-header" style="display:flex;align-items:center;">
@@ -3721,6 +3754,70 @@ function saveRegisterTenant() {
 }
 
 // ============================================================
+// ============================================================
+// BACKUP / RESTORE
+// ============================================================
+function exportData() {
+  const prefix = _currentSession ? 'remgt_u_' + _currentSession.userId + '_' : 'remgt_tmp_';
+  const backup = { version: 1, exportedAt: new Date().toISOString(), userId: _currentSession?.userId || 'admin', data: {} };
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(prefix)) {
+      const shortKey = key.replace(prefix, '');
+      try { backup.data[shortKey] = JSON.parse(localStorage.getItem(key)); } catch(e) {}
+    }
+  }
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = 'REMGT_backup_' + date + '.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('백업 파일이 다운로드됐습니다.');
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.data || backup.version !== 1) {
+        showToast('올바른 백업 파일이 아닙니다.', 'error'); return;
+      }
+      const prefix = _currentSession ? 'remgt_u_' + _currentSession.userId + '_' : 'remgt_tmp_';
+      // 기존 데이터 삭제
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(prefix)) keysToRemove.push(k);
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      // 백업 데이터 복원
+      Object.entries(backup.data).forEach(([k, v]) => {
+        localStorage.setItem(prefix + k, JSON.stringify(v));
+      });
+      input.value = '';
+      const statusEl = document.getElementById('backupStatus');
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = '#dcfce7';
+        statusEl.style.color = '#15803d';
+        statusEl.style.padding = '10px 14px';
+        statusEl.style.borderRadius = '8px';
+        const keys = Object.keys(backup.data);
+        statusEl.textContent = '✅ 복구 완료! (' + keys.join(', ') + ') — 페이지를 새로고침합니다.';
+      }
+      setTimeout(() => window.location.reload(), 1500);
+    } catch(err) {
+      showToast('파일 읽기 오류: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
 // SETTINGS PAGE
 // ============================================================
 function renderSettings() {
