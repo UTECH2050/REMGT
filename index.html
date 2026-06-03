@@ -501,7 +501,13 @@
       </div>
       <div class="mt-4">
         <div class="card">
-          <div class="card-header"><span class="card-title">🏠 호실별 현황</span></div>
+          <div class="card-header">
+            <span class="card-title">🏠 호실별 현황</span>
+            <select id="dashRoomBuildingFilter" onchange="renderDashboardRoomGrid()"
+              style="margin-left:auto;font-size:12px;padding:4px 8px;border:1px solid var(--gray-200);border-radius:8px;background:white;color:var(--gray-700);cursor:pointer;">
+              <option value="">전체 건물</option>
+            </select>
+          </div>
           <div class="card-body">
             <div id="dashRoomGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;"></div>
           </div>
@@ -2331,8 +2337,30 @@ function renderDashboard() {
 
   // Room grid — properties 등록 호실 기준 (공실 포함)
   const props = getData('properties');
+  renderDashboardRoomGrid();
+}
+
+function renderDashboardRoomGrid() {
+  const props = getData('properties');
+  const tenants = getData('tenants');
+
+  // 건물 필터 드롭다운 채우기
+  const sel = document.getElementById('dashRoomBuildingFilter');
+  if (sel) {
+    const curVal = sel.value;
+    sel.innerHTML = '<option value="">전체 건물</option>';
+    props.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.name; opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
+    sel.value = curVal;
+  }
+  const filterBuilding = sel ? sel.value : '';
+
   const roomCards = [];
   props.forEach(p => {
+    if (filterBuilding && p.name !== filterBuilding) return;
     (p.rooms || []).forEach(r => {
       const t = tenants.find(x => x.building === p.name && String(x.room) === String(r.roomNo) && x.status === '입주' && x.name);
       const dong = r.dong || '';
@@ -2369,6 +2397,7 @@ function renderDashboard() {
     ? roomCards.map(c=>c.html).join('')
     : '<div style="color:var(--gray-400);font-size:13px;padding:12px;">등록된 호실이 없습니다.</div>';
 }
+
 
 // ============================================================
 // TENANTS
