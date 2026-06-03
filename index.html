@@ -867,8 +867,8 @@
         </button>
         <button onclick="applyImport('merge')"
           style="background:#2563eb;color:#fff;border:none;padding:14px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;text-align:left;">
-          🔀 데이터 병합 복구
-          <div style="font-size:12px;font-weight:400;margin-top:4px;opacity:0.85;">기존 데이터를 유지하면서 백업 데이터를 추가/업데이트합니다.</div>
+          🔀 스마트 병합 복구
+          <div style="font-size:12px;font-weight:400;margin-top:4px;opacity:0.85;">건물명·동·호수 기준으로 중복 제거 후 최신 내용으로 업데이트합니다.</div>
         </button>
       </div>
     </div>
@@ -3805,11 +3805,11 @@ function resetAllData() {
 }
 
 function applyImport(mode) {
-  // mode: 'replace' | 'merge'
   closeModal('importOptionModal');
   const { backup, input } = window._pendingBackup || {};
   if (!backup) return;
   const prefix = _currentSession ? 'remgt_u_' + _currentSession.userId + '_' : 'remgt_tmp_';
+
   if (mode === 'replace') {
     // 기존 데이터 전부 삭제 후 복원
     const keysToRemove = [];
@@ -3821,35 +3821,116 @@ function applyImport(mode) {
     Object.entries(backup.data).forEach(([k, v]) => {
       localStorage.setItem(prefix + k, JSON.stringify(v));
     });
+
   } else {
-    // merge: 배열 데이터는 id 기준 병합, 나머지는 덮어쓰기
+    // ── 스마트 병합: 비즈니스 키 기준으로 중복 방지 ──────────────────────
+
+    // 1. properties: 건물명 기준 병합, rooms는 roomNo 기준
+    if (backup.data.properties) {
+      const existing = JSON.parse(localStorage.getItem(prefix+'properties') || '[]');
+      const merged = [...existing];
+      backup.data.properties.forEach(bp => {
+        const idx = merged.findIndex(p => p.name === bp.name);
+        if (idx >= 0) {
+          // 기존 건물 업데이트 (rooms 병합)
+          const existRooms = merged[idx].rooms || [];
+          const backupRooms = bp.rooms || [];
+          const mergedRooms = [...existRooms];
+          backupRooms.forEach(br => {
+            const ri = mergedRooms.findIndex(r => r.roomNo === br.roomNo);
+            if (ri >= 0) mergedRooms[ri] = { ...mergedRooms[ri], ...br };
+            else mergedRooms.push(br);
+          });
+          merged[idx] = { ...merged[idx], ...bp, rooms: mergedRooms };
+        } else {
+          merged.push(bp);
+        }
+      });
+      localStorage.setItem(prefix+'properties', JSON.stringify(merged));
+    }
+
+    // 2. tenants: 건물명 + room(동+호수) 기준 병합
+    if (backup.data.tenants) {
+      const existing = JSON.parse(localStorage.getItem(prefix+'tenants') || '[]');
+      const merged = [...existing];
+      backup.data.tenants.forEach(bt => {
+        const idx = merged.findIndex(t =>
+          t.building === bt.building && String(t.room) === String(bt.room)
+        );
+        if (idx >= 0) merged[idx] = { ...merged[idx], ...bt, id: merged[idx].id }; // id 유지
+        else merged.push(bt);
+      });
+      localStorage.setItem(prefix+'tenants', JSON.stringify(merged));
+    }
+
+    // 3. payments: 로컬 임차인(건물+호수 매칭) → yearMonth 기준 병합
+    if (backup.data.payments && backup.data.tenants) {
+      const localTenants  = JSON.parse(localStorage.getItem(prefix+'tenants') || '[]');
+      const backupTenants = backup.data.tenants;
+      const existing = JSON.parse(localStorage.getItem(prefix+'payments') || '[]');
+      const merged = [...existing];
+      backup.data.payments.forEach(bp => {
+        // 백업 수납의 임차인을 찾아 건물+호수 파악
+        const bTenant = backupTenants.find(t => t.id === bp.tenantId);
+        if (!bTenant) return;
+        // 로컬에서 동일 건물+호수 임차인 찾기
+        const localTenant = localTenants.find(t =>
+          t.building === bTenant.building && String(t.room) === String(bTenant.room)
+        );
+        const targetTenantId = localTenant ? localTenant.id : bp.tenantId;
+        const idx = merged.findIndex(p =>
+          p.tenantId === targetTenantId && p.yearMonth === bp.yearMonth
+        );
+        const newPayment = { ...bp, tenantId: targetTenantId };
+        if (idx >= 0) merged[idx] = { ...merged[idx], ...newPayment, id: merged[idx].id };
+        else merged.push({ ...newPayment, id: newPayment.id || (Date.now().toString(36)+Math.random().toString(36).slice(2)) });
+      });
+      localStorage.setItem(prefix+'payments', JSON.stringify(merged));
+    }
+
+    // 4. expenses: 날짜 + 건물 + 항목 + 금액 기준 병합
+    if (backup.data.expenses) {
+      const existing = JSON.parse(localStorage.getItem(prefix+'expenses') || '[]');
+      const merged = [...existing];
+      backup.data.expenses.forEach(be => {
+        const idx = merged.findIndex(e =>
+          e.date === be.date &&
+          (e.building||'') === (be.building||'') &&
+          e.category === be.category &&
+          Number(e.amount) === Number(be.amount)
+        );
+        if (idx >= 0) merged[idx] = { ...merged[idx], ...be, id: merged[idx].id };
+        else merged.push(be);
+      });
+      localStorage.setItem(prefix+'expenses', JSON.stringify(merged));
+    }
+
+    // 5. 나머지 키 (history 등) — id 기준 단순 병합
+    const handled = new Set(['properties','tenants','payments','expenses']);
     Object.entries(backup.data).forEach(([k, v]) => {
-      const fullKey = prefix + k;
+      if (handled.has(k)) return;
       try {
-        const existing = JSON.parse(localStorage.getItem(fullKey) || '[]');
+        const existing = JSON.parse(localStorage.getItem(prefix+k) || '[]');
         if (Array.isArray(existing) && Array.isArray(v)) {
-          // id 기준 병합 (백업 데이터 우선)
           const merged = [...existing];
           v.forEach(item => {
             const idx = merged.findIndex(x => x.id && x.id === item.id);
-            if (idx >= 0) merged[idx] = item;
-            else merged.push(item);
+            if (idx >= 0) merged[idx] = item; else merged.push(item);
           });
-          localStorage.setItem(fullKey, JSON.stringify(merged));
+          localStorage.setItem(prefix+k, JSON.stringify(merged));
         } else {
-          localStorage.setItem(fullKey, JSON.stringify(v));
+          localStorage.setItem(prefix+k, JSON.stringify(v));
         }
-      } catch(e) {
-        localStorage.setItem(fullKey, JSON.stringify(v));
-      }
+      } catch(e) {}
     });
   }
+
   if (input) input.value = '';
   window._pendingBackup = null;
   const statusEl = document.getElementById('backupStatus');
   if (statusEl) {
     statusEl.style.cssText = 'display:block;background:#dcfce7;color:#15803d;padding:10px 14px;border-radius:8px;font-size:13px;';
-    statusEl.textContent = '✅ ' + (mode==='replace'?'완전 교체':'데이터 병합') + ' 복구 완료! 페이지를 새로고침합니다.';
+    statusEl.textContent = '✅ ' + (mode==='replace'?'완전 교체':'스마트 병합') + ' 복구 완료! 페이지를 새로고침합니다.';
   }
   setTimeout(() => window.location.reload(), 1500);
 }
