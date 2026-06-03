@@ -501,10 +501,10 @@
       </div>
       <div class="mt-4">
         <div class="card">
-          <div class="card-header">
-            <span class="card-title">🏠 호실별 현황</span>
+          <div class="card-header" style="flex-wrap:nowrap;gap:8px;">
+            <span class="card-title" style="white-space:nowrap;flex-shrink:0;">🏠 호실별 현황</span>
             <select id="dashRoomBuildingFilter" onchange="renderDashboardRoomGrid()"
-              style="margin-left:auto;font-size:12px;padding:4px 8px;border:1px solid var(--gray-200);border-radius:8px;background:white;color:var(--gray-700);cursor:pointer;">
+              style="margin-left:auto;font-size:12px;padding:4px 8px;border:1px solid var(--gray-200);border-radius:8px;background:white;color:var(--gray-700);cursor:pointer;max-width:160px;min-width:80px;width:auto;">
               <option value="">전체 건물</option>
             </select>
           </div>
