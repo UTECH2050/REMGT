@@ -495,15 +495,13 @@
         <div class="card-header"><span class="card-title">📄 만료 임박 계약</span></div>
         <div class="card-body" id="dashExpiryList"></div>
       </div>
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">📅 이번 달 수납 현황</span>
-            <span id="dashMonth" style="font-size:12px;color:var(--gray-500)"></span>
-          </div>
-          <div class="card-body">
-            <div id="dashPaymentSummary"></div>
-          </div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <span class="card-title">📅 이번 달 수납 현황</span>
+          <span id="dashMonth" style="font-size:12px;color:var(--gray-500)"></span>
+        </div>
+        <div class="card-body">
+          <div id="dashPaymentSummary"></div>
         </div>
       </div>
       <div class="mt-4">
@@ -2311,8 +2309,8 @@ function renderDashboard() {
     <div class="progress-bar" style="height:12px;margin-bottom:16px">
       <div class="progress-fill" style="background:var(--primary);width:${rate}%"></div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:6px">
-      ${active.slice(0,8).map(t => {
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:4px 20px;">
+      ${active.map(t => {
         const p = payments.find(x=>x.tenantId===t.id);
         const rentPaid = p && p.rentPaid;
         const mgmtPaid = p && p.mgmtPaid;
@@ -2324,16 +2322,15 @@ function renderDashboard() {
         const dong = room?.dong || '';
         const hosu = room?.hosu || fmtRoom(t.room);
         return `<div style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--gray-100);">
-          <span style="color:var(--gray-600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%;">
+          <span style="color:var(--gray-600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
             <span style="font-weight:600;color:var(--gray-800);">${t.building||''}</span>
             ${dong?`<span style="color:var(--gray-400);margin:0 2px;">·</span>${dong}동`:''}
             <span style="color:var(--gray-400);margin:0 2px;">·</span>${hosu}호
             <span style="color:var(--gray-400);margin:0 3px;">|</span>${t.name}
           </span>
-          <span class="badge ${allPaid?'badge-success':'badge-danger'}" style="width:auto;min-width:40px;flex-shrink:0;">${allPaid?'납부':'미납'}</span>
+          <span class="badge ${allPaid?'badge-success':'badge-danger'}" style="width:auto;min-width:40px;flex-shrink:0;margin-left:8px;">${allPaid?'납부':'미납'}</span>
         </div>`;
       }).join('')}
-      ${active.length > 8 ? `<div style="font-size:12px;color:var(--gray-400);text-align:center;padding-top:4px;">외 ${active.length-8}건...</div>` : ''}
     </div>
   `;
 
