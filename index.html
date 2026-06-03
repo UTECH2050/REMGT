@@ -2309,14 +2309,8 @@ function renderDashboard() {
     <div class="progress-bar" style="height:12px;margin-bottom:16px">
       <div class="progress-fill" style="background:var(--primary);width:${rate}%"></div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:4px 20px;">
-      ${active.map(t => {
-        const p = payments.find(x=>x.tenantId===t.id);
-        const rentPaid = p && p.rentPaid;
-        const mgmtPaid = p && p.mgmtPaid;
-        const hasRent = Number(t.rent||0) > 0;
-        const hasMgmt = Number(t.management||0) > 0;
-        const allPaid = (!hasRent||rentPaid) && (!hasMgmt||mgmtPaid);
+    ${(() => {
+      const mkRow = (t, allPaid) => {
         const prop = getData('properties').find(x=>x.name===t.building);
         const room = (prop?.rooms||[]).find(r=>String(r.roomNo)===String(t.room));
         const dong = room?.dong || '';
@@ -2330,8 +2324,14 @@ function renderDashboard() {
             <span style="color:var(--gray-400);margin:0 4px;">|</span>${t.name}
           </span>
         </div>`;
-      }).join('')}
-    </div>
+      };
+      const paidList   = active.filter(t => { const p=payments.find(x=>x.tenantId===t.id); const hasR=Number(t.rent||0)>0; const hasM=Number(t.management||0)>0; return (!hasR||(p&&p.rentPaid))&&(!hasM||(p&&p.mgmtPaid)); });
+      const unpaidList = active.filter(t => { const p=payments.find(x=>x.tenantId===t.id); const hasR=Number(t.rent||0)>0; const hasM=Number(t.management||0)>0; return !( (!hasR||(p&&p.rentPaid))&&(!hasM||(p&&p.mgmtPaid)) ); });
+      return (unpaidList.length ? \`<div style="font-size:11.5px;font-weight:700;color:#dc2626;margin:8px 0 2px;letter-spacing:0.03em;">미납 \${unpaidList.length}건</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0 20px;margin-bottom:12px;">\${unpaidList.map(t=>mkRow(t,false)).join('')}</div>\` : '')
+      + (paidList.length ? \`<div style="font-size:11.5px;font-weight:700;color:#16a34a;margin:8px 0 2px;letter-spacing:0.03em;">납부 \${paidList.length}건</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0 20px;">\${paidList.map(t=>mkRow(t,true)).join('')}</div>\` : '');
+    })()}
   `;
 
   // Expiry list
