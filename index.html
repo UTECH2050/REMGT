@@ -608,9 +608,9 @@
                   <th>동</th>
                   <th><button class="sort-btn" onclick="sortPayments('room')">호수 <span class="sort-icon" id="psi-room">⇅</span></button></th>
                   <th><button class="sort-btn" onclick="sortPayments('name')">임차인명 <span class="sort-icon" id="psi-name">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortPayments('rent')">월세 <span class="sort-icon" id="psi-rent">⇅</span></button></th>
-                  <th><button class="sort-btn" onclick="sortPayments('management')">관리비 <span class="sort-icon" id="psi-management">⇅</span></button></th>
-                  <th>합계</th>
+                  <th style="text-align:right;"><button class="sort-btn" onclick="sortPayments('rent')">월세 <span class="sort-icon" id="psi-rent">⇅</span></button></th>
+                  <th style="text-align:right;"><button class="sort-btn" onclick="sortPayments('management')">관리비 <span class="sort-icon" id="psi-management">⇅</span></button></th>
+                  <th style="text-align:right;">합계</th>
                   <th>월세 납부</th>
                   <th>관리비 납부</th>
                   <th><button class="sort-btn" onclick="sortPayments('paidDate')">납부일 <span class="sort-icon" id="psi-paidDate">⇅</span></button></th>
@@ -653,8 +653,8 @@
                     <th><button class="sort-btn" onclick="sortContracts('contractStart')">계약 시작 <span class="sort-icon" id="csi-contractStart">⇅</span></button></th>
                     <th><button class="sort-btn" onclick="sortContracts('contractEnd')">계약 종료 <span class="sort-icon" id="csi-contractEnd">⇅</span></button></th>
                     <th>임대유형</th>
-                    <th><button class="sort-btn" onclick="sortContracts('deposit')">보증금 <span class="sort-icon" id="csi-deposit">⇅</span></button></th>
-                    <th><button class="sort-btn" onclick="sortContracts('rent')">월세 <span class="sort-icon" id="csi-rent">⇅</span></button></th>
+                    <th style="text-align:right;"><button class="sort-btn" onclick="sortContracts('deposit')">보증금 <span class="sort-icon" id="csi-deposit">⇅</span></button></th>
+                    <th style="text-align:right;"><button class="sort-btn" onclick="sortContracts('rent')">월세 <span class="sort-icon" id="csi-rent">⇅</span></button></th>
                     <th>남은 기간</th>
                     <th>상태</th><th>계약관리</th>
                   </tr>
@@ -689,7 +689,7 @@
                 <thead>
                   <tr>
                     <th>건물명</th><th>동</th><th>호수</th><th>임차인</th><th>유형</th>
-                    <th>보증금</th><th>월세</th><th>관리비</th>
+                    <th style="text-align:right;">보증금</th><th style="text-align:right;">월세</th><th style="text-align:right;">관리비</th>
                     <th>계약 시작</th><th>계약 종료</th>
                     <th>퇴거일</th><th>상태</th><th>비고</th><th>관리</th>
                   </tr>
@@ -4373,9 +4373,9 @@ function renderPaymentTable() {
       <td>${getTenantDong(t.building, t.room)}</td>
       <td><strong>${fmtRoom(t.room)}</strong></td>
       <td>${t.name}</td>
-      <td>${Number(t.rent||0)>0?Number(t.rent).toLocaleString():'<span style="color:var(--gray-300)">-</span>'}</td>
-      <td>${Number(t.management||0)>0?Number(t.management).toLocaleString():'<span style="color:var(--gray-300)">-</span>'}</td>
-      <td><strong>${Number(total||0).toLocaleString()}</strong></td>
+      <td style="text-align:right;">${Number(t.rent||0)>0?Number(t.rent).toLocaleString():'<span style="color:var(--gray-300)">-</span>'}</td>
+      <td style="text-align:right;">${Number(t.management||0)>0?Number(t.management).toLocaleString():'<span style="color:var(--gray-300)">-</span>'}</td>
+      <td style="text-align:right;"><strong>${Number(total||0).toLocaleString()}</strong></td>
       <td style="text-align:center;">${rentCell}</td>
       <td style="text-align:center;">${mgmtCell}</td>
       <td>${p.paidDate ? fmtDate(p.paidDate) : '-'}</td>
@@ -4623,8 +4623,8 @@ function renderContracts(filter, statusFilter) {
       <td>${fmtDate(t.contractStart)}</td>
       <td>${fmtDate(t.contractEnd)}</td>
       <td>${leaseTypeBadge(t.type, t.deposit)}</td>
-      <td>${t.deposit ? Number(t.deposit).toLocaleString() : '-'}</td>
-      <td>${t.rent ? Number(t.rent).toLocaleString() : '-'}</td>
+      <td style="text-align:right;">${t.deposit ? Number(t.deposit).toLocaleString() : '-'}</td>
+      <td style="text-align:right;">${t.rent ? Number(t.rent).toLocaleString() : '-'}</td>
       <td><span class="badge ${badge} ${d<=30&&d>=0?'expiry-soon':''}">${dText}</span></td>
       <td><span class="badge ${d<0?'badge-danger':d<=90?'badge-warning':'badge-success'}">${d<0?'만료':d<=90?'만료임박':'계약중'}</span></td>
       <td style="white-space:nowrap;">
