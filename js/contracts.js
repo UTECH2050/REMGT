@@ -147,13 +147,14 @@ function initHistoryFilters() {
   const props = getData('properties');
   buildSel.innerHTML = '<option value="">─ 선택 ─</option><option value="__ALL__">전체 건물</option>' +
     props.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  buildSel.value = '__ALL__'; // 기본값: 전체
   const dongSel = document.getElementById('histDongSel');
   const roomSel = document.getElementById('histRoomSel');
   dongSel.innerHTML = '<option value="">동</option>';
   dongSel.disabled = true;
   roomSel.innerHTML = '<option value="">호수</option>';
   roomSel.disabled = true;
-  document.getElementById('historyTbody').innerHTML = '';
+  renderContractHistory(); // 전체 히스토리 바로 표시
 }
 
 function onHistBuildingChange() {
@@ -219,8 +220,8 @@ function renderContractHistory() {
   const dongFilter  = document.getElementById('histDongSel')?.value    || '';
   const roomFilter  = document.getElementById('histRoomSel')?.value    || '';
 
-  // 건물 미선택 시 빈 화면
-  if (!buildFilter) { tbody.innerHTML = ''; return; }
+  // 건물 미선택(─ 선택 ─) 시만 빈 화면, __ALL__은 통과
+  if (!buildFilter) { tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:20px;color:var(--gray-400);">건물을 선택하세요.</td></tr>'; return; }
 
   // 과거 계약 이력 (contractHistory) — 구조화 저장에서 flat 로드
   let records = loadAllHistory().map(r => ({...r, _isCurrent: false}));
