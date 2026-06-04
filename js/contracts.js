@@ -2,6 +2,51 @@
 if (typeof window.REMGT === 'undefined') window.REMGT = {};
 
 // ============================================================
+// CONTRACT HISTORY 유틸
+// ============================================================
+function _histKey(building, dong, room) {
+  return `${building||''}||${dong||''}||${room||''}`;
+}
+
+function loadAllHistory() {
+  const raw = getData('contractHistory');
+  if (!raw || (Array.isArray(raw) && raw.length === 0)) return [];
+  if (Array.isArray(raw)) {
+    // 구버전 flat 배열 → 구조화로 마이그레이션
+    const structured = {};
+    raw.forEach(rec => {
+      const k = _histKey(rec.building, rec.dong, rec.room);
+      if (!structured[k]) structured[k] = [];
+      structured[k].push(rec);
+    });
+    setData('contractHistory', structured);
+    return raw;
+  }
+  return Object.values(raw).flat();
+}
+
+function saveHistory(flatArray) {
+  const structured = {};
+  flatArray.forEach(rec => {
+    const k = _histKey(rec.building, rec.dong, rec.room);
+    if (!structured[k]) structured[k] = [];
+    structured[k].push(rec);
+  });
+  setData('contractHistory', structured);
+}
+
+function loadRoomHistory(building, dong, room) {
+  const raw = getData('contractHistory');
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(r =>
+    r.building === building &&
+    String(r.dong||'') === String(dong||'') &&
+    String(r.room) === String(room)
+  );
+  return raw[_histKey(building, dong, room)] || [];
+}
+
+// ============================================================
 // CONTRACTS
 // ============================================================
 let contractFilter = '', contractDongFilter = '', contractRoomFilter = '', contractStatusFilter = '';
