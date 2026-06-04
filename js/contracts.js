@@ -582,11 +582,35 @@ function openContractEndFromModal() {
   setTimeout(() => openContractEnd(id), 200);
 }
 
+// 종료 유형 선택 (만기/중도)
+function selectEndType(type) {
+  const isEarly = type === 'early';
+  document.getElementById('endTypeExpirySection').style.display = isEarly ? 'none' : 'block';
+  document.getElementById('endTypeEarlySection').style.display  = isEarly ? 'block' : 'none';
+  const btnExpiry = document.getElementById('btnEndTypeExpiry');
+  const btnEarly  = document.getElementById('btnEndTypeEarly');
+  const confirmBtn = document.getElementById('contractEndConfirmBtn');
+  if (btnExpiry) {
+    btnExpiry.style.border = isEarly ? '2px solid #d1d5db' : '2px solid #2563eb';
+    btnExpiry.style.background = isEarly ? '#f9fafb' : '#eff6ff';
+    btnExpiry.style.color = isEarly ? '#6b7280' : '#1d4ed8';
+  }
+  if (btnEarly) {
+    btnEarly.style.border = isEarly ? '2px solid #dc2626' : '2px solid #d1d5db';
+    btnEarly.style.background = isEarly ? '#fff1f0' : '#f9fafb';
+    btnEarly.style.color = isEarly ? '#b91c1c' : '#6b7280';
+  }
+  if (confirmBtn) confirmBtn.textContent = isEarly ? '🚪 중도 해지 확인' : '✅ 만기 종료 확인';
+  window._contractEndType = type;
+}
+
 // 계약종료 확인 모달 열기
 function openContractEnd(tenantId) {
   const t = getData('tenants').find(x => x.id === tenantId);
   if (!t) return;
   _contractEndTenantId = tenantId;
+  window._contractEndType = 'expiry'; // 기본값 만기 종료
+
   const infoEl = document.getElementById('contractEndInfo');
   const prop = getData('properties').find(p => p.name === t.building);
   const rm   = (prop?.rooms || []).find(r => String(r.roomNo) === String(t.room));
@@ -600,6 +624,13 @@ function openContractEnd(tenantId) {
   }
   const dateInput = document.getElementById('contractEndDateInput');
   if (dateInput) dateInput.value = t.contractEnd || '';
+  const earlyInput = document.getElementById('earlyEndDateInput');
+  if (earlyInput) earlyInput.value = today();
+  const earlyReason = document.getElementById('earlyEndReason');
+  if (earlyReason) earlyReason.value = '';
+
+  // 초기 상태 만기 종료로 설정
+  selectEndType('expiry');
   openModal('contractEndModal');
 }
 
@@ -607,21 +638,41 @@ function openContractEnd(tenantId) {
 function confirmContractEnd() {
   const id = _contractEndTenantId;
   if (!id) return;
-  const newEndDate = (document.getElementById('contractEndDateInput')?.value || '').trim();
-  if (!newEndDate || newEndDate.length < 10) {
-    showToast('계약 종료일을 입력해주세요.', 'error'); return;
-  }
-  // 종료일 업데이트 후 아카이브
+  const endType = window._contractEndType || 'expiry';
   const tenants = getData('tenants');
   const idx = tenants.findIndex(x => x.id === id);
   if (idx < 0) return;
-  tenants[idx].contractEnd = newEndDate;
-  setData('tenants', tenants);
   const t = tenants[idx];
-  closeModal('contractEndModal');
-  archiveTenant(id, '');
-  updateBadges();
-  showToast(`'${t.name}' 계약종료 처리 완료. 계약 히스토리에 기록됐습니다.`);
+
+  if (endType === 'expiry') {
+    // 만기 종료
+    const newEndDate = (document.getElementById('contractEndDateInput')?.value || '').trim();
+    if (!newEndDate || newEndDate.length < 10) {
+      showToast('계약 종료일을 입력해주세요.', 'error'); return;
+    }
+    tenants[idx].contractEnd = newEndDate;
+    tenants[idx].endType = 'expiry';
+    setData('tenants', tenants);
+    closeModal('contractEndModal');
+    archiveTenant(id, '만기 종료');
+    updateBadges();
+    showToast(`'${t.name}' 만기 종료 처리 완료. 계약 히스토리에 기록됐습니다.`);
+  } else {
+    // 중도 해지
+    const earlyDate = (document.getElementById('earlyEndDateInput')?.value || '').trim();
+    if (!earlyDate || earlyDate.length < 10) {
+      showToast('중도 해지일을 입력해주세요.', 'error'); return;
+    }
+    const reason = (document.getElementById('earlyEndReason')?.value || '').trim();
+    tenants[idx].earlyEndDate = earlyDate;   // 실제 해지일
+    tenants[idx].earlyEndReason = reason;
+    tenants[idx].endType = 'early';
+    setData('tenants', tenants);
+    closeModal('contractEndModal');
+    archiveTenant(id, '중도 해지' + (reason ? ': ' + reason : ''));
+    updateBadges();
+    showToast(`'${t.name}' 중도 해지 처리 완료 (${earlyDate}). 계약 히스토리에 기록됐습니다.`);
+  }
   if (currentPage === 'tenants')   renderTenants();
   if (currentPage === 'contracts') renderContracts();
 }
