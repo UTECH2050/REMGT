@@ -57,10 +57,25 @@ function selectMonth(ym) {
 
 function renderPaymentTable() {
   const payments = getData('payments');
-  // 월세·관리비 둘 다 0원(전세 등)인 경우 수납 목록에서 제외
-  const tenants = getData('tenants').filter(t =>
-    t.status==='입주' && t.name && (Number(t.rent||0) > 0 || Number(t.management||0) > 0)
-  );
+  // 수납 대상: 입주 중 + 중도해지(해지일 이후 월은 제외) + 만기종료(종료월 포함)
+  const [selY, selM] = selectedYM.split('-').map(Number);
+  const selDate = new Date(selY, selM - 1, 1); // 선택 월 1일
+
+  const tenants = getData('tenants').filter(t => {
+    if (!t.name || (Number(t.rent||0) === 0 && Number(t.management||0) === 0)) return false;
+    if (t.status === '입주') return true;
+    // 중도 해지: 해지일이 선택 월 이후면 수납 대상
+    if (t.endType === 'early' && t.earlyEndDate) {
+      const earlyEnd = new Date(t.earlyEndDate);
+      return earlyEnd >= selDate; // 해지월까지 포함
+    }
+    // 만기 종료: 계약종료월까지 포함
+    if (t.endType === 'expiry' && t.contractEnd) {
+      const contractEnd = new Date(t.contractEnd);
+      return contractEnd >= selDate;
+    }
+    return false;
+  });
   tenants.sort((a,b) => {
     let va = a[paymentSortKey] ?? '', vb = b[paymentSortKey] ?? '';
     if (paymentSortKey === 'paidDate') {
