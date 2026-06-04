@@ -145,7 +145,7 @@ function initHistoryFilters() {
   const buildSel = document.getElementById('histBuildingSel');
   if (!buildSel) return;
   const props = getData('properties');
-  buildSel.innerHTML = '<option value="">─ 선택 ─</option>' +
+  buildSel.innerHTML = '<option value="">─ 선택 ─</option><option value="__ALL__">전체 건물</option>' +
     props.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
   const dongSel = document.getElementById('histDongSel');
   const roomSel = document.getElementById('histRoomSel');
@@ -165,6 +165,12 @@ function onHistBuildingChange() {
   roomSel.disabled = true;
   document.getElementById('historyTbody').innerHTML = '';
 
+  if (buildName === '__ALL__') {
+    dongSel.disabled = true;
+    roomSel.disabled = true;
+    renderContractHistory();
+    return;
+  }
   if (buildName) {
     const prop  = getData('properties').find(p => p.name === buildName);
     const dongs = [...new Set((prop?.rooms || []).map(r => r.dong).filter(Boolean))].sort();
@@ -213,19 +219,20 @@ function renderContractHistory() {
   const dongFilter  = document.getElementById('histDongSel')?.value    || '';
   const roomFilter  = document.getElementById('histRoomSel')?.value    || '';
 
-  // 건물이 선택되지 않으면 표시 안 함
+  // 건물 미선택 시 빈 화면
   if (!buildFilter) { tbody.innerHTML = ''; return; }
 
   // 과거 계약 이력 (contractHistory) — 구조화 저장에서 flat 로드
   let records = loadAllHistory().map(r => ({...r, _isCurrent: false}));
-  if (buildFilter) records = records.filter(r => r.building === buildFilter);
+  const isAll = buildFilter === '__ALL__';
+  if (!isAll) records = records.filter(r => r.building === buildFilter);
   if (dongFilter)  records = records.filter(r => r.dong === dongFilter);
   if (roomFilter)  records = records.filter(r => String(r.room) === String(roomFilter));
 
-  // 현재 계약 중인 임차인도 포함 (특정 호수 선택 시 또는 필터 없을 때)
+  // 현재 계약 중인 임차인도 포함
   const activeTenants = (getData('tenants') || []).filter(t => t.name && t.status === '입주');
   let activeFiltered = activeTenants;
-  if (buildFilter) activeFiltered = activeFiltered.filter(t => t.building === buildFilter);
+  if (!isAll) activeFiltered = activeFiltered.filter(t => t.building === buildFilter);
   if (dongFilter)  activeFiltered = activeFiltered.filter(t => {
     // 동 정보를 props에서 찾아서 비교
     const prop = getData('properties').find(p => p.name === t.building);
