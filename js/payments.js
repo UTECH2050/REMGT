@@ -57,22 +57,24 @@ function selectMonth(ym) {
 
 function renderPaymentTable() {
   const payments = getData('payments');
-  // 수납 대상: 입주 중 + 중도해지(해지일 이후 월은 제외) + 만기종료(종료월 포함)
-  const [selY, selM] = selectedYM.split('-').map(Number);
-  const selDate = new Date(selY, selM - 1, 1); // 선택 월 1일
-
+  // 수납 대상: 선택 월에 계약이 활성화된 모든 임차인
+  // 기준: contractStart <= selectedYM <= 종료일(contractEnd / earlyEndDate)
   const tenants = getData('tenants').filter(t => {
     if (!t.name || (Number(t.rent||0) === 0 && Number(t.management||0) === 0)) return false;
+
+    // 계약 시작일이 선택 월 이후면 제외
+    if (t.contractStart && t.contractStart.slice(0,7) > selectedYM) return false;
+
+    // 현재 입주 중: 계약 시작이 선택 월 이전이면 포함
     if (t.status === '입주') return true;
-    // 중도 해지: 해지일이 선택 월 이후면 수납 대상
+
+    // 중도 해지: 해지 월까지 포함
     if (t.endType === 'early' && t.earlyEndDate) {
-      const earlyEnd = new Date(t.earlyEndDate);
-      return earlyEnd >= selDate; // 해지월까지 포함
+      return t.earlyEndDate.slice(0,7) >= selectedYM;
     }
-    // 만기 종료: 계약종료월까지 포함
-    if (t.endType === 'expiry' && t.contractEnd) {
-      const contractEnd = new Date(t.contractEnd);
-      return contractEnd >= selDate;
+    // 만기 종료: 계약 종료 월까지 포함
+    if (t.contractEnd) {
+      return t.contractEnd.slice(0,7) >= selectedYM;
     }
     return false;
   });
@@ -305,7 +307,13 @@ function updatePaymentNote(tenantId, ym, note) {
 
 function markAllPaid() {
   confirm(`${selectedYM.replace('-','년 ')}월 전체 임차인을 납부 처리하시겠습니까?`, () => {
-    const tenants = getData('tenants').filter(t => t.status==='입주' && t.name);
+    const tenants = getData('tenants').filter(t => {
+    if (!t.name) return false;
+    if (t.status === '입주') return true;
+    if (t.endType === 'early' && t.earlyEndDate) return t.earlyEndDate.slice(0,7) >= selectedYM;
+    if (t.contractEnd) return t.contractEnd.slice(0,7) >= selectedYM;
+    return false;
+  });
     const payments = getData('payments');
     tenants.forEach(t => {
       let p = payments.find(x => x.tenantId===t.id && x.yearMonth===selectedYM);
