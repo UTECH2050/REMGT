@@ -124,18 +124,8 @@ function verifyRecoveryAnswer(answer) {
   return sha256sync(answer.toLowerCase().trim()) === r.answerHash;
 }
 
-// 시스템 초기화: admin 계정이 없으면 자동 생성
-function initAuthSystem() {
-  const users = getUsers();
-  if (!users.find(u => u.id === 'admin')) {
-    users.push({
-      id: 'admin', name: '관리자', role: 'admin',
-      email: '', createdAt: new Date().toISOString().slice(0,10),
-      mustChangePassword: false
-    });
-    saveUsers(users);
-  }
-}
+// 시스템 초기화 (호환성용)
+function initAuthSystem() {}
 
 // ── 로그인 ───────────────────────────────────────────────────────────────────
 function doLogin() {
@@ -255,6 +245,55 @@ function doRecoveryReset() {
     document.getElementById('recoveryPanel').style.display = 'none';
     document.getElementById('loginPw').focus();
   }, 1800);
+}
+
+
+// ── 하위 호환 stub (이전 auth 오버레이에서 호출) ──────────────────────────
+function doChangePassword() {
+  // 초기 비밀번호 변경 (changePwOverlay에서 호출)
+  const cur  = document.getElementById('cpCurrent')?.value || '';
+  const nw   = document.getElementById('cpNew')?.value || '';
+  const conf = document.getElementById('cpConfirm')?.value || '';
+  const errEl = document.getElementById('changePwError');
+  if (errEl) errEl.style.display = 'none';
+  if (!cur || !nw || !conf) {
+    if (errEl) { errEl.textContent='모든 항목을 입력해주세요.'; errEl.style.display='block'; } return;
+  }
+  if (!verifyPassword(cur)) {
+    if (errEl) { errEl.textContent='현재 비밀번호가 올바르지 않습니다.'; errEl.style.display='block'; } return;
+  }
+  if (nw.length < 6) {
+    if (errEl) { errEl.textContent='새 비밀번호는 6자 이상이어야 합니다.'; errEl.style.display='block'; } return;
+  }
+  if (nw !== conf) {
+    if (errEl) { errEl.textContent='비밀번호가 일치하지 않습니다.'; errEl.style.display='block'; } return;
+  }
+  savePasswordHash(nw);
+  const overlay = document.getElementById('changePwOverlay');
+  if (overlay) overlay.classList.add('hidden');
+  _currentSession = { userId: 'admin', name: '관리자', role: 'admin' };
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(_currentSession)); } catch(e) {}
+  document.getElementById('loginOverlay').style.display = 'none';
+  try { if(typeof seedDemoData==='function') seedDemoData(); } catch(e) {}
+  try { if(typeof updateBadges==='function') updateBadges(); } catch(e) {}
+  try { if(typeof renderDashboard==='function') renderDashboard(); } catch(e) {}
+}
+
+function verifyEmailForReset() {
+  const id    = (document.getElementById('erId')?.value || '').trim();
+  const email = (document.getElementById('erEmail')?.value || '').trim();
+  const msgEl = document.getElementById('emailResetMsg');
+  if (!id || !email) {
+    if (msgEl) { msgEl.className=''; msgEl.style.cssText='display:block;background:#fee2e2;color:#dc2626;padding:8px 12px;border-radius:6px;font-size:12px;';
+      msgEl.textContent='아이디와 이메일을 입력해주세요.'; } return;
+  }
+  // 보안 질문 방식으로 전환
+  if (msgEl) { msgEl.style.cssText='display:block;background:#fef3c7;color:#92400e;padding:8px 12px;border-radius:6px;font-size:12px;';
+    msgEl.textContent='이메일 인증은 지원하지 않습니다. 로그인 후 설정에서 보안 질문을 이용해 주세요.'; }
+}
+
+function doEmailReset() {
+  verifyEmailForReset();
 }
 
 function doLogout() {
