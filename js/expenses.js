@@ -200,8 +200,171 @@ function importData(input) {
   reader.readAsText(file);
 }
 
-// SETTINGS PAGE
 // ============================================================
+// EXPENSES
+// ============================================================
+function fillExpDongHosu(buildingName, selDong, selHosu) {
+  const props = getData('properties');
+  const prop  = props.find(p => p.name === buildingName);
+  const rooms = prop?.rooms || [];
+  const dongs = [...new Set(rooms.map(r => r.dong||'').filter(Boolean))].sort();
+  const dongEl  = document.getElementById('eDong');
+  const hosuEl  = document.getElementById('eHosu');
+  dongEl.innerHTML  = '<option value="">-</option>' + dongs.map(d=>`<option value="${d}">${d}</option>`).join('');
+  hosuEl.innerHTML  = '<option value="">-</option>';
+  if (selDong) dongEl.value = selDong;
+  const filteredRooms = dongEl.value ? rooms.filter(r => (r.dong||'') === dongEl.value) : rooms;
+  filteredRooms.sort((a,b)=>String(a.roomNo||'').localeCompare(String(b.roomNo||''),'ko'));
+  hosuEl.innerHTML = '<option value="">-</option>' + filteredRooms.map(r=>`<option value="${r.hosu||r.roomNo}">${r.hosu ? r.hosu+'호' : r.roomNo}</option>`).join('');
+  if (selHosu) hosuEl.value = selHosu;
+}
+function onExpBuildingChange() { fillExpDongHosu(document.getElementById('eBuilding').value, '', ''); }
+function onExpDongChange() { fillExpDongHosu(document.getElementById('eBuilding').value, document.getElementById('eDong').value, ''); }
+
+function openExpenseModal(id) {
+  const bSel = document.getElementById('eBuilding');
+  bSel.innerHTML = '<option value="">공통 / 전체</option>';
+  getData('properties').forEach(p => { const opt = document.createElement('option'); opt.value = p.name; opt.textContent = p.name; bSel.appendChild(opt); });
+  document.getElementById('expenseModalTitle').textContent = id ? '지출 수정' : '지출 추가';
+  document.getElementById('expDeleteBtn').style.display = id ? 'inline-flex' : 'none';
+  document.getElementById('expenseId').value = '';
+  document.getElementById('eDate').value = today();
+  document.getElementById('eAmount').value = '';
+  document.getElementById('eCategory').value = '중개수수료';
+  document.getElementById('eBuilding').value = '';
+  document.getElementById('eDong').innerHTML = '<option value="">-</option>';
+  document.getElementById('eHosu').innerHTML = '<option value="">-</option>';
+  document.getElementById('eMemo').value = '';
+  if (id) {
+    const e = getData('expenses').find(x => x.id === id);
+    if (e) {
+      document.getElementById('expenseId').value = e.id;
+      document.getElementById('eDate').value = e.date || '';
+      document.getElementById('eAmount').value = e.amount ? Number(e.amount).toLocaleString() : '';
+      document.getElementById('eCategory').value = e.category || '기타';
+      document.getElementById('eBuilding').value = e.building || '';
+      fillExpDongHosu(e.building||'', e.dong||'', e.hosu||'');
+      document.getElementById('eMemo').value = e.memo || '';
+    }
+  }
+  openModal('expenseModal');
+}
+
+function deleteExpenseFromModal() {
+  const id = document.getElementById('expenseId').value;
+  if (!id) return;
+  confirm('이 지출 항목을 삭제하시겠습니까?', () => {
+    setData('expenses', getData('expenses').filter(e=>e.id!==id));
+    closeModal('expenseModal');
+    renderExpensesPage();
+    showToast('삭제되었습니다.');
+  });
+}
+
+function saveExpense() {
+  const date = document.getElementById('eDate').value;
+  const amount = document.getElementById('eAmount').value;
+  if (!date || !amount) { showToast('날짜와 금액을 입력해주세요.', 'error'); return; }
+  const expenses = getData('expenses');
+  const id = document.getElementById('expenseId').value;
+  const obj = {
+    id: id || uid(), date, amount: Number(amount.replace(/,/g,'')),
+    category: document.getElementById('eCategory').value,
+    building: document.getElementById('eBuilding').value,
+    dong:     document.getElementById('eDong').value,
+    hosu:     document.getElementById('eHosu').value,
+    memo:     document.getElementById('eMemo').value
+  };
+  if (id) { const idx = expenses.findIndex(e=>e.id===id); expenses[idx]=obj; } else expenses.push(obj);
+  setData('expenses', expenses);
+  closeModal('expenseModal');
+  if (document.getElementById('page-expenses').classList.contains('active')) renderExpensesPage();
+  else renderAnalytics();
+  showToast('지출이 저장되었습니다.');
+}
+
+function deleteExpense(id) {
+  confirm('이 지출 항목을 삭제하시겠습니까?', () => {
+    setData('expenses', getData('expenses').filter(e=>e.id!==id));
+    if (document.getElementById('page-expenses').classList.contains('active')) renderExpensesPage();
+    else renderAnalytics();
+    showToast('삭제되었습니다.');
+  });
+}
+
+let expSelectedYear = new Date().getFullYear();
+let expSortKey = 'date';
+let expSortDir = 'desc';
+
+function sortExpenses(key) {
+  if (expSortKey === key) expSortDir = expSortDir === 'asc' ? 'desc' : 'asc';
+  else { expSortKey = key; expSortDir = key === 'amount' ? 'desc' : 'asc'; }
+  renderExpensesPage();
+}
+function changeExpYear(delta) { expSelectedYear += delta; renderExpensesPage(); }
+
+function renderExpensesPage() {
+  const allExpenses = getData('expenses');
+  const properties  = getData('properties');
+  const curYear     = new Date().getFullYear();
+  const yearLabel = document.getElementById('expYearLabel');
+  if (yearLabel) yearLabel.textContent = expSelectedYear + '년';
+  const usedYears = [...new Set(allExpenses.map(e=>parseInt(e.date?.slice(0,4))).filter(Boolean))];
+  const minY = usedYears.length ? Math.min(...usedYears) : curYear;
+  const prevBtn = document.getElementById('expPrevBtn');
+  const nextBtn = document.getElementById('expNextBtn');
+  if (prevBtn) prevBtn.disabled = expSelectedYear <= minY;
+  if (nextBtn) nextBtn.disabled = expSelectedYear >= curYear + 1;
+  const bSel = document.getElementById('expFilterBuilding');
+  const curB = bSel ? bSel.value : '';
+  if (bSel) {
+    bSel.innerHTML = '<option value="">전체 건물</option>';
+    properties.forEach(p => { const opt = document.createElement('option'); opt.value = p.name; opt.textContent = p.name; bSel.appendChild(opt); });
+    bSel.value = curB;
+  }
+  const filterB = bSel ? bSel.value : '';
+  let filtered = allExpenses.filter(e => e.date?.startsWith(String(expSelectedYear)));
+  if (filterB) filtered = filtered.filter(e => e.building === filterB);
+  filtered.sort((a,b) => {
+    let va, vb;
+    if (expSortKey==='date') { va=a.date||''; vb=b.date||''; }
+    else if (expSortKey==='category') { va=a.category||''; vb=b.category||''; }
+    else if (expSortKey==='building') { va=a.building||''; vb=b.building||''; }
+    else if (expSortKey==='amount') { va=Number(a.amount||0); vb=Number(b.amount||0); }
+    else { va=a.date||''; vb=b.date||''; }
+    if (typeof va==='number') return expSortDir==='asc'?va-vb:vb-va;
+    return expSortDir==='asc'?va.localeCompare(vb,'ko'):vb.localeCompare(va,'ko');
+  });
+  ['date','category','building','amount'].forEach(k => {
+    const el = document.getElementById('esi-'+k);
+    if (el) el.className = 'sort-icon' + (expSortKey===k ? (' '+expSortDir) : '');
+  });
+  const totalAmt = filtered.reduce((s,e) => s+Number(e.amount||0), 0);
+  const catMap = {};
+  filtered.forEach(e => { catMap[e.category] = (catMap[e.category]||0)+Number(e.amount||0); });
+  const statsEl = document.getElementById('expenseStats');
+  const CAT_COLORS = {'중개수수료':'#7c3aed','수선비':'#dc2626','세금':'#d97706','관리비':'#059669','보험료':'#2563eb','광고비':'#db2777','인건비':'#0891b2','기타':'#6b7280'};
+  if (statsEl) statsEl.innerHTML = `
+    <div class="stat-card" style="flex:0 0 auto;min-width:130px;"><div class="stat-label">총 지출</div><div class="stat-value" style="color:var(--danger);font-size:20px;">${totalAmt.toLocaleString()}<span style="font-size:13px;font-weight:500;">만원</span></div></div>
+    <div class="stat-card" style="flex:0 0 auto;min-width:100px;"><div class="stat-label">지출 건수</div><div class="stat-value" style="font-size:20px;">${filtered.length}<span style="font-size:13px;font-weight:500;">건</span></div></div>
+    ${Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>`<div class="stat-card" style="flex:0 0 auto;min-width:100px;"><div class="stat-label" style="color:${CAT_COLORS[cat]||'#6b7280'};font-weight:700;">${cat}</div><div class="stat-value" style="font-size:16px;">${amt.toLocaleString()}<span style="font-size:12px;font-weight:500;">만원</span></div></div>`).join('')}`;
+  const totalLabel = document.getElementById('expTotalLabel');
+  if (totalLabel) totalLabel.textContent = filtered.length ? `${filtered.length}건 · ${totalAmt.toLocaleString()}만원` : '';
+  const tbody = document.getElementById('expenseListTbody');
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><p>'+expSelectedYear+'년 지출 내역이 없습니다.</p></div></td></tr>'; return; }
+  tbody.innerHTML = filtered.map(e => `
+    <tr>
+      <td style="white-space:nowrap;text-align:center;">${fmtDate(e.date)}</td>
+      <td style="text-align:center;"><span style="font-size:12px;background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.category}</span></td>
+      <td style="text-align:center;">${e.building?`<span style="font-size:12px;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:10px;white-space:nowrap;">${e.building}</span>`:'<span style="color:var(--gray-400);font-size:12px;">-</span>'}</td>
+      <td style="font-size:13px;text-align:center;">${e.dong&&e.hosu?e.dong+'동 '+e.hosu+'호':e.dong?e.dong+'동':e.hosu?e.hosu+'호':'-'}</td>
+      <td style="text-align:right;padding-right:12px;"><strong style="color:var(--danger);">${Number(e.amount||0).toLocaleString()}만원</strong></td>
+      <td style="font-size:12px;color:var(--gray-500);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.memo||'-'}</td>
+      <td style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="openExpenseModal('${e.id}')">수정</button></td>
+    </tr>`).join('');
+}
+
+// (settings 함수는 settings.js 에 있음)
 function renderSettings() {
   // 내 계정 정보
   const myEl = document.getElementById('settingsMyAccount');
