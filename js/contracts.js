@@ -563,7 +563,6 @@ function archiveTenant(tenantId, extraNote) {
 // ============================================================
 // 계약 탭 전환
 // ============================================================
-let _contractTab = 'active';
 function switchContractTab(tab) {
   _contractTab = tab;
   document.getElementById('ctab-active').style.display  = tab === 'active'  ? 'block' : 'none';
