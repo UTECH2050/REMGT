@@ -1420,4 +1420,34 @@ function saveRegisterTenant() {
   }
 }
 
-// ============================================================
+function deleteTenant(id) {
+  const t = getData('tenants').find(x => x.id === id);
+  if (!t) return;
+  confirm('"' + fmtRoom(t.room) + ' ' + t.name + '" 임차인을 삭제하시겠습니까?\n관련 수납 데이터도 함께 삭제됩니다.', () => {
+    const tenants = getData('tenants').filter(x => x.id !== id);
+    setData('tenants', tenants);
+    const payments = getData('payments').filter(x => x.tenantId !== id);
+    setData('payments', payments);
+    renderTenants();
+    updateBadges();
+    showToast('삭제되었습니다.');
+  });
+}
+
+function deleteTenantFromModal() {
+  if (!_editingTenantId) return;
+  const id = _editingTenantId;
+  const t = getData('tenants').find(x => x.id === id);
+  if (!t) return;
+  confirm('"' + fmtRoom(t.room) + ' ' + t.name + '" 임차인을 삭제하시겠습니까?\n관련 수납 데이터도 함께 삭제됩니다.', () => {
+    const tenants = getData('tenants').filter(x => x.id !== id);
+    setData('tenants', tenants);
+    const payments = getData('payments').filter(x => x.tenantId !== id);
+    setData('payments', payments);
+    _editingTenantId = null;
+    closeModal('registerModal');
+    renderTenants();
+    updateBadges();
+    showToast('삭제되었습니다.');
+  });
+}
